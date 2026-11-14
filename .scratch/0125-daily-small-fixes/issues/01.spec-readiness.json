@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0125:01",
+  "request": {
+    "digest": "df90ab2b420b13b2c9707790d8f6dd5e8adaaccd75737fbd5cd7405b416b4754",
+    "filePath": ".tmp/claude-code/506d838b-467f-4d0a-941b-b548850a12fa/0125_01/spec-readiness/requests/request-501c195f-ca74-4820-a614-16de25250673.json",
+    "id": "501c195f-ca74-4820-a614-16de25250673"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0125-daily-small-fixes/spec.md",
+      "role": "governing-spec",
+      "sha256": "bc8a15fcec1a7c752445eb4e98a2c7a22916305d6558d4db49beddd0ae237aad"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "bb46d6459b86d2535cee7b20c4d0365de3c55b4d5c16be45719f53f28fddbc12"
+    },
+    {
+      "filePath": "lib/document-terms/document-terms.mjs",
+      "role": "architecture-evidence",
+      "sha256": "b66a6f23c7e2f57ea2c78ed50ae68b37fd6454d5e161f63f32b1e71b62f0aa58"
+    },
+    {
+      "filePath": "lib/repository-workflow/workflow.mjs",
+      "role": "architecture-evidence",
+      "sha256": "66a37ed8ce479dc5e94016ecd13922a3c48db09fb1dab1d1bf6895ae8d19dc2d"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0125-daily-small-fixes/issues/01-daily-small-fixes.md",
+    "sha256": "04135b8ebebbf2ff318c86fb8fdd676677e7a92326e112edf9272b20391a768c"
+  },
+  "result": "satisfied"
+}
