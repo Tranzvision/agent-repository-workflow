@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0129:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户 2026-11-02 常设确认: 不含设计决定的清理类 issue 不需要治理设计; 本 issue 是不改规格和公开 Interface 的缺陷修复, 只放宽一处内部卸载判断."
+  },
+  "subject": {
+    "filePath": ".scratch/0129-followup-settings-unload-reservation/issues/01-followup-settings-unload-reservation.md",
+    "sha256": "866319af7f42638dfa013d928711f81699de654907143bd5cc77f88a06cc65aa"
+  },
+  "result": "not-applicable"
+}

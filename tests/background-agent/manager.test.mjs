@@ -463,8 +463,10 @@ test('Claude backend runs are limited by the anthropic provider cap before the g
   if(denied.status==='failed')assert.match(denied.error.message,/Provider anthropic capacity is exhausted/u);
 });
 
-test('safe eviction and maintenance cannot unload work reserved during native idle verification',async t=>{
-  const fake=await harness(t,{maxInstances:1});
+/** A finished run whose native idle verification can be held open; `idleGate()` installs a fresh gate on it.
+ * @param {import('node:test').TestContext} t @param {number} maxInstances */
+async function idleRun(t,maxInstances){
+  const fake=await harness(t,{maxInstances});
   const first=result(await fake.start());
   await waitDelivered(fake.stateStore,first.messageId);
   await fake.manager.owned(first.runId,'main-1','main-1').work;
@@ -472,7 +474,6 @@ test('safe eviction and maintenance cannot unload work reserved during native id
   await fake.manager.list();
   const entry=fake.manager.owned(first.runId,'main-1','main-1');
   assert.ok(entry.native);
-  const session=fake.manager.proxy(entry);
   const native=entry.native;
   const originalIdleFacts=native.idleFacts;
   /** @returns {{entered:Promise<void>,release:()=>void,install:()=>void}} */
@@ -484,6 +485,11 @@ test('safe eviction and maintenance cannot unload work reserved during native id
         native.idleFacts=async input=>{enter();await gate;return originalIdleFacts(input);};
       }};
   };
+  return {fake,native,originalIdleFacts,idleGate,session:fake.manager.proxy(entry)};
+}
+
+test('safe eviction and maintenance cannot unload work reserved during native idle verification',async t=>{
+  const {fake,native,originalIdleFacts,idleGate,session}=await idleRun(t,1);
 
   const capacityGate=idleGate();
   /** @type {ReturnType<typeof idleGate>|null} */let maintenanceGate=null;
@@ -1494,4 +1500,20 @@ test('a non-Reviewer run must keep its recovery directory under its cwd, at spaw
   await tick();
   refused(await fake.execute(first.runId,'followup_task',{handoff:'more',cwd:outside}));
   assert.equal((await fake.execute(first.runId,'followup_task',{handoff:'more',cwd:fake.directory})).status,'succeeded');
+});
+
+test('a task with changed settings unloads the idle root although another caller reserves the run during native idle verification',async t=>{
+  const {fake,idleGate,session}=await idleRun(t,2);
+  const gate=idleGate();
+  gate.install();
+  const releaseTask=session.holdManagedWork();
+  const accepted=await session.acceptTask({handoff:'next task',settings:{...settings,config:{profile:'changed'}}});
+  const preparing=session.prepareForTask({messageId:accepted.messageId});
+  await gate.entered;
+  // An inspection of the same run takes its own reservation while the task is being prepared.
+  const releaseInspection=session.holdManagedWork();
+  gate.release();
+  try{await preparing;}finally{releaseInspection();releaseTask();}
+  assert.equal(fake.native.rootStops,1);
+  assert.equal(fake.native.openCount,2);
 });
