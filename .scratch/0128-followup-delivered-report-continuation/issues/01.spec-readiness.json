@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0128:01",
+  "request": {
+    "digest": "12597df9b4bcaf268484f3e832ab8a03d2242219fc81bfb06a2c663dfc389f44",
+    "filePath": ".tmp/claude-code/506d838b-467f-4d0a-941b-b548850a12fa/0128_01/spec-readiness/requests/request-bed4388c-2ac8-4fb0-977a-01248c7e2c5f.json",
+    "id": "bed4388c-2ac8-4fb0-977a-01248c7e2c5f"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0128-followup-delivered-report-continuation/spec.md",
+      "role": "governing-spec",
+      "sha256": "5144f77025e1531991b5774078b551b929b79b9d82097c50100de4619374cc3f"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "782c2b2b45a2a46ba240f1c1bc5e8494aeda4a7ad680c064631e3a8fae49dfec"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0128-followup-delivered-report-continuation/issues/01-followup-delivered-report-continuation.md",
+    "sha256": "de917312f30b25136fef07bfb6b4509c2667c39e4d6b3123d1d46c66d9850ac3"
+  },
+  "result": "satisfied"
+}

@@ -28,6 +28,13 @@ const options = (/** @type {ReturnType<typeof createReviewerRuntimeFixture>} */ 
     nativeSessions: fixture.native.nativeSessions, filesystem: fixture.filesystem,
     clock: fixture.clock, recoveryBoundary: fixture.recoveryBoundary,
 });
+/** A scripted program continuation: accept the instruction under `messageId()` and start the next native turn with it.
+ * @param {Awaited<ReturnType<ReturnType<typeof createReviewerRuntimeFixture>['native']['nativeSessions']['open']>>} session @param {()=>string} messageId */
+const programContinuation = (session, messageId) => async (/** @type {Parameters<NonNullable<typeof session.continueTask>>[0]} */ request) => {
+    request.onAccepted(messageId());
+    const delivered = await session.startTurn({threadId: request.rootThreadId, handoff: request.instruction});
+    return {turnId: /** @type {string} */ (delivered.turnId), deliveryStatus: 'delivered'};
+};
 /** @param {ReturnType<typeof createReviewerRuntimeFixture>} fixture @param {{runId:string,recoveryPath:string}} observed @param {import('../../lib/background-agent/state-store.mjs').AgentState} state */
 const managedBinding = async (fixture, observed, state) => {
     const opened = await fixture.filesystem.open({root: reviewerHandoff.cwd});
@@ -138,9 +145,7 @@ test('a provisional missing report stays live, then a native completion retires 
             configureReviewerTask:async()=>({enabled:true,settings:input.settings,compactBinding:null}),
             continueTask:async(/** @type {NonNullable<typeof session.continueTask> extends (input:infer T)=>unknown?T:never} */ request)=>{
                 const root=continuingFixture.native.members.get(request.rootThreadId);assert.ok(root);assert.equal(root.turnId,request.endedTurnId);
-                instructions++;request.onAccepted(`program-${instructions}`);
-                const delivered=await session.startTurn({threadId:request.rootThreadId,handoff:request.instruction});
-                return {turnId:/** @type {string} */(delivered.turnId),deliveryStatus:'delivered'};
+                return programContinuation(session,()=>`program-${++instructions}`)(request);
             },
         });
     }};
@@ -1163,11 +1168,7 @@ test('a recoverable bound report read fault receives concrete feedback and resum
                 createStrataTaskSupport({driver:'strata',installationDirectory:'/unused'}).createPolicy({...callbacks,
                     readWorkState:()=>/** @type {Record<string,unknown>} */(/** @type {unknown} */(work)),
                     saveWorkState:state=>{work=/** @type {typeof work} */(/** @type {unknown} */(state));}}),
-            continueTask:async(/** @type {Parameters<NonNullable<typeof session.continueTask>>[0]} */ request)=>{
-                request.onAccepted('report-read-feedback');
-                const delivered=await session.startTurn({threadId:request.rootThreadId,handoff:request.instruction});
-                return {turnId:/** @type {string} */(delivered.turnId),deliveryStatus:'delivered'};
-            },
+            continueTask:programContinuation(session,()=>'report-read-feedback'),
         });
     }};
     const runtime=createReviewerRuntime({...options(fixture),nativeSessions});
@@ -1206,4 +1207,33 @@ test('a recoverable bound report read fault receives concrete feedback and resum
         assert.equal(completed.measurement?.wallClockMs,65);assert.equal(completed.measurement?.usage.totalTokens,35);
         assert.equal(fixture.filesystem.snapshot(reviewerHandoff.cwd).get(reportRelative)?.toString(),report);
     } finally {await runtime.close();}
+});
+
+test('a follow-up or new thread over a delivered review is not pre-empted by a continuation for its emptied report', async () => {
+    const fixture = createReviewerRuntimeFixture();
+    let continuations = 0;
+    const nativeSessions = {open: async (/** @type {Parameters<typeof fixture.native.nativeSessions.open>[0]} */ input) => {
+        const session = await fixture.native.nativeSessions.open(input);
+        return Object.assign(session, {continueTask: programContinuation(session, () => `program-${++continuations}`)});
+    }};
+    const runtime = createReviewerRuntime({...options(fixture), nativeSessions});
+    const first = succeeded(await runtime.execute({operation: 'spawn_agent', input: reviewerHandoff}));
+    const active = succeeded(await runtime.inspect({runId: first.runId}));
+    const threadId = /** @type {string} */ (active.threadId);
+    await fixture.writeReport('Complete report.');
+    fixture.native.finish(threadId);
+    assert.equal(succeeded(await runtime.inspect({runId: first.runId})).completion?.status, 'ready');
+    await fixture.writeReport('');
+    const next = succeeded(await runtime.execute({operation: 'followup_task', input: {...reviewerHandoff, runId: first.runId, handoff: 'Review the next input.'}}));
+    assert.equal(next.runId, first.runId);
+    assert.equal(succeeded(await runtime.inspect({runId: first.runId})).state, 'running');
+    assert.equal(continuations, 0);
+    assert.equal(fixture.native.calls.filter(call => call.operation === 'startTurn').length, 2);
+    await fixture.writeReport('Second complete report.');
+    fixture.native.finish(threadId);
+    await fixture.writeReport('');
+    const fresh = succeeded(await runtime.execute({operation: 'spawn_agent', input: {...reviewerHandoff, newThread: true}}));
+    assert.notEqual(fresh.runId, first.runId);
+    assert.equal(continuations, 0);
+    await runtime.close();
 });
