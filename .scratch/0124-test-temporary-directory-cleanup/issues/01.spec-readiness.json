@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0124:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户 2026-11-02 常设确认: 不含设计决定的清理类 issue 不需要治理设计; 本 issue 为测试临时目录清理, 只改测试."
+  },
+  "subject": {
+    "filePath": ".scratch/0124-test-temporary-directory-cleanup/issues/01-test-temporary-directory-cleanup.md",
+    "sha256": "fa6453c12d778dc8ce6b442ec7acd994cb5054c43cf7207552373dd058908d65"
+  },
+  "result": "not-applicable"
+}

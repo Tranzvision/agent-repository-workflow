@@ -2,8 +2,7 @@ import assert from 'node:assert/strict';
 import childProcess from 'node:child_process';
 import {EventEmitter} from 'node:events';
 import {syncBuiltinESMExports} from 'node:module';
-import {access, copyFile, mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {access, copyFile, mkdir, readFile, writeFile} from 'node:fs/promises';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import test, {after} from 'node:test';
@@ -69,10 +68,18 @@ const RELEASE_CONFIGURATION = {
     status: 'succeeded',
     value: {repositories: {sourceCheckout: {url: 'https://github.com/example/arw.git'}}},
 };
-const ARCHIVE_DIRECTORY = await mkdtemp(join(tmpdir(), 'arw-bootstrap-archive-'));
+/** @type {() => void | Promise<void>} */
+let removeArchiveDirectory = () => {};
+const ARCHIVE_DIRECTORY = await createTemporaryDirectory({after: cleanup => { removeArchiveDirectory = cleanup; }}, 'arw-bootstrap-archive-');
 const ARCHIVE = join(ARCHIVE_DIRECTORY, 'arw.tar.gz');
-await runSuccessfulProcess(process.execPath, [join(SOURCE_DIRECTORY, 'scripts', 'pack-release.mjs'), ARCHIVE]);
-after(() => rm(ARCHIVE_DIRECTORY, {force: true, recursive: true}));
+// An `after` hook registered while the packing is pending could run before the tests below are registered, so it is registered once the packing succeeded.
+try {
+    await runSuccessfulProcess(process.execPath, [join(SOURCE_DIRECTORY, 'scripts', 'pack-release.mjs'), ARCHIVE]);
+} catch (error) {
+    await removeArchiveDirectory();
+    throw error;
+}
+after(removeArchiveDirectory);
 const ASSET_URL = (/** @type {string} */ tag) => `https://github.com/example/arw/releases/download/${tag}/arw.tar.gz`;
 
 test('bootstrap with --version downloads that release asset, hands off the tag and cleans up', async () => {

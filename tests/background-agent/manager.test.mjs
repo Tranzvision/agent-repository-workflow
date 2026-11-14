@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {mkdir, rm, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createBackgroundAgentManager} from '../../lib/background-agent/manager.mjs';
 import {createStrataWorkPolicy,initialStrataWorkState} from '../../lib/background-agent/strata-work-policy.mjs';
 import {createReviewerMeasurement,observeReviewerMeasurement,reviewerMeasurementResult} from '../../lib/reviewer-runtime/reviewer-measurement.mjs';
 import {createBackgroundAgentStateStore} from '../../lib/background-agent/state-store.mjs';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 
 const settings={model:'test',modelProvider:'test',reasoningEffort:'high',serviceTier:null,config:{}};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -100,7 +100,11 @@ function nativeHarness({blockedStart=false,unsafeIdle=false,failStart=false,inco
  * providers?:Record<string,import('../../lib/background-agent/model-catalog.mjs').ProviderConfiguration>,
  * createStrataDriver?:typeof import('../../lib/background-agent/strata-driver.mjs').createStrataDriver}} [options] */
 async function harness(t,options={}){
-  const directory=await mkdtemp(join(tmpdir(),'arw-manager-'));
+  /** @type {Awaited<ReturnType<typeof createBackgroundAgentManager>>|undefined} */
+  let created;
+  // Registered before the directory so that the manager closes before the directory is removed.
+  t.after(()=>created?.close());
+  const directory=await createTemporaryDirectory(t,'arw-manager-');
   /** @type {Set<{handler:()=>void,delay:number,unref:()=>void}>} */
   const timers=new Set();
   const clock=/** @type {{now:()=>number,setTimeout:typeof setTimeout,clearTimeout:typeof clearTimeout}} */ (
@@ -109,10 +113,9 @@ async function harness(t,options={}){
     clearTimeout:/** @param {{handler:()=>void,delay:number,unref:()=>void}} timer */timer=>{timers.delete(timer);}}));
   const native=nativeHarness(options);
   const stateStore=createBackgroundAgentStateStore({runtimeDirectory:directory,clock});
-  const manager=await createBackgroundAgentManager({nativeSessions:native.nativeSessions,maxInstances:options.maxInstances??2,
+  const manager=created=await createBackgroundAgentManager({nativeSessions:native.nativeSessions,maxInstances:options.maxInstances??2,
     stateStore,clock,modelCatalog:options.providers?{getProviders:async()=>options.providers??{}}:undefined,
     createStrataDriver:options.createStrataDriver});
-  t.after(async()=>{try{await manager.close();}finally{await rm(directory,{recursive:true,force:true});}});
   const start=(ownerId='main-1',runSettings=settings,stateDirectory=directory)=>manager.execute({ownerId,controllerId:ownerId,operation:'spawn_agent',input:{
     role:'generic',settings:runSettings,cwd:directory,stateDirectory,readPaths:[],writePaths:[],
     instructions:'instructions',handoff:'initial work',
@@ -1453,8 +1456,7 @@ test('unload_agent refuses a run whose recovery record no longer matches it',asy
 
 test('a non-Reviewer run must keep its recovery directory under its cwd, at spawn and on follow-up',async t=>{
   const fake=await harness(t);
-  const outside=await mkdtemp(join(tmpdir(),'arw-outside-'));
-  t.after(()=>rm(outside,{recursive:true,force:true}));
+  const outside=await createTemporaryDirectory(t,'arw-outside-');
   const spawn=(/** @type {string} */ cwd)=>fake.manager.execute({ownerId:'main-1',controllerId:'main-1',operation:'spawn_agent',input:{
     role:'generic',settings,cwd,stateDirectory:fake.directory,readPaths:[],writePaths:[],instructions:'instructions',handoff:'work'}});
   /** @param {import('../../lib/background-agent/machine.mjs').RuntimeResult} outcome */

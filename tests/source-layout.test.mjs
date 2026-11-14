@@ -12,8 +12,8 @@ const execute = promisify(execFile);
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const nodeModules = new Set(builtinModules.flatMap(identity => [identity, `node:${identity}`]));
 
-const readSourcePaths = async () => {
-    const {stdout} = await execute('git', ['ls-files', '--', 'scripts', 'lib'], {cwd: repositoryRoot});
+const readPaths = async (/** @type {string[]} */ ...pathspecs) => {
+    const {stdout} = await execute('git', ['ls-files', '--', ...pathspecs], {cwd: repositoryRoot});
     return stdout.trim().split('\n').filter(Boolean).sort();
 };
 
@@ -22,7 +22,7 @@ test('source checkout does not retain target Repository lifecycle state', async 
 });
 
 test('source checkout keeps maintenance entries flat and implementations in responsibility directories', async () => {
-    const paths = await readSourcePaths();
+    const paths = await readPaths('scripts', 'lib');
     const scriptPaths = paths.filter(path => path.startsWith('scripts/'));
     assert.ok(scriptPaths.length > 0);
     for (const path of scriptPaths) {
@@ -44,8 +44,17 @@ test('source checkout keeps maintenance entries flat and implementations in resp
     }
 });
 
+test('tests create temporary directories only through the helper that removes them', async () => {
+    const paths = (await readPaths('tests/*.mjs')).filter(path => !path.startsWith('tests/fixtures/') && path !== 'tests/helpers/cleanup.mjs');
+    assert.ok(paths.length > 0);
+    for (const path of paths) {
+        // The brackets keep this file from matching its own pattern.
+        assert.doesNotMatch(await readFile(new URL(`../${path}`, import.meta.url), 'utf8'), /\bmkdte[m]p/u, `${path} must call createTemporaryDirectory from tests/helpers/cleanup.mjs.`);
+    }
+});
+
 test('shared implementation dependencies point from arw-common to common without business imports', async () => {
-    const paths = (await readSourcePaths()).filter(path => path.startsWith('lib/') && path.endsWith('.mjs'));
+    const paths = (await readPaths('scripts', 'lib')).filter(path => path.startsWith('lib/') && path.endsWith('.mjs'));
     for (const path of paths) {
         const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
         for (const specifier of moduleSpecifiers(source)) {

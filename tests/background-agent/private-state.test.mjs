@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {chmod,mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {chmod,readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 import {securePrivateStatePath,verifyPrivateStatePath} from '../../lib/background-agent/private-state.mjs';
@@ -10,21 +9,19 @@ import {backgroundAgentMessageDatabasePaths} from '../../lib/background-agent/me
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {installFakeCommand} from '../helpers/process.mjs';
 
-test('private runtime state rejects broad filesystem access before it is read', async () => {
-  const directory = await mkdtemp(join(tmpdir(),'arw-private-state-'));
+test('private runtime state rejects broad filesystem access before it is read', async t => {
+  const directory = await createTemporaryDirectory(t,'arw-private-state-');
   const file = join(directory,'credential');
-  try {
-    await writeFile(file,'private\n',{mode:0o600});
-    await securePrivateStatePath(directory,'directory');
-    await securePrivateStatePath(file,'file');
-    if (process.platform !== 'win32') {
-      await chmod(file,0o644);
-      await assert.rejects(verifyPrivateStatePath(file,'file'),/not private/);
-      await chmod(file,0o600);
-      await chmod(directory,0o755);
-      await assert.rejects(verifyPrivateStatePath(directory,'directory'),/not private/);
-    }
-  } finally {await rm(directory,{recursive:true,force:true});}
+  await writeFile(file,'private\n',{mode:0o600});
+  await securePrivateStatePath(directory,'directory');
+  await securePrivateStatePath(file,'file');
+  if (process.platform !== 'win32') {
+    await chmod(file,0o644);
+    await assert.rejects(verifyPrivateStatePath(file,'file'),/not private/);
+    await chmod(file,0o600);
+    await chmod(directory,0o755);
+    await assert.rejects(verifyPrivateStatePath(directory,'directory'),/not private/);
+  }
 });
 
 test('Agent, message and provider state share one private SQLite file', async t => {

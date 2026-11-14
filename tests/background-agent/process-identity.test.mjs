@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
-import fsPromises, {mkdir, mkdtemp, readFile, rm, stat, writeFile} from 'node:fs/promises';
+import fsPromises, {mkdir, readFile, rm, stat, writeFile} from 'node:fs/promises';
 import {syncBuiltinESMExports} from 'node:module';
-import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
@@ -12,25 +11,23 @@ import {appServerProcessIdentityPath, parseDarwinProcessStartSecond, readProcess
 
 
 
-test('private process identity distinguishes live, exited, reused PID and unknown observation', async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-native-identity-'));
+test('private process identity distinguishes live, exited, reused PID and unknown observation', async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-native-identity-');
   const path=appServerProcessIdentityPath(runtimeDirectory);
   const identity={pid:4242,createdAt:'1700000000123456789'};
-  try{
-    await securePrivateStatePath(runtimeDirectory,'directory'); // The manager makes the runtime directory private first; a Windows temporary directory inherits its ACL.
-    assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null}),{state:'absent',identity:null});
-    await recordProcessIdentity({runtimeDirectory,path,identity});
-    assert.equal(await readFile(path,'ascii'),'4242,1700000000123456789');
-    if(process.platform!=='win32')assert.equal((await stat(path)).mode&0o077,0);
-    assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>identity.createdAt}),{state:'alive',identity});
-    await assert.rejects(removeEndedProcessIdentity({runtimeDirectory,path,identity,readCreationTime:async()=>identity.createdAt}),/not confirmed/);
-    assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>{throw new Error('unknown');}})).state,'unknown');
-    assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>String(BigInt(identity.createdAt)+1n)}),{state:'ended',identity});
-    await removeEndedProcessIdentity({runtimeDirectory,path,identity,readCreationTime:async()=>null});
-    assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null})).state,'absent');
-    await writeFile(path,'not-a-process',{mode:0o600});
-    assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null})).state,'unknown');
-  }finally{await rm(runtimeDirectory,{recursive:true,force:true});}
+  await securePrivateStatePath(runtimeDirectory,'directory'); // The manager makes the runtime directory private first; a Windows temporary directory inherits its ACL.
+  assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null}),{state:'absent',identity:null});
+  await recordProcessIdentity({runtimeDirectory,path,identity});
+  assert.equal(await readFile(path,'ascii'),'4242,1700000000123456789');
+  if(process.platform!=='win32')assert.equal((await stat(path)).mode&0o077,0);
+  assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>identity.createdAt}),{state:'alive',identity});
+  await assert.rejects(removeEndedProcessIdentity({runtimeDirectory,path,identity,readCreationTime:async()=>identity.createdAt}),/not confirmed/);
+  assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>{throw new Error('unknown');}})).state,'unknown');
+  assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>String(BigInt(identity.createdAt)+1n)}),{state:'ended',identity});
+  await removeEndedProcessIdentity({runtimeDirectory,path,identity,readCreationTime:async()=>null});
+  assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null})).state,'absent');
+  await writeFile(path,'not-a-process',{mode:0o600});
+  assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>null})).state,'unknown');
 });
 
 test('operating system creation time is read from the running process identity',async()=>{
@@ -123,26 +120,24 @@ test('Linux creation value is the boot id and start ticks and ignores the wall c
   await assert.rejects(readFile(getconfLog),{code:'ENOENT'});
 });
 
-test('process identity records accept the boot-id form and the plain number form and reject anything else',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-native-identity-forms-'));
+test('process identity records accept the boot-id form and the plain number form and reject anything else',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-native-identity-forms-');
   const path=appServerProcessIdentityPath(runtimeDirectory);
   const identity={pid:4242,createdAt:`${bootId}:2114598`};
-  try{
-    await securePrivateStatePath(runtimeDirectory,'directory');
-    const put=async(/** @type {string} */ content)=>{await writeFile(path,content,{mode:0o600});await securePrivateStatePath(path,'file');};
-    await recordProcessIdentity({runtimeDirectory,path,identity});
-    assert.equal(await readFile(path,'ascii'),`4242,${bootId}:2114598`);
-    /** @type {(string|undefined)[]} */
-    const seen=[];
-    assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async(pid,recorded)=>{seen.push(recorded);return identity.createdAt;}}),{state:'alive',identity});
-    assert.deepEqual(seen,[identity.createdAt]);
-    await rm(path);
-    await put('4242,1700000000123456789');
-    assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>'1700000000123456789'})).state,'alive');
-    for(const bad of ['4242,abc','4242,not-a-uuid:5',`4242,${bootId}:`,`4242,${bootId}`,'4242,1,2']){
-      await put(bad);
-      assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>identity.createdAt})).state,'unknown');
-    }
-    await assert.rejects(recordProcessIdentity({runtimeDirectory,path:join(runtimeDirectory,'other'),identity:{pid:1,createdAt:'x:1'}}),/invalid/);
-  }finally{await rm(runtimeDirectory,{recursive:true,force:true});}
+  await securePrivateStatePath(runtimeDirectory,'directory');
+  const put=async(/** @type {string} */ content)=>{await writeFile(path,content,{mode:0o600});await securePrivateStatePath(path,'file');};
+  await recordProcessIdentity({runtimeDirectory,path,identity});
+  assert.equal(await readFile(path,'ascii'),`4242,${bootId}:2114598`);
+  /** @type {(string|undefined)[]} */
+  const seen=[];
+  assert.deepEqual(await readProcessIdentity({runtimeDirectory,path,readCreationTime:async(pid,recorded)=>{seen.push(recorded);return identity.createdAt;}}),{state:'alive',identity});
+  assert.deepEqual(seen,[identity.createdAt]);
+  await rm(path);
+  await put('4242,1700000000123456789');
+  assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>'1700000000123456789'})).state,'alive');
+  for(const bad of ['4242,abc','4242,not-a-uuid:5',`4242,${bootId}:`,`4242,${bootId}`,'4242,1,2']){
+    await put(bad);
+    assert.equal((await readProcessIdentity({runtimeDirectory,path,readCreationTime:async()=>identity.createdAt})).state,'unknown');
+  }
+  await assert.rejects(recordProcessIdentity({runtimeDirectory,path:join(runtimeDirectory,'other'),identity:{pid:1,createdAt:'x:1'}}),/invalid/);
 });

@@ -1,15 +1,14 @@
 import assert from 'node:assert/strict';
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
+import {readFile, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
 import {prepareReviewerRound} from '../../lib/reviewer-runtime/reviewer-round.mjs';
 import {reviewerRecoveryPath} from '../../lib/reviewer-runtime/reviewer-session-record.mjs';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 
 test('a round follows a usable thread, opens a new thread after a failed run, and stops on an unreadable record', async t => {
-    const stateDirectory = await mkdtemp(join(tmpdir(), 'arw-round-'));
-    t.after(() => rm(stateDirectory, {recursive: true, force: true}));
+    const stateDirectory = await createTemporaryDirectory(t, 'arw-round-');
     const ruleFiles = new Map([['docs/agents/roles/r.md', Buffer.from('role')], ['docs/agents/reviewer.md', Buffer.from('common')]]);
     const recordPath = reviewerRecoveryPath({stateDirectory, role: 'r', identity: {kind: 'ordinary', issueIds: ['issue:0001:01']}});
     const round = async (/** @type {string} */ name) => {

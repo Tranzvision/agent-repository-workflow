@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import {chmod,mkdtemp,readdir,readFile,rm,writeFile} from 'node:fs/promises';
+import {chmod,readdir,readFile,writeFile} from 'node:fs/promises';
 import {createServer} from 'node:net';
-import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {controlProof,createBackgroundAgentClient,sendBackgroundAgentRequest} from '../../lib/background-agent/client.mjs';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {installFakeCommand} from '../helpers/process.mjs';
 
 const secret='1'.repeat(64);
@@ -93,8 +93,8 @@ test('ordinary control response decodes a multibyte character split across TCP c
   }finally{await server.close();}
 });
 
-test('wait returns one complete UTF-8 update batch and closing a client cancels pending waits',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-utf8-'));
+test('wait returns one complete UTF-8 update batch and closing a client cancels pending waits',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-utf8-');
   await writeFile(join(runtimeDirectory,'credential'),`${secret}\n`,{mode:0o600});
   /** @type {() => void} */ let awaiting=()=>{};
   const requestSeen=new Promise(resolve=>{awaiting=()=>resolve(undefined);});
@@ -111,7 +111,7 @@ test('wait returns one complete UTF-8 update batch and closing a client cancels 
     await requestSeen;
     await client.close();
     assert.deepEqual(await waiting,{status:'succeeded',result:{cancelled:true}});
-  }finally{await server.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await server.close();}
 });
 
 test('ordinary request budget covers a partial response and timeout leaves acceptance unknown',async()=>{
@@ -124,7 +124,7 @@ test('ordinary request budget covers a partial response and timeout leaves accep
 });
 
 test('cold credential and manager startup share one pre-delivery budget',async t=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-budget-'));
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-budget-');
   const port=await closedPort();
   let launches=0;
   t.mock.timers.enable({apis:['Date','setTimeout'],now:1000});
@@ -135,19 +135,19 @@ test('cold credential and manager startup share one pre-delivery budget',async t
   try {
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),/timed out before delivery/);
     assert.equal(launches,1);
-  }finally{await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await client.close();}
 });
 
-test('a stalled cold launch cannot hold the control call beyond its budget',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-stalled-'));
+test('a stalled cold launch cannot hold the control call beyond its budget',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-stalled-');
   const client=createBackgroundAgentClient({runtimeDirectory,port:await closedPort(),messageTimeoutMs:15,entryPoint:()=>new Promise(()=>{})});
   try {
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),/timed out before delivery/);
-  }finally{await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await client.close();}
 });
 
 test('a refused connection cannot restart the ordinary request budget',async t=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-retry-'));
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-retry-');
   await writeFile(join(runtimeDirectory,'credential'),`${secret}\n`,{mode:0o600});
   const port=await closedPort();
   let launches=0;
@@ -158,20 +158,20 @@ test('a refused connection cannot restart the ordinary request budget',async t=>
   try {
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),/timed out before delivery/);
     assert.equal(launches,1);
-  }finally{await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await client.close();}
 });
 
-test('a manager launch that cannot write its state asks for a rerun outside the sandbox',async()=>{
-  const parent=await mkdtemp(join(tmpdir(),'arw-background-agent-sandbox-'));
+test('a manager launch that cannot write its state asks for a rerun outside the sandbox',async t=>{
+  const parent=await createTemporaryDirectory(t,'arw-background-agent-sandbox-');
   await chmod(parent,0o500);
   const client=createBackgroundAgentClient({runtimeDirectory:join(parent,'runtime'),port:await closedPort(),entryPoint:'/unused-entry.mjs'});
   try {
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),/blocked by the sandbox\. Rerun this same command with escalated permissions/);
-  }finally{await client.close();await chmod(parent,0o700);await rm(parent,{recursive:true,force:true});}
+  }finally{await client.close();await chmod(parent,0o700);}
 });
 
-test('two concurrent cold launches whose managers exit while another manager keeps starting time out and leave no standard error file',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-probe-'));
+test('two concurrent cold launches whose managers exit while another manager keeps starting time out and leave no standard error file',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-probe-');
   const port=await closedPort();
   const lease=await leaseHeldPort();
   // The budget is far above the time the failing entry needs to exit, so a lease probe proves the exit was seen.
@@ -181,22 +181,22 @@ test('two concurrent cold launches whose managers exit while another manager kee
     for(const result of results)assert.match(String(/** @type {PromiseRejectedResult} */(result).reason?.message),/timed out before delivery/);
     assert.ok(lease.connections()>0);
     assert.deepEqual(await stderrFiles(runtimeDirectory),[]);
-  }finally{await lease.close();await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await lease.close();await client.close();}
 });
 
-test('a manager that exits during startup is reported at once with its standard error',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-exit-'));
+test('a manager that exits during startup is reported at once with its standard error',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-exit-');
   const client=createBackgroundAgentClient({runtimeDirectory,port:await closedPort(),maintenancePort:await closedPort(),messageTimeoutMs:30000,entryPoint:await failingDaemon(runtimeDirectory)});
   try {
     const started=Date.now();
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),/^Error: Background Agent manager exited during startup \(exit code 3\): Runtime is broken\.$/);
     assert.ok(Date.now()-started<20000);
     assert.deepEqual(await stderrFiles(runtimeDirectory),[]);
-  }finally{await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await client.close();}
 });
 
-test('a request reads the credential only after the control port accepts connections',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-ready-'));
+test('a request reads the credential only after the control port accepts connections',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-ready-');
   const port=await closedPort();
   // Another client's manager has published its credential but not yet secured it or started listening.
   await writeFile(join(runtimeDirectory,'credential'),`${secret}\n`,{mode:0o644});
@@ -212,11 +212,11 @@ test('a request reads the credential only after the control port accepts connect
   try {
     assert.deepEqual(await client.execute({operation:'list_agents',input:{}}),{late:true});
     assert.deepEqual(await stderrFiles(runtimeDirectory),[]);
-  }finally{await manager;for(const server of servers)await server.close();await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await manager;for(const server of servers)await server.close();await client.close();}
 });
 
 test('a missing credential fails with ENOENT before any PowerShell process starts',async t=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-missing-'));
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-missing-');
   const log=join(runtimeDirectory,'calls.log');
   await installFakeCommand(t,runtimeDirectory,'powershell.exe',`echo called >> "${log}"\n`);
   const platform=/** @type {PropertyDescriptor} */ (Object.getOwnPropertyDescriptor(process,'platform'));
@@ -226,5 +226,5 @@ test('a missing credential fails with ENOENT before any PowerShell process start
   try {
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),{code:'ENOENT'});
     await assert.rejects(readFile(log),{code:'ENOENT'});
-  }finally{await client.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await client.close();}
 });

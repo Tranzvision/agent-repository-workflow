@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {DatabaseSync} from 'node:sqlite';
-import fsPromises, {mkdtemp, readFile, readdir, rm, unlink, writeFile} from 'node:fs/promises';
+import fsPromises, {readFile, readdir, unlink, writeFile} from 'node:fs/promises';
 import {syncBuiltinESMExports} from 'node:module';
 import {createConnection, createServer} from 'node:net';
-import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test, {mock} from 'node:test';
 import {createBackgroundAgentDaemon} from '../../lib/background-agent/daemon.mjs';
@@ -70,8 +69,8 @@ test('control authentication keeps the private credential from an unrelated list
   } finally {await new Promise(resolveClose => listener.close(() => resolveClose(undefined)));}
 });
 
-test('daemon decodes a multibyte request split across TCP chunks',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-request-utf8-'));
+test('daemon decodes a multibyte request split across TCP chunks',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-request-utf8-');
   const daemon=await createBackgroundAgentDaemon({runtimeDirectory,port:0,maintenancePort:await freePort(),
     dispatch:async ({input})=>({status:'succeeded',result:input}),
     list:()=>[],prepareMaintenance:async()=>({status:'busy',stoppedAgents:[]}),
@@ -112,12 +111,11 @@ test('daemon decodes a multibyte request split across TCP chunks',async()=>{
   }finally{
     socket.destroy();
     await daemon.close();
-    await rm(runtimeDirectory,{recursive:true,force:true});
   }
 });
 
-test('authenticated wait returns one batch after a successful output and cancellation only ends the connection', async () => {
-  const runtimeDirectory = await mkdtemp(join(tmpdir(),'arw-background-agent-wait-auth-'));
+test('authenticated wait returns one batch after a successful output and cancellation only ends the connection', async t => {
+  const runtimeDirectory = await createTemporaryDirectory(t,'arw-background-agent-wait-auth-');
   let delivered = false;
   let waitingReady = () => {};
   const pendingReady = new Promise(resolve => {waitingReady=()=>resolve(undefined);});
@@ -151,11 +149,11 @@ test('authenticated wait returns one batch after a successful output and cancell
     controller.abort();
     assert.deepEqual(await pending,{status:'succeeded',result:{cancelled:true}});
     assert.deepEqual(await client.execute({operation:'list_agents',input:{}}),{status:'succeeded',result:{delivered:true,workInterrupted:false}});
-  } finally {await daemon.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  } finally {await daemon.close();}
 });
 
-test('maintenance forwards the idle-eviction authorization separately from stop authorization',async()=>{
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-background-agent-maintenance-options-'));
+test('maintenance forwards the idle-eviction authorization separately from stop authorization',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-maintenance-options-');
   const maintenancePort=await freePort();
   /** @type {{stopBackgroundAgents:boolean,allowIdleEviction:boolean}[]} */
   const received=[];
@@ -176,7 +174,7 @@ test('maintenance forwards the idle-eviction authorization separately from stop 
       {stopBackgroundAgents:false,allowIdleEviction:false},
       {stopBackgroundAgents:true,allowIdleEviction:false},
     ]);
-  }finally{await daemon.close();await rm(runtimeDirectory,{recursive:true,force:true});}
+  }finally{await daemon.close();}
 });
 
 test('the maintenance port stays below the Windows dynamic and Linux ephemeral ranges',()=>{
@@ -184,8 +182,8 @@ test('the maintenance port stays below the Windows dynamic and Linux ephemeral r
   assert.ok(port>=20000&&port<30000);
 });
 
-test('authenticated localhost control retains work across client disconnect and fences maintenance', async () => {
-  const runtimeDirectory = await mkdtemp(join(tmpdir(), 'arw-background-agent-'));
+test('authenticated localhost control retains work across client disconnect and fences maintenance', async t => {
+  const runtimeDirectory = await createTemporaryDirectory(t,'arw-background-agent-');
   const maintenancePort=await freePort();
   let calls = 0;
   const daemon = await createBackgroundAgentDaemon({runtimeDirectory, port: 0,maintenancePort,
@@ -223,12 +221,11 @@ test('authenticated localhost control retains work across client disconnect and 
     }
   } finally {
     if (daemon.server.listening) await daemon.close();
-    await rm(runtimeDirectory, {recursive: true, force: true});
   }
 });
 
-test('maintenance observes the owning manager process exit before it acquires the control port', async () => {
-  const runtimeDirectory = await mkdtemp(join(tmpdir(),'arw-background-agent-exit-'));
+test('maintenance observes the owning manager process exit before it acquires the control port', async t => {
+  const runtimeDirectory = await createTemporaryDirectory(t,'arw-background-agent-exit-');
   const maintenancePort=await freePort();
   const moduleUrl = new URL('../../lib/background-agent/daemon.mjs',import.meta.url).href;
   const source = `import {createBackgroundAgentDaemon} from ${JSON.stringify(moduleUrl)};
@@ -245,67 +242,58 @@ process.stdout.write(String(daemon.port)+'\\n');`;
     assert.equal(child.exitCode,0);
   } finally {
     if (child.exitCode === null) child.kill();
-    await rm(runtimeDirectory,{recursive:true,force:true});
   }
 });
 
-test('list distinguishes a never-started private state directory from incomplete state without launching work', async () => {
-  const runtimeDirectory = await mkdtemp(join(tmpdir(),'arw-background-agent-empty-'));
+test('list distinguishes a never-started private state directory from incomplete state without launching work', async t => {
+  const runtimeDirectory = await createTemporaryDirectory(t,'arw-background-agent-empty-');
   let launched = false;
-  try {
-    const client = createBackgroundAgentClient({runtimeDirectory,entryPoint:async () => {launched = true;},observeManagerProcess:async () => 'absent'});
-    assert.equal(await client.list(),null);
-    assert.equal(launched,false);
-    const {writeFile} = await import('node:fs/promises');
-    await writeFile(join(runtimeDirectory,'messages.sqlite'),'{}\n',{mode:0o600});
-    await assert.rejects(client.list(),/incomplete/);
-    const maintenance = await acquireBackgroundAgentMaintenance({runtimeDirectory,port:0,maintenancePort:await freePort()});
-    assert.equal(maintenance.status,'unknown');
-    if (maintenance.status === 'unknown') assert.match(maintenance.reason,/credential is missing/);
-    assert.equal(launched,false);
-  } finally {await rm(runtimeDirectory,{recursive:true,force:true});}
+  const client = createBackgroundAgentClient({runtimeDirectory,entryPoint:async () => {launched = true;},observeManagerProcess:async () => 'absent'});
+  assert.equal(await client.list(),null);
+  assert.equal(launched,false);
+  const {writeFile} = await import('node:fs/promises');
+  await writeFile(join(runtimeDirectory,'messages.sqlite'),'{}\n',{mode:0o600});
+  await assert.rejects(client.list(),/incomplete/);
+  const maintenance = await acquireBackgroundAgentMaintenance({runtimeDirectory,port:0,maintenancePort:await freePort()});
+  assert.equal(maintenance.status,'unknown');
+  if (maintenance.status === 'unknown') assert.match(maintenance.reason,/credential is missing/);
+  assert.equal(launched,false);
 });
 
-test('maintenance admits consecutive never-started installations without creating a database', async () => {
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-maintenance-empty-'));
-  try {
-    for(let attempt=0;attempt<2;attempt+=1){
-      assert.deepEqual(await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0}),{status:'acquired',stoppedAgents:[]});
-      assert.deepEqual(await readdir(runtimeDirectory),[]);
-    }
-  } finally {await rm(runtimeDirectory,{recursive:true,force:true});}
+test('maintenance admits consecutive never-started installations without creating a database', async t => {
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-maintenance-empty-');
+  for(let attempt=0;attempt<2;attempt+=1){
+    assert.deepEqual(await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0}),{status:'acquired',stoppedAgents:[]});
+    assert.deepEqual(await readdir(runtimeDirectory),[]);
+  }
 });
 
-test('maintenance rejects every orphaned database file without creating or changing state', async () => {
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-maintenance-orphan-'));
-  try {
-    for(const path of Object.values(backgroundAgentMessageDatabasePaths(runtimeDirectory))){
-      await writeFile(path,'orphaned state',{mode:0o600});
-      const result=await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0});
-      assert.equal(result.status,'unknown');
-      if(result.status==='unknown')assert.match(result.reason,/credential is missing/);
-      assert.equal(await readFile(path,'utf8'),'orphaned state');
-      assert.equal((await readdir(runtimeDirectory)).length,1);
-      await unlink(path);
-    }
-  } finally {await rm(runtimeDirectory,{recursive:true,force:true});}
+test('maintenance rejects every orphaned database file without creating or changing state', async t => {
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-maintenance-orphan-');
+  for(const path of Object.values(backgroundAgentMessageDatabasePaths(runtimeDirectory))){
+    await writeFile(path,'orphaned state',{mode:0o600});
+    const result=await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0});
+    assert.equal(result.status,'unknown');
+    if(result.status==='unknown')assert.match(result.reason,/credential is missing/);
+    assert.equal(await readFile(path,'utf8'),'orphaned state');
+    assert.equal((await readdir(runtimeDirectory)).length,1);
+    await unlink(path);
+  }
 });
 
-test('maintenance without database state preserves ended identities and rejects live or unknown identities', async () => {
-  const runtimeDirectory=await mkdtemp(join(tmpdir(),'arw-maintenance-identity-'));
+test('maintenance without database state preserves ended identities and rejects live or unknown identities', async t => {
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-maintenance-identity-');
   const path=appServerProcessIdentityPath(runtimeDirectory);
-  try {
-    const createdAt=await readOperatingSystemProcessCreationTime(process.pid);
-    assert.ok(createdAt);
-    for(const [content,expected] of [[`${process.pid},${createdAt}`,'unknown'],['invalid identity','unknown'],[`${process.pid},0`,'acquired']]){
-      await writeFile(path,content,{mode:0o600});
-      const result=await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0});
-      assert.equal(result.status,expected);
-      if(result.status==='unknown')assert.match(result.reason,content==='invalid identity'?/process exit is unknown\. Process identity is invalid\./:/process exit is unknown/);
-      assert.equal(await readFile(path,'utf8'),content);
-      assert.deepEqual(await readdir(runtimeDirectory),['app-server-process']);
-    }
-  } finally {await rm(runtimeDirectory,{recursive:true,force:true});}
+  const createdAt=await readOperatingSystemProcessCreationTime(process.pid);
+  assert.ok(createdAt);
+  for(const [content,expected] of [[`${process.pid},${createdAt}`,'unknown'],['invalid identity','unknown'],[`${process.pid},0`,'acquired']]){
+    await writeFile(path,content,{mode:0o600});
+    const result=await acquireBackgroundAgentMaintenance({runtimeDirectory,maintenancePort:0});
+    assert.equal(result.status,expected);
+    if(result.status==='unknown')assert.match(result.reason,content==='invalid identity'?/process exit is unknown\. Process identity is invalid\./:/process exit is unknown/);
+    assert.equal(await readFile(path,'utf8'),content);
+    assert.deepEqual(await readdir(runtimeDirectory),['app-server-process']);
+  }
 });
 
 test('offline maintenance persists ended environments without losing recovery facts and admits retry',async t=>{
