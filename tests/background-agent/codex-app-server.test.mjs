@@ -417,13 +417,27 @@ test('unexpected shared exit retains process identity until startup recovers its
   fake.child.emit('close',1,null);
   assert.equal(await fake.factory.observeServer(),'ended');
   assert.equal((await fake.processIdentityBoundary.read()).state,'ended');
-  await assert.rejects(fake.factory.close(),/outside normal closure/);
+  assert.deepEqual(await fake.factory.close({retainProcessIdentity:true}),{environmentState:'exited'});
   assert.equal((await fake.processIdentityBoundary.read()).state,'ended');
   await assert.rejects(fake.open(),/requires provider recovery/);
   await assert.rejects(fake.factory.ensureServer({onPreviousExit:async()=>{throw new Error('Original lease remains unreturned.');}}),
     /Original lease remains unreturned/);
   assert.equal((await fake.processIdentityBoundary.read()).state,'ended');
   assert.equal(fake.spawnCount,1);
+});
+
+test('closing after an unexpected shared exit keeps the identity, and a failed catalog cleanup is retried',async()=>{
+  const fake=harness();
+  const session=await fake.open();
+  await session.start({instructions:'root instructions'});
+  await session.stop();
+  const remove=fake.modelCatalog.remove;
+  fake.modelCatalog.remove=async()=>{throw new Error('Catalog cleanup failed.');};
+  fake.child.emit('close',1,null);
+  await assert.rejects(fake.factory.close(),/exit cleanup failed: shared model catalog/);
+  fake.modelCatalog.remove=remove;
+  assert.deepEqual(await fake.factory.close(),{environmentState:'exited'});
+  assert.equal((await fake.processIdentityBoundary.read()).state,'ended');
 });
 
 test('shared catalog is prepared before launch and cannot be overridden by a root',async()=>{

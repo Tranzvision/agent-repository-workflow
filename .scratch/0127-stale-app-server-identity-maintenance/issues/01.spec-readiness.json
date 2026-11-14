@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0127:01",
+  "request": {
+    "digest": "ee7c3fb87dd031179f2468ecdabcf47d27c8128385a9ff390007a57eba073d5e",
+    "filePath": ".tmp/claude-code/506d838b-467f-4d0a-941b-b548850a12fa/0127_01/spec-readiness/requests/request-1ed20c25-4c2c-4001-933b-96443aa7bc59.json",
+    "id": "1ed20c25-4c2c-4001-933b-96443aa7bc59"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0127-stale-app-server-identity-maintenance/spec.md",
+      "role": "governing-spec",
+      "sha256": "6275be26ac63e244e7beb555d30614270236b1044876ebdf90fb9f56ae4c08ce"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-installation/spec.md",
+      "role": "governing-spec",
+      "sha256": "e9dd745df94c0552cca6f44fd09c7f247a51465d5e33f96940ab8033486c3033"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0127-stale-app-server-identity-maintenance/issues/01-stale-app-server-identity-maintenance.md",
+    "sha256": "446369619179763ac4606cbd2b406348db9665b4ea3c21a3bae3a5194529c8a7"
+  },
+  "result": "satisfied"
+}

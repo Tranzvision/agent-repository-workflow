@@ -242,6 +242,27 @@ test('maintenance unloads roots and closes the shared server only after exit',as
   assert.equal(rejected.status,'failed');
 });
 
+test('maintenance proceeds when only a stale ended App Server identity remains and no key is held',async t=>{
+  const cold=await harness(t);
+  cold.native.exitServer();
+  const close=cold.native.nativeSessions.close;
+  /** @type {boolean|undefined} */ let retained;
+  cold.native.nativeSessions.close=async()=>{throw new Error('Catalog cleanup failed.');};
+  const failed=await cold.manager.prepareMaintenance({stopBackgroundAgents:true});
+  assert.equal(failed.status,'unknown');
+  assert.match(failed.reason??'',/Catalog cleanup failed/);
+  cold.native.nativeSessions.close=async input=>{retained=input?.retainProcessIdentity;return close(input);};
+  assert.equal((await cold.manager.prepareMaintenance({stopBackgroundAgents:true})).status,'ready');
+  assert.equal(retained,true);
+
+  const used=await harness(t);
+  const started=result(await used.start('main-1'));
+  await waitDelivered(used.stateStore,started.messageId);
+  await used.manager.proxy(used.manager.owned(started.runId,'main-1','main-1')).stop();
+  used.native.exitServer();
+  assert.equal((await used.manager.prepareMaintenance({stopBackgroundAgents:true})).status,'ready');
+});
+
 test('the internal unload signal follows confirmed root and tool exit, never a failed stop',async t=>{
   const fake=await harness(t);
   /** @type {string[]} */ const signals=[];
@@ -648,6 +669,10 @@ test('the idle timer does not treat an unexpected empty App Server exit as norma
   assert.equal(fake.native.closeCount,1);
   assert.equal(fake.stateStore.getProvider('strata')?.leaseKey,'key-1');
   assert.equal(await fake.native.nativeSessions.observeServer(),'ended');
+  const maintenance=await fake.manager.prepareMaintenance({stopBackgroundAgents:true});
+  assert.equal(maintenance.status,'unknown');
+  assert.match(maintenance.reason??'',/exited outside normal closure/);
+  assert.equal(service.releaseCount,0);
 });
 
 test('failed key return keeps the normal shared server alive for a later confirmed return',async t=>{
