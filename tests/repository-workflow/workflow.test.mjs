@@ -673,6 +673,7 @@ test('interactive init asks for one Profile and final authorization before writi
     assert.equal(initialized.handoff?.auditRequired, true);
     assert.ok(initialized.handoff?.checklist.includes('arw workflow verify'));
     assert.ok(initialized.handoff?.checklist.includes('arw terms check'));
+    assert.ok(initialized.handoff?.checklist.some(item => item.includes('.gitignore ignores the engine temporary root .tmp/')));
 });
 
 test('non-interactive init normalizes one trailing Code Map root slash and rejects other unsafe forms', async t => {

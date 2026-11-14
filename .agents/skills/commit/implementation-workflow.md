@@ -22,7 +22,7 @@
 
 ### Run
 
-1. 在 `<仓库根>/.tmp/<目录>/input.json` (文件名必须是 `input.json`) 写一个文件, 只含完整排序的 `authorizingIssueIds`. 运行 `arw commit-audit prepare --input <absolute-input-path>`; 它新建审核轮目录 `_commit-audit/<n>/` (见 `../reviewer-launch/SKILL.md` 的 Review rounds 节), 其中 `request.json` 含 `gate1`, `gate2` (文档与 `since`), `reviewPath` 和受审版本 `base`, `tree`, 在标准输出只打印轮目录, 并在标准错误输出候选的实测净增 (代码行数, 文档字符数, 测试行数) 和下一个 ADR 编号, 写 issue 的 `## Validation` 或 `## Comments` 时原样复制摘要块 (一个 issue 分多次提交时把各次数字相加); 摘要后的 `warning:` 行逐条核对 (含 Validation 缺摘要块, 数字与实测不符), 它们不是关卡, 但要先改 Validation 并重新 `prepare`, 再启动 Reviewer, 不留给 Reviewer 发现.
+1. 在 `<仓库根>/.tmp/<目录>/input.json` (文件名必须是 `input.json`) 写一个文件, 只含完整排序的 `authorizingIssueIds`. 运行 `arw commit-audit prepare --input <absolute-input-path>`; 它新建审核轮目录 `_commit-audit/<n>/` (见 `../reviewer-launch/SKILL.md` 的 Review rounds 节), 其中 `request.json` 含 `gate1`, `gate2` (文档与 `since`), `reviewPath` 和受审版本 `base`, `tree`, 在标准输出只打印轮目录, 并在标准错误输出候选的实测净增 (代码行数, 文档字符数, 测试行数) 和下一个 ADR 编号, 写 issue 的 `## Validation` 或 `## Comments` 时原样复制摘要块 (一个 issue 分多次提交时把各次数字相加); `## Comments` 里写体积时, 预计取 `## What to build` 的预计净增, 实际取最后一次修改后的 `## Validation` 摘要数字, 超出量为二者之差, 之后再改 Validation 数字时同步重写; 摘要后的 `warning:` 行逐条核对 (含 Validation 缺摘要块, 数字与实测不符), 它们不是关卡, 但要先改 Validation 并重新 `prepare`, 再启动 Reviewer, 不留给 Reviewer 发现.
 2. 按 `../reviewer-launch/SKILL.md` 的 Review rounds 节运行 `cat <轮目录>/*.jsonl | arw background-agent --wait`. Reviewer 按 `docs/agents/reviewer.md` 的 Report 节逐条写入问题, 或写 `No problems.`.
 
 Main Agent 负责暂存, Request, 审核协调和处理问题, 不代写语义判断. Reviewer 只用只读 git 命令读取 `base` 和 `tree`, 不调用 Engine, 不修改索引.

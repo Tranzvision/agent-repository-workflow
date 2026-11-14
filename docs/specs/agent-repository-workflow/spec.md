@@ -603,6 +603,7 @@ Engine 只提供现有 v1 锁文件到 v2 的确定性迁移. 迁移删除失去
 - 仓库自有验证命令;
 - 写作规则, 本地语言文件名选择和 Baseline 例外;
 - `.arwignore` 和 Agent 管理范围;
+- 仓库根 `.gitignore` 忽略引擎临时根 `.tmp/` (缺失时加入);
 - ARW Artifact 迁移准备情况.
 
 Main Agent 删除或替换与当前 Workflow Distribution 冲突的仓库自有规则, 并保留和应用不冲突的规则. 无法判断权威来源时停止受影响工作并请求用户决定. 完整审核没有缺口时不创建 issue. 存在任一缺口时, 在普通实施前恰好创建一个汇总的仓库工作流补全 issue. 任一文件名选择仍缺少用户决定时使用 `Status: needs-info`; 全部选择和阻断问题解决后才使用 `Status: ready-for-agent`.

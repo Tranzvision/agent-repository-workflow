@@ -1,6 +1,6 @@
 # 初始化交接清单提示忽略 `.tmp/`, 并合并两项小修
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 
@@ -18,11 +18,11 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `arw workflow init` 成功后返回的 `handoff.checklist` 含 `The repository root .gitignore ignores the engine temporary root .tmp/ (add it when missing)`, 由 `tests/repository-workflow/workflow.test.mjs` 的初始化测试断言; `gaps` 和 `workflow init` 写入的文件不变.
-- [ ] 长期规格 `Post-init handoff` 节的审核范围列表含对应的一条.
+- [x] `arw workflow init` 成功后返回的 `handoff.checklist` 含 `The repository root .gitignore ignores the engine temporary root .tmp/ (add it when missing)`, 由 `tests/repository-workflow/workflow.test.mjs` 的初始化测试断言; `gaps` 和 `workflow init` 写入的文件不变.
+- [x] 长期规格 `Post-init handoff` 节的审核范围列表含对应的一条.
 - [x] `lib/document-terms/document-terms.mjs` 按第 2 项清理, `tests/document-terms` 全部通过且未改动其断言.
-- [ ] `commit` Skill 的 `implementation-workflow.md` 含第 3 项的一句, `.agents/skills`, `distribution/skills`, `.claude/skills` 三处一致 (`node scripts/project-claude-skills.mjs --check` 与 `node scripts/check-workflow-distribution.mjs` 通过).
-- [ ] `git diff --numstat` 中 `lib/` 下只有 `lib/repository-workflow/workflow.mjs` 和 `lib/document-terms/document-terms.mjs` 有改动.
+- [x] `commit` Skill 的 `implementation-workflow.md` 含第 3 项的一句, `.agents/skills`, `distribution/skills`, `.claude/skills` 三处一致 (`node scripts/project-claude-skills.mjs --check` 与 `node scripts/check-workflow-distribution.mjs` 通过).
+- [x] `git diff --numstat` 中 `lib/` 下只有 `lib/repository-workflow/workflow.mjs` 和 `lib/document-terms/document-terms.mjs` 有改动.
 
 ## Blocked by
 
@@ -30,17 +30,25 @@ Status: ready-for-agent
 
 ## Validation
 
-(第 1 次提交, 只含第 2 项 `lib/document-terms/document-terms.mjs`; 第 1, 3 项在第 2 次提交, 见终态记录.)
+第 2 次提交 (第 1, 3 项) 的候选摘要; 第 1 次提交 (`447c3df`, 第 2 项) 的代码净增为 -12 行 (1 个文件), 无文档和测试改动; 两次相加: 代码 -11 行, 文档 +404 字符, 测试 +1 行.
 
 ```text
-code: -12 lines (files: 1)
-  lib/document-terms/document-terms.mjs -12
-documents: 0 characters (files: 0)
-tests: 0 lines (files: 0)
+code: +1 lines (files: 1)
+  lib/repository-workflow/workflow.mjs +1
+documents: +404 characters (files: 4)
+  .agents/skills/commit/implementation-workflow.md +120
+  .claude/skills/commit/implementation-workflow.md +120
+  distribution/skills/commit/implementation-workflow.md +120
+  docs/specs/agent-repository-workflow/spec.md +44
+tests: +1 lines (files: 1)
+  tests/repository-workflow/workflow.test.mjs +1
 next ADR number: 0041
 ```
 
-- `pnpm test`: 964 项全部通过, `pnpm typecheck` 通过; `tests/document-terms` 的断言未改动.
+- `pnpm test`: 964 项全部通过 (3.3 秒); `tests/repository-workflow/workflow.test.mjs` 的初始化测试新增断言 `handoff.checklist` 含新清单项, `arw workflow init` 的其余行为和 `tests/document-terms` 的断言未改动. `pnpm typecheck` 通过.
+- `node scripts/project-claude-skills.mjs --check`, `node scripts/check-workflow-distribution.mjs`, `node scripts/generate-install-arw.mjs --check` 通过 (先运行 `node scripts/sync-workflow-distribution.mjs` 与 `node scripts/project-claude-skills.mjs` 同步两份副本). `node arw.mjs text check`, `node arw.mjs terms check --include .scratch/0125-daily-small-fixes/`, `git diff --check` 通过.
+- `git diff --numstat` 中两次提交合计 `lib/` 下只有 `lib/document-terms/document-terms.mjs` (第 1 次提交, 11 增 23 删) 和 `lib/repository-workflow/workflow.mjs` (1 增).
+- 测试只在现有案例中加一行断言, 不新增案例, 耗时不变.
 
 ## Comments
 
@@ -48,3 +56,6 @@ next ADR number: 0041
 - 分两次提交: 无关的冗余代码删除 (第 2 项) 按根 `AGENTS.md` 效率原则第 7 条单独提交, 不抵扣第 1, 3 项的净增. 本次提交体积: 代码 -12 行 (预计第 2 项约 -5 行, 多删 7 行来自两处诊断字面量合并各 -6 行和并入既有构造函数 -1 行).
 - 台账: lib/document-terms/document-terms.mjs:121 (`invalidTermEntry`) 冲突裁决 What to build 第 2 项写 "合并为一个局部构造函数", 与 Code Standards 要求与既有 `invalidGlobalTermEntry` 合并冲突: 按 effort spec 的目的 (只做不改变可观察结果的删减, 去掉重复构造) 保留并入模块顶层构造函数的做法, 诊断字段与顺序不变, 不改回局部构造函数.
 - 台账: 第 1 项与第 3 项的验收标准 转入后续提交 本 issue 分两次提交, 这两项是计划中尚未完成的工作, 在第 2 次提交完成 (本次提交只含第 2 项).
+- 第 2 次提交 (第 1, 3 项): 体积合计与预计对比: 本任务自身代码净增预计 +1 行, 实际 +1 行; 无关冗余删除 (第 2 项) 预计约 -5 行, 实际 -12 行, 单独提交, 不抵扣净增; 文档预计约 +400 字符, 实际 +404 字符, 超出 4 字符 (三份副本各 +120 而不是 +100); 测试预计约 +2 行, 实际 +1 行.
+- 偏离: 第 2 项原计划的 "`asciiWhitespace` 与分词正则复用字符类" 没有做, 复用需要由字符串构造正则, 增加的代码比删去的多. 原计划一次提交, 因第 1 次提交审核中 Code Standards 要求把无关清理单独提交 (`AGENTS.md` 效率原则第 7 条), 改为两次提交.
+- 验证环境: 套件在 `TMPDIR` 为较长路径 (`/tmp/ARW/<任务>`) 时会卡在 `tests/background-agent/claude-sessions.test.mjs` 的已知案例 (见 0124 Comments), 所以 `pnpm test` 用默认 `TMPDIR`.
