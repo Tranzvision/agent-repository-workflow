@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0123:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户 2026-11-02 常设确认: 不含设计决定的小改动不需要治理设计; 本 issue 为用户 2026-11-15 状态页选 A 的 Reviewer 能力测试时限规则, 只改规则文本."
+  },
+  "subject": {
+    "filePath": ".scratch/0123-reviewer-capability-timelimit/issues/01-reviewer-capability-timelimit.md",
+    "sha256": "74c6b67ef24f9b022710ba048ab883a231c8aeeb08d270bd0d186c4f340399bc"
+  },
+  "result": "not-applicable"
+}
