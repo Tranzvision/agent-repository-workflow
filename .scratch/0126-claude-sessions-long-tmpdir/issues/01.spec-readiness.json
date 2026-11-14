@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0126:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户 2026-11-02 常设确认: 不含设计决定的清理类 issue 不需要治理设计; 本 issue 只调整一个测试案例的路径长度, 不改生产代码."
+  },
+  "subject": {
+    "filePath": ".scratch/0126-claude-sessions-long-tmpdir/issues/01-claude-sessions-long-tmpdir.md",
+    "sha256": "a023f50092e48521bcbbcbb0c405b0f810c1f91ae58f9ef2530410b5dc8d3062"
+  },
+  "result": "not-applicable"
+}

@@ -98,7 +98,8 @@ test('a Claude turn runs one restricted stream-json process and later turns resu
 
 test('a session record in the shortened project directory of a long working directory is resumed', async t => {
     const f = await fixture(t);
-    const cwd = join(f.directory, 'w'.repeat(220));
+    // The project directory name is 210 characters: over 200 so Claude Code shortens it, under 255 so the fake Claude can create it whatever TMPDIR is.
+    const cwd = join(f.directory, 'w'.repeat(209 - f.directory.length));
     await mkdir(cwd);
     const name = cwd.replace(/[^A-Za-z0-9]/g, '-');
     const threadId = '11111111-2222-4333-8444-555555555555';
