@@ -132,6 +132,47 @@ test('a path is flagged once per call, positions are file line numbers, and the 
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
 });
 
+test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, []);
+    await writeFile(join(root, 'run', 'x'), 'outside\n');
+    const body = `{"summary": "reads / writes", "see": "${root}/run/x and ../x"}`;
+    const writers = [`cat > report.json <<'EOF'\n${body}\nEOF`, `cat >> report.json <<EOF\n${body}\nEOF`, `cd src && cat <<-EOF > report.json\n\t${body}\n\tEOF\ngit status`];
+    const quoted = `bash -lc "cat > report.json <<'EOF'\n${body}\nEOF"`; // Claude only: Codex has its own wrapper already
+    await writeFile(sessionPath, lines([codex.meta(), ...writers.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+    await writeFile(sessionPath, lines([claude.owner(), ...[...writers, quoted].flatMap((command, index) => [claude.use(`u${index}`, 'Bash', {command}), claude.result(`u${index}`, 'x')])]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+});
+
+test('heredocs that run, other commands around a written body, and its target are still checked', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, []);
+    await writeFile(join(root, 'run', 'x'), 'outside\n');
+    const commands = [
+        'cat > ../x <<EOF\nreport / text\nEOF',
+        'cat > report.json <<EOF\nreport / text\nEOF\ncat ../x',
+        'bash <<EOF\nls /\nEOF',
+        'cat <<EOF | bash\nls ../x\nEOF',
+        'cat > report.json <<EOF\n$(cat ../x)\nEOF',
+        'cat > report.json <<EOF\n`cat ../x`\nEOF',
+        'find / -name x',
+        'cat <<EOF\nls /\nEOF',
+        'cat >&2 <<EOF\nls /\nEOF',
+        'cat > /dev/stdout <<EOF\nls /\nEOF',
+        'cat > /proc/self/fd/1 <<EOF\nls /\nEOF',
+        'eval "$(\ncat > /dev/stdout <<\'EOF\'\nls /\nEOF\n)"',
+        "python3 scripts/cat.py <<'PY'\nls /\nPY",
+        'bash ./cat-run.sh <<EOF\nls /\nEOF',
+        'bash -c "$(cat <<\'EOF\'\nls /\nEOF\n)"',
+    ];
+    const expected = [join(root, 'run', 'x'), join(root, 'run', 'x'), '/', join(root, 'run', 'x'), join(root, 'run', 'x'), join(root, 'run', 'x'), ...Array(9).fill('/')];
+    await writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    const {flags} = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual(flags.map((/** @type {any} */ flag) => flag.match), expected);
+    const wrapped = ['bash -lc "cat > report.json <<\'EOF\'\n$(ls /)\nEOF"', 'bash -lc "cat > report.json <<EOF\n$(cat /tmp)\nEOF"'];
+    await writeFile(sessionPath, lines([claude.owner(), ...wrapped.flatMap((command, index) => [claude.use(`u${index}`, 'Bash', {command}), claude.result(`u${index}`, 'x')])]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), ['/', '/tmp']);
+});
+
 test('answer-key text in tool output is flagged, in the Reviewer own writing or the instance it is not', async t => {
     const escaped = JSON.stringify(KEY).slice(1, -1);
     const {result} = await run(t, codexRecords(

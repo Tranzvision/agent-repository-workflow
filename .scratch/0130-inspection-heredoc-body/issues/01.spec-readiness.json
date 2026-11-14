@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0130:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户 2026-11-02 常设确认: 不含设计决定的清理类 issue 不需要治理设计; 本 issue 是不改规格和公开 Interface 的缺陷修复, 只收窄测试检查器的一处误报."
+  },
+  "subject": {
+    "filePath": ".scratch/0130-inspection-heredoc-body/issues/01-inspection-heredoc-body.md",
+    "sha256": "4e371dae7b118c8454284548e64e66dda6fa4e7d75013c8c5d581e9513006da9"
+  },
+  "result": "not-applicable"
+}
