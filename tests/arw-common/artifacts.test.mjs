@@ -271,3 +271,10 @@ test('duplicate effort numbers are reported once as duplicates, not as invalid n
     assert.ok(messages.includes('Duplicate effort number 0001.'));
     assert.ok(messages.every(message => message !== 'Effort directory is not numbered.' && !message.includes('not a valid canonical ID')));
 });
+
+test('artifact headings respect fence length, character and indentation', async t => {
+    const repository = await createRepository(t);
+    await writeArtifact(repository, '.scratch/0001-demo/spec.md', '   ~~~~text\n```\n# Hidden\n   ~~~~\n# Actual\n');
+    const inventory = await readArtifactInventory(repository);
+    assert.equal(inventory.records.spec[0]?.title, 'Actual');
+});

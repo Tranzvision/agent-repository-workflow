@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0140:01",
+  "exception": {
+    "confirmedAt": "2026-11-18T00:00:00Z",
+    "reason": "本轮用户明确确认无设计决定, 不依赖共用 spec, 单 effort 单实施 issue, 采用仓库常设例外."
+  },
+  "subject": {
+    "filePath": ".scratch/0140-strata-backlog/issues/01-strata-backlog.md",
+    "sha256": "09d50b36fb3970dba89ffc48fc9ba981eb78a649d62f99a02d552ca63a433d08"
+  },
+  "result": "not-applicable"
+}

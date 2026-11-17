@@ -62,3 +62,10 @@ test('precheck stays silent for a clean subject', async t => {
     const root = await createTemporaryDirectory(t, 'precheck-');
     assert.deepEqual(await precheckSpecReadiness({repositoryRoot: root, subject: {content: subjectOf('做事.', '- [ ] 观察: 通过.'), filePath: 'issue.md'}, texts: []}), []);
 });
+
+test('precheck ignores fenced acceptance headings and criteria after the next section', async t => {
+    const root = await createTemporaryDirectory(t, 'precheck-');
+    const subject = subjectOf('~~~\n## Acceptance criteria\n- [ ] 观察: Commit Audit 通过.\n~~~', '- [ ] 观察: 输出含 ok.')
+        + '\n## Comments\n- [ ] 观察: 提交号已记录.\n';
+    assert.deepEqual(await precheckSpecReadiness({repositoryRoot: root, subject: {content: subject, filePath: 'issue.md'}, texts: []}), []);
+});

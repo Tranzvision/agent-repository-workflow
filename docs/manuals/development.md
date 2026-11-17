@@ -10,7 +10,7 @@ Here you will choose the right maintenance route for your task, find the entry p
 
 Start every change by identifying the final outcome you need and the authoritative document that governs it. Do not pick a familiar script first and work backward to justify using it.
 
-Three terms appear throughout the routes below and keep their exact meanings everywhere in this manual:
+The following names describe the maintenance routes:
 
 - **ARW Artifact**: a registered issue, map, or specification work record under `.scratch`.
 - **Spec Readiness**: the governance-preparation review that runs before implementation starts.
@@ -30,7 +30,7 @@ Use the table below to match your goal to its maintenance route and primary sour
 | Validate cross-operating-system installation or maintain the test environment | [Cross-operating-system validation environment](#cross-operating-system-validation-environment) | Active issue and the `$release` Skill |
 | Validate or publish a stable release | [Stable release](#stable-release) | Release long-term specification and the `$release` Skill |
 
-When an Agent works in this repository, it starts from the root `AGENTS.md` and follows the triggered workflow rules there; this manual only routes you to the right content and entry points. If your task spans more than one route in the table, check the authoritative source and entry point for each route before you begin.
+When an Agent works in this repository, it starts from the root `AGENTS.md` and follows the triggered workflow rules there. If your task spans more than one route in the table, check the authoritative source and entry point for each route before you begin.
 
 ## Change product implementation
 
@@ -50,7 +50,7 @@ pnpm typecheck
 pnpm test
 ~~~
 
-`pnpm typecheck` runs a strict check across all Git-managed `.mjs` files without emitting any build files. `pnpm test` runs the built-in Node.js test suite; if you want to see every individual test case in that same set, run `pnpm test:verbose` instead (you do not need to run both).
+`pnpm typecheck` strictly checks `.mjs` files selected by `tsconfig.json`, excluding `node_modules`, `.tmp`, and `tests/fixtures/reviewer-capability`, without emitting build files. `pnpm test` runs the built-in Node.js test suite; if you want to see every individual test case in that same set, run `pnpm test:verbose` instead (you do not need to run both).
 
 ### Find implementation responsibility
 
@@ -80,12 +80,13 @@ After editing code and tests, verify your changes. The [validation rules (Chines
 pnpm typecheck
 pnpm test
 node scripts/check-workflow-distribution.mjs
-node scripts/project-claude-skills.mjs --check
 node --check <changed-javascript-file>
 node arw.mjs text check
 node arw.mjs terms check --include .scratch/<NNNN>-<effort-slug>/
 git diff --check
 ~~~
+
+`pnpm test` includes the Claude Code Skill projection check; run `node scripts/project-claude-skills.mjs --check` to check it separately.
 
 If you also need to inspect language character ratios on specific document paths, run `node arw.mjs language inspect <repository-relative-path>...`.
 
@@ -148,13 +149,13 @@ To run Reviewer capability validation, explicitly invoke the source-only `$revie
 
 ~~~text
 node scripts/reviewer-capability.mjs setup <scenario-directory> <new-target-directory>
-node scripts/reviewer-capability.mjs score <scenario-directory> <report> [--instance ID] [--decisions FILE]
+node scripts/reviewer-capability.mjs score <scenario-directory> <report> --agent <agent> (--repair <path.changes.json>|--no-repair) [--instance ID] [--decisions FILE]
 node scripts/reviewer-capability.mjs pool build|prompt|split|override ...
 ~~~
 
 ### Cross-operating-system validation environment
 
-Local unit tests cannot prove that installers, PATH registration, and `arw workflow init` behave properly across clean operating systems. To verify those end-to-end on real Windows and Linux systems, follow the VM validation procedure in the source-only `$release` Skill (`.agents/skills/release/`, Chinese), which defines the VM configuration, guest requirements, and snapshot discipline. During a run, `scripts/release-vm.mjs` restores a clean VMware snapshot, copies the candidate Git bundle into the guest over SSH, executes `scripts/release-guest-check.mjs` inside the guest, and restores the snapshot again when finished.
+Local unit tests cannot prove that installers, PATH registration, and `arw workflow init` behave properly across clean operating systems. To verify those end-to-end on real Windows and Linux systems, follow the VM validation procedure in the source-only `$release` Skill (`.agents/skills/release/`, Chinese), which defines the VM configuration, guest requirements, and snapshot discipline. During a run, `scripts/release-vm.mjs` restores a clean VMware snapshot, copies the candidate Git bundle, configured `agent-assisted.tgz` fixture, and installation archive selected by `--archive` (produced by `scripts/pack-release.mjs`) into the guest over SSH, executes `scripts/release-guest-check.mjs` inside the guest, and restores the snapshot again when finished.
 
 ### Stable release
 
@@ -193,18 +194,13 @@ Unlike the root entry points, direct children of `scripts/` are maintenance tool
 
 ### lib
 
-Both the root commands and `scripts/` delegate their work to `lib/`, which holds all production implementation and Source Checkout-only maintenance Modules. Its subdirectories follow a strict one-way dependency hierarchy:
-
-- Specific business responsibilities live in dedicated `lib/<responsibility>/` directories and may depend on `lib/arw-common/` and `lib/common/`.
-- `lib/arw-common/` holds shared capabilities that depend on ARW domain semantics and are reused across business areas; it may depend on `lib/common/`.
-- `lib/common/` holds general utilities with no ARW semantics; it must not depend on ARW semantics or any other `lib/` directory.
-
-Root-level files directly under `lib/` connect multiple responsibilities. Keep module imports direct: do not automatically add an `index.mjs` barrel file, a pass-through forwarding layer, or a new Module Interface just because a directory exists.
+Root commands and `scripts/` call into `lib/`, which contains production runtime implementations and source-only maintenance Modules. See the [development specification (Chinese)](../specs/agent-repository-workflow-development/spec.md) for dependency and import rules.
 
 ### Main directories
 
 Beyond `scripts/` and `lib/`, the remaining top-level directories separate authoring sources, generated payloads, documentation, tests, and working state:
 
+- `.claude/` contains generated Claude Code Skill projections, and `.codex/` contains Codex configuration for the source repository.
 - `.agents/skills/` contains the Skill Packages used and maintained by the Source Checkout.
 - `distribution/` contains reviewed workflow-distribution installation payloads produced before release.
 - `docs/specs/` contains long-term product behavior, `docs/adr/` contains hard-to-reverse decisions, `docs/agents/` contains Agent operating rules, and `docs/manuals/` contains human-reader guides.

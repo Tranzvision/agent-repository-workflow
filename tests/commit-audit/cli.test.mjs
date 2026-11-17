@@ -568,3 +568,25 @@ test('commit-audit verify --non-implementation writes no Effect Log record', asy
     assert.equal((await run(['commit-audit', 'verify', '--non-implementation'], repository)).result, 0);
     await assert.rejects(readFile(logDirectory, 'utf8'), {code: 'ENOENT'});
 });
+
+test('prepare excludes ignored fixture rules from frozen rule inputs on both platforms', async t => {
+    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    await mkdir(join(repository.root, 'tests/fixtures/src'), {recursive: true});
+    await writeFile(join(repository.root, 'tests/fixtures/src/AGENTS.md'), '# Fixture rules\n');
+    await writeFile(join(repository.root, 'AGENTS.md'), '# Root rules\n');
+    await mkdir(join(repository.root, 'src'), {recursive: true});
+    await writeFile(join(repository.root, 'src/AGENTS.md'), '# Source rules\n');
+    await writeFile(join(repository.root, 'src/code.mjs'), 'export const value = 1;\n');
+    await writeFile(join(repository.root, '.arwignore'), 'tests/fixtures/\nAGENTS.md\ndocs/agents/\n');
+    await runGit(repository.root, ['add', '.']);
+    for (const platform of ['codex', 'claude-code']) {
+        const platformAdapter = {getCurrentAgentIdentity: () => ({platform: /** @type {'codex'|'claude-code'} */ (platform), sessionId: 'fixture-rules'})};
+        const {round} = await prepare(repository.root, {authorizingIssueIds: ['issue:0001:01']}, platformAdapter);
+        const sums = await readFile(join(round, 'rules/SHA256SUMS'), 'utf8');
+        assert.doesNotMatch(sums, /fixtures/);
+        await assert.rejects(readFile(join(round, 'rules/tests/fixtures/src/AGENTS.md')), {code: 'ENOENT'});
+        assert.match(sums, /docs\/agents\/reviewer.md/);
+        assert.equal(await readFile(join(round, 'rules/AGENTS.md'), 'utf8'), '# Root rules\n');
+        assert.equal(await readFile(join(round, 'rules/src/AGENTS.md'), 'utf8'), '# Source rules\n');
+    }
+});

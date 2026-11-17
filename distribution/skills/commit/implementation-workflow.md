@@ -3,7 +3,7 @@
 ## Implementation issue commit workflow
 
 1. 确定完整排序的 `authorizingIssueIds`, 按 `../code-review/result-reuse.md` 的 Completion records 节规则更新真实的 Status 和验收勾选, 暂存完整实施候选. 必要实施验证按 `validation` Skill, 可以与审核并行; 未完成的检查不提供通过事实.
-2. 启动 Reviewer 前自查 (这些是复审的常见问题): 没有重新实现已有公共辅助函数; 无死代码, 文件内部导出已去掉; 测试名与断言相符, 测试回调耗时满足 `validation` Skill 的 Coverage 节规定的阈值; 审核对象是已暂存的真实树, 不审私有索引 (`git write-tree` 取树).
+2. 启动 Reviewer 前自查 (这些是复审的常见问题): 没有重新实现已有公共辅助函数; 无死代码, 文件内部导出已去掉; 测试名与断言相符, 测试回调耗时满足 `validation` Skill 的 Coverage 节规定的阈值; 审核对象是已暂存的真实树, 不审私有索引 (`git write-tree` 取树). 对已暂存候选先运行 `arw text check`, `arw terms check --include .scratch/<NNNN>-<effort-slug>/`, `git diff --cached --check` 和 `git diff --check`, 全部退出 `0` 才运行 `prepare`; 修改授权 issue 或 effort 文件后, 重新 `prepare` 前再运行这些检查.
 3. 按 Run 节准备审核轮, 并行运行 `requirements-reviewer` (要求符合审核) 和 `code-standards-reviewer`. 一次提交最多这两个并行 Reviewer.
 4. 两个 Reviewer 正常结束 (`ready`) 后, 按 `docs/agents/subagent-findings.md` 独立核对报告中的每个问题, 并按 `../reviewer-launch/SKILL.md` 抽查. Reviewer 返回 `incomplete` 时本轮结束, Main Agent 处理其原因后重新 `prepare`.
 5. 报告有问题需要修复或处置时, 读取 `./fix-rounds.md` 并按其执行 (复审, 台账, 轮次规则, 冲突裁决); 没有问题时跳过.

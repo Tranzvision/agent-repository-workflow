@@ -1237,3 +1237,24 @@ test('a follow-up or new thread over a delivered review is not pre-empted by a c
     assert.equal(continuations, 0);
     await runtime.close();
 });
+
+test('warm inspection of an exited paused Reviewer clears provider pause state', async () => {
+    const fixture = createReviewerRuntimeFixture();
+    let work = {...initialStrataWorkState(false), paused: false, resumeMessageId: /** @type {string|null} */ (null)};
+    const nativeSessions = {open: async (/** @type {Parameters<typeof fixture.native.nativeSessions.open>[0]} */ input) => {
+        const session = await fixture.native.nativeSessions.open(input);
+        return Object.assign(session, {getProviderWork: () => work,
+            saveProviderWork: (/** @type {Record<string, unknown>} */ value) => {work = /** @type {typeof work} */ (value);}});
+    }};
+    const runtime = createReviewerRuntime({...options(fixture), nativeSessions});
+    try {
+        const receipt = succeeded(await runtime.execute({operation: 'spawn_agent', input: reviewerHandoff}));
+        succeeded(await runtime.inspect({runId: receipt.runId}));
+        work.paused = true;
+        fixture.native.sessions[0].environmentState = 'exited';
+        const result = succeeded(await runtime.inspect({runId: receipt.runId}));
+        assert.equal(result.state, 'stopped');
+        assert.equal(work.paused, false);
+        assert.equal(work.resumeMessageId, null);
+    } finally {await runtime.close();}
+});

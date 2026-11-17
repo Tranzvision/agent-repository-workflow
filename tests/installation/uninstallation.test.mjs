@@ -902,9 +902,11 @@ test('installed uninstall command executes through the real CLI entry point', as
     const home = await createHome(t);
     const installationDirectory = await writeInstallation(home, {
         managedFiles: [
+            'lib/arw-common/config.mjs',
             'lib/arw-common/identity.mjs',
             'lib/arw-common/installation-manifest.mjs',
             'lib/arw-common/product-identity.mjs',
+            'lib/arw-common/reviewer-configuration.mjs',
             'lib/background-agent/claude-provider.mjs',
             'lib/background-agent/client.mjs',
             'lib/background-agent/manager-process.mjs',
@@ -916,6 +918,7 @@ test('installed uninstall command executes through the real CLI entry point', as
             'lib/background-agent/sqlite.mjs',
             'lib/background-agent/state-store.mjs',
             'lib/common/cli-prompt.mjs',
+            'lib/common/diagnostics.mjs',
             'lib/common/filesystem.mjs',
             'lib/common/json.mjs',
             'lib/common/process-warnings.mjs',
@@ -930,6 +933,8 @@ test('installed uninstall command executes through the real CLI entry point', as
         ],
     });
     await mkdir(join(installationDirectory, 'lib', 'arw-common'), {recursive: true});
+    await copyFile(join(SOURCE_DIRECTORY, 'lib', 'arw-common', 'config.mjs'), join(installationDirectory, 'lib', 'arw-common', 'config.mjs'));
+    await copyFile(join(SOURCE_DIRECTORY, 'lib', 'arw-common', 'reviewer-configuration.mjs'), join(installationDirectory, 'lib', 'arw-common', 'reviewer-configuration.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'arw-common', 'identity.mjs'), join(installationDirectory, 'lib', 'arw-common', 'identity.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'arw-common', 'installation-manifest.mjs'), join(installationDirectory, 'lib', 'arw-common', 'installation-manifest.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'arw-common', 'product-identity.mjs'), join(installationDirectory, 'lib', 'arw-common', 'product-identity.mjs'));
@@ -946,6 +951,7 @@ test('installed uninstall command executes through the real CLI entry point', as
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'background-agent', 'state-store.mjs'), join(installationDirectory, 'lib', 'background-agent', 'state-store.mjs'));
     await mkdir(join(installationDirectory, 'lib', 'common'), {recursive: true});
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'common', 'cli-prompt.mjs'), join(installationDirectory, 'lib', 'common', 'cli-prompt.mjs'));
+    await copyFile(join(SOURCE_DIRECTORY, 'lib', 'common', 'diagnostics.mjs'), join(installationDirectory, 'lib', 'common', 'diagnostics.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'common', 'filesystem.mjs'), join(installationDirectory, 'lib', 'common', 'filesystem.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'common', 'json.mjs'), join(installationDirectory, 'lib', 'common', 'json.mjs'));
     await copyFile(join(SOURCE_DIRECTORY, 'lib', 'common', 'process-warnings.mjs'), join(installationDirectory, 'lib', 'common', 'process-warnings.mjs'));

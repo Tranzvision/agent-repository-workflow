@@ -36,3 +36,10 @@ test('Application Completion treats a resolved Wayfinder issue as terminal and a
     assert.equal(evaluate('resolved').eligible, true);
     assert.equal(evaluate('open').eligible, false);
 });
+
+test('Application Completion reads JIRA metadata after the first unfenced heading', () => {
+    const result = evaluateApplicationCompletion({issues: [], jiraBaseUrl: 'https://jira.example.test/', phase: 'accepted',
+        applicationName: 'payments', specId: 'spec:0001', specText: '   ~~~~text\n# Hidden\n```\n   ~~~~\n' + spec});
+    assert.equal(result.status, 'succeeded');
+    assert.equal(result.jiraKey, 'PAY-123');
+});

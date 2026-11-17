@@ -77,3 +77,22 @@ test('Submodule fetch alone uses the extended network timeout', async () => {
     assert.ok(calls.length > 1);
     assert.ok(calls.slice(1).every(call => call.timeoutMs === undefined));
 });
+
+test('Submodule inspection distinguishes detached HEAD from a failed branch observation', async () => {
+    for (const code of [1, 128]) {
+        const adapter = createSubmoduleGitAdapter({git: {run: async ({argv}) => ({code: argv[0] === 'symbolic-ref' ? code : 0,
+            failure: null, stderr: '', stdout: Buffer.from(argv[0] === 'rev-parse' ? 'local\n' : '')})}});
+        const result = await adapter.inspectSwitch(input);
+        assert.equal(result.status, code === 1 ? 'succeeded' : 'failed');
+        if (result.status === 'succeeded') assert.equal(result.state?.branch, '');
+    }
+});
+
+test('Submodule inspection reports an unborn HEAD separately from Git failure', async () => {
+    const adapter = createSubmoduleGitAdapter({git: {run: async ({argv}) => ({code: argv[0] === 'rev-parse' ? 1 : 0,
+        failure: null, stderr: '', stdout: Buffer.from(argv[0] === 'symbolic-ref' ? 'dev\n' : '')})}});
+    for (const result of [await adapter.inspectSwitch(input), await adapter.inspectConvergence(input)]) {
+        assert.equal(result.status, 'failed');
+        assert.equal(result.diagnostics[0]?.code, 'submodule-head-missing');
+    }
+});

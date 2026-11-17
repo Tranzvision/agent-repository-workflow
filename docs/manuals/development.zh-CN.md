@@ -10,7 +10,7 @@
 
 每次动手修改前, 先明确你要改变的最终结果以及管辖它的权威来源. 不要从某个熟悉的脚本出发, 再反推它是否适合当前任务.
 
-以下三个名称贯穿全文的各条路线, 在本手册中始终保持准确含义:
+以下名称用于说明维护路线:
 
 - **ARW Artifact**: `.scratch` 中登记的 issue, map 和 spec 工作记录.
 - **Spec Readiness**: 实施开始前的治理准备审核.
@@ -30,7 +30,7 @@
 | 验证跨操作系统安装或维护受验环境 | [跨操作系统验证环境](#跨操作系统验证环境) | 活动 issue 和 `$release` Skill |
 | 验证并发布稳定版本 | [稳定版本发布](#稳定版本发布) | 发布长期规格和 `$release` Skill |
 
-当 Agent 在本仓库中执行工作时, 会从根 `AGENTS.md` 进入适用规则; 本手册只帮助维护者选择内容路线和操作入口, 不描述 Agent 工作流. 如果一个任务横跨表中的多条路线, 动手前先分别确认每条路线的权威来源和起始入口.
+当 Agent 在本仓库中执行工作时, 会从根 `AGENTS.md` 进入适用规则. 如果一个任务横跨表中的多条路线, 动手前先分别确认每条路线的权威来源和起始入口.
 
 ## 修改产品实现
 
@@ -50,7 +50,7 @@ pnpm typecheck
 pnpm test
 ```
 
-`pnpm typecheck` 对受 Git 管理的 `.mjs` 文件执行完整严格检查, 不会生成任何编译文件. `pnpm test` 运行 Node.js 内置测试套件; 如果需要逐条显示同一测试集合中的每个用例, 改用 `pnpm test:verbose` 即可, 不需要把两种模式重复跑一遍.
+`pnpm typecheck` 按 `tsconfig.json` 对 `.mjs` 文件执行严格检查, 排除 `node_modules`, `.tmp` 和 `tests/fixtures/reviewer-capability`, 不会生成编译文件. `pnpm test` 运行 Node.js 内置测试套件; 如果需要逐条显示同一测试集合中的每个用例, 改用 `pnpm test:verbose` 即可, 不需要把两种模式重复跑一遍.
 
 ### 找到实现责任
 
@@ -80,12 +80,13 @@ pnpm test
 pnpm typecheck
 pnpm test
 node scripts/check-workflow-distribution.mjs
-node scripts/project-claude-skills.mjs --check
 node --check <changed-javascript-file>
 node arw.mjs text check
 node arw.mjs terms check --include .scratch/<NNNN>-<effort-slug>/
 git diff --check
 ```
+
+`pnpm test` 已包含 Claude Code Skill 投影一致性检查; 需要单独核对时运行 `node scripts/project-claude-skills.mjs --check`.
 
 如果还需要分析指定文档路径的语言字符比例, 运行 `node arw.mjs language inspect <repository-relative-path>...`.
 
@@ -148,13 +149,13 @@ node scripts/check-workflow-distribution.mjs
 
 ```text
 node scripts/reviewer-capability.mjs setup <scenario-directory> <new-target-directory>
-node scripts/reviewer-capability.mjs score <scenario-directory> <report> [--instance ID] [--decisions FILE]
+node scripts/reviewer-capability.mjs score <scenario-directory> <report> --agent <agent> (--repair <path.changes.json>|--no-repair) [--instance ID] [--decisions FILE]
 node scripts/reviewer-capability.mjs pool build|prompt|split|override ...
 ```
 
 ### 跨操作系统验证环境
 
-仅靠本机单元测试无法证明安装程序, PATH 登记和 `arw workflow init` 在干净的真实操作系统上都能正常工作. 要在真实 Windows 与 Linux 系统中完成端到端验证, 使用源码仓库专用的 `$release` Skill (`.agents/skills/release/`), 其中规定了 VM 配置, 受验系统要求和快照纪律. 执行验证时, `scripts/release-vm.mjs` 会先还原干净的 VMware 快照, 经 SSH 传入候选 Git bundle, 在 guest 中运行 `scripts/release-guest-check.mjs`, 跑完后再次还原快照.
+仅靠本机单元测试无法证明安装程序, PATH 登记和 `arw workflow init` 在干净的真实操作系统上都能正常工作. 要在真实 Windows 与 Linux 系统中完成端到端验证, 使用源码仓库专用的 `$release` Skill (`.agents/skills/release/`), 其中规定了 VM 配置, 受验系统要求和快照纪律. 执行验证时, `scripts/release-vm.mjs` 会先还原干净的 VMware 快照, 经 SSH 传入候选 Git bundle, 配置的 `agent-assisted.tgz` 夹具和 `--archive` 指定的安装压缩包 (由 `scripts/pack-release.mjs` 生成), 在 guest 中运行 `scripts/release-guest-check.mjs`, 跑完后再次还原快照.
 
 ### 稳定版本发布
 
@@ -193,18 +194,13 @@ node scripts/reviewer-capability.mjs pool build|prompt|split|override ...
 
 ### lib
 
-根目录命令和 `scripts/` 最终都会调用 `lib/`, 这里保存了全部正式运行实现和只服务源码仓库的维护 Module. 其子目录遵循严格的单向依赖层次:
-
-- 具体业务责任位于各自的 `lib/<responsibility>/` 目录中, 可以依赖 `lib/arw-common/` 和 `lib/common/`.
-- `lib/arw-common/` 保存依赖 ARW 语义且由多个业务范围复用的公共能力, 可以依赖 `lib/common/`.
-- `lib/common/` 只放与 ARW 语义无关的通用能力, 不依赖 ARW 语义或任何其他 `lib/` 实现.
-
-直接位于 `lib/` 根级的文件负责连接多个责任. 保持直接导入: 不要仅因为存在某个目录, 就自动为它增加 `index.mjs`, 转发层或新的 Module Interface.
+根目录命令和 `scripts/` 最终都会调用 `lib/`, 这里保存了全部正式运行实现和只服务源码仓库的维护 Module. 依赖层次和导入约束见 [开发长期规格](../specs/agent-repository-workflow-development/spec.md).
 
 ### 主要目录
 
 除了 `scripts/` 和 `lib/`, 其余顶层目录分别承载编写来源, 派生载荷, 文档, 测试和运行状态:
 
+- `.claude/` 保存生成的 Claude Code Skill 投影, `.codex/` 保存源码仓库的 Codex 配置.
 - `.agents/skills/` 保存源码仓库实际使用并维护的 Skill Package.
 - `distribution/` 保存发布前同步产生并审核的工作流分发安装载荷.
 - `docs/specs/` 保存长期产品行为, `docs/adr/` 保存难以撤销的决定, `docs/agents/` 保存 Agent 工作规则, `docs/manuals/` 保存 Human 读者指南.
