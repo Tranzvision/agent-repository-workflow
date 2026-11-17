@@ -1,6 +1,6 @@
 # 修复 Reviewer 运行时被替换的运行不退役, 补齐预检第四项规格, 把无设计决定 issue 的常设确认写进仓库
 
-Status: ready-for-agent
+Status: wontfix
 
 ## What to build
 
@@ -34,3 +34,4 @@ Status: ready-for-agent
 - 来源: `common/review` report-1116 的 A1, A2 (代码确认, 未运行, 见 `~/projects/.tasks/common/review/report-1116.md`); 第 (3) 项来自 `ARW/daily` 的 sesspathloop 待办.
 - Spec Readiness 记 `not-applicable` (三项都不含设计决定, 不依赖共用 spec; 常设确认见 (3), 实施前尚未入库时引用 `~/projects/docs/ARW.md` "ARW 自主工作方式" 拆分工作条), 按本机规则单独成 effort, 不写 spec.
 - (3) 是 Agent 指令改动, 按 Baseline 例外由 Main Agent 确认, 维护者按整体 diff 复核.
+- 2026-11-18: 已被 effort 0135 (`182c925`, issue:0135:01) 取代, 取消单独实施: 第 (2), (3) 项由 0135 交付; 第 (1) 项在 0135 中先写 mock 测试, 未复现差异, 记录不修 (`retireIfTerminal` 已在 inspect 返回 ready 前退役旧运行). wontfix 只表示取消单独实施, 不表示放弃原发现.

@@ -4,7 +4,7 @@ Status: ready-for-agent
 
 ## What to build
 
-清理 effort, 合并 `ARW/daily` 11-17 核实的无行为变化清理和文档文字问题, 不含设计决定, 不写 spec (记 Spec Readiness `not-applicable`). 每项的最终状态是描述的重复/死代码/不一致消失, 行为不变, 现有测试全部通过; 对象行号以实施时 main 为准, 先 grep 核对, 某项已不存在则在 `## Comments` 记录跳过. 与 0131 无文件冲突 (0131 只动 `reviewer-runtime.mjs` 的 `spawn` 和预检规格一节).
+清理 effort, 合并 `ARW/daily` 11-17 核实的无行为变化清理和文档文字问题, 不含设计决定, 不写 spec (记 Spec Readiness `not-applicable`). 每项的最终状态是描述的重复/死代码/不一致消失, 行为不变, 现有测试全部通过; 对象行号以实施时 main 为准, 先 grep 核对, 某项已不存在则在 `## Comments` 记录跳过. 0131 已被 0135 取代, 不再有冲突问题.
 
 ### A. `lib/` 清理 (来自 strataweek3 的 23 条, 11-09 周, 全低)
 
@@ -53,13 +53,16 @@ Status: ready-for-agent
 - `manuals-1`: docs/manuals/development.md:7, :33, :165, :218 — the same "this manual is only a… 修法: 保留 :7 一处, 删 :33/:165/:218 的重复声明 (估 -300字)
 - `manuals-1`: docs/manuals/development.md:198-202 — restates the lib/ one-way dependency hie… 修法: 删 :198-202 的依赖层次复述, 改链接到 development spec (估 -400字)
 
-预计净增: 代码约 -300 行 (非测试, 估计值, 实施时以 `git diff --numstat` 为准); 文档约 -600 字符; 测试只改被删对象的测试. 实施可分几个提交, 但仍是一个 issue.
+### D. 提交前文本检查提前 (来自 `ARW/daily` 1118 的 Issue Y, codex20q-1117 的 0135 运行)
+`.agents/skills/commit/implementation-workflow.md` 步骤 2 "启动 Reviewer 前自查" 加一句: 对暂存候选先运行 `arw text check`, `arw terms check --include .scratch/<NNNN>-<effort-slug>/` 和 `git diff --check` (秒级, 退出 0 才 `prepare`); 作者改过授权 issue 或 effort 文件后, 重新 `prepare` 前再运行一遍. 不改审核关卡, 只把已在验证命令清单里的格式检查提前到 `prepare` 之前. 依据: 0135 运行中行内代码 `## Validation` 被误插入使一个反引号跨到 `## Comments`, 检查在 Reviewer 已启动后才跑, 受审版本已坏, 多开了第 3 轮 (约 5 分钟, 占全程 20%). 证据只有这一次 (n=1), 机制确定. 同步 `distribution/skills/commit/implementation-workflow.md` 和 `.claude/skills/commit/implementation-workflow.md` (后者用 `node scripts/project-claude-skills.mjs`, 前者按分发流程). 预计净增文档约 +200 字符; 不涉及 Reviewer 能力, 不需要能力 A/B.
+
+预计净增: 代码约 -300 行 (非测试, 估计值, 实施时以 `git diff --numstat` 为准); 文档约 -400 字符 (含 D 的 +200); 测试只改被删对象的测试. 实施可分几个提交, 但仍是一个 issue.
 
 预期验证: `pnpm test`, `pnpm typecheck`, `arw text check`, `arw terms check`, `git diff --check`, 完整 `pnpm test` 通过; 改了 `docs/manuals/development.md` 同步 `development.zh-CN.md`, 改了 Agent 规则文件后 `node scripts/check-workflow-distribution.mjs`, `node scripts/project-claude-skills.mjs --check`.
 
 ## Acceptance criteria
 
-- [ ] A, B, C 各项已处理或在 `## Comments` 写明跳过原因 (观察: 逐项对照 `## What to build` 的列表).
+- [ ] A, B, C, D 各项已处理或在 `## Comments` 写明跳过原因 (观察: 逐项对照 `## What to build` 的列表).
 - [ ] 公开 Interface, 持久状态和用户可见行为没有改动; `pnpm test` 与 `pnpm typecheck` 通过.
 - [ ] 净增在预算内, 超出时在 `## Comments` 说明.
 
@@ -71,3 +74,4 @@ Status: ready-for-agent
 
 - 来源: `~/projects/.tasks/ARW/daily-report-1117.md`; 逐条结论 `.tasks/ARW/strata-review/triage/2026-11-17.jsonl` 与 `2026-11-16.jsonl`.
 - Spec Readiness 记 `not-applicable` (清理与文字修正, 无设计决定, 不依赖共用 spec; 依据 `~/projects/docs/ARW.md` "拆分工作时" 一条), 单独成 effort.
+- 2026-11-18: 并入 D 项 (Issue Y, 提交前文本检查提前); 原因: `ARW/daily` 规则要求小 issue 合并, D 是无设计决定的文档改动. 草稿: `~/projects/.tasks/ARW/daily-1118-issue-draft.md`.
