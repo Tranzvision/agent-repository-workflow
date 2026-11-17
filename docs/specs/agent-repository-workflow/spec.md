@@ -73,7 +73,7 @@ Gate 3 由 `code-review` Skill Package 拥有 Standards 与 Requirements 两个�
 git rev-parse --show-toplevel
 ```
 
-命令只能读取和修改该根目录内状态. ARW Artifact 只使用 `<repository>/.scratch`. 仓库工作流只使用该根目录的 `arw-lock.json`,Managed Content 和仓库自有内容.
+命令只能读取和修改该根目录内状态; 开启 Effect Log 时另向用户在全局配置中指定的日志目录追加记录 (见 Effect Log 节). ARW Artifact 只使用 `<repository>/.scratch`. 仓库工作流只使用该根目录的 `arw-lock.json`,Managed Content 和仓库自有内容.
 
 仓库发现只识别最近 Git 根目录, 不递归扫描普通子目录或嵌套 Git 仓库. 嵌套仓库需要自己的 ARW 生命周期时, 用户必须从它自己的根目录或子目录单独运行命令. 外层仓库不替嵌套仓库执行 `workflow init` 或扫描其 Agent 与 Skill 路径.
 
@@ -514,7 +514,7 @@ Reviewer 在完成全部适用检查和绑定文件写入后单独返回完成�
 
 审核后的结果按生成, 提升, 验证的顺序交接. 生成临时结果不等于把它写入工作记录, 写入工作记录也不等于已经取得实施授权.
 
-`generate --issue --input <draft-path>` 要求路径与活动请求完全相同. 普通审核中, 零字节或仅含空白的草稿失败 (错误提示重新 `prepare` 并重发 Reviewer), 不生成规范结果文件; 去除首尾空白后精确为 `No problems.` 时结果为 `satisfied`, 否则为 `gap`. Engine 不解析问题条目, 问题的有效性由 Main Agent 独立核对, Main Agent 每轮自选一两处 Reviewer 应当检查的要求或代码位置抽查. 正式结果使用模式版本 7, 不含检查项. 例外只在应用治理设计和 ADR 触发条件后用户明确确认不需要治理设计, 且 effort 的 `issues/` 目录只含待审的这一个 issue 文件时可用, 失败的普通审核不得转为例外; 此时 `--input` 是 Main Agent 写在该 issue 当前 Agent 临时工作区内的绝对 `.json` 路径 (不经 Reviewer), 例外草稿必须包含明确理由和用户确认时间 (`exception.reason`, `exception.confirmedAt`), 且用户确认不能推断, 结果为 `not-applicable`. 用户确认须早于首次修改本 issue 的实现文件, `exception.confirmedAt` 是用户作出确认的时间, 不是生成时间. 满足这一条件时, 例外记录可以在实施开始后补生成, 在实施提交前完成 `generate -> promote -> verify`: 例外不经 Reviewer, 记录内容不随生成时机变化, 是否适用在用户确认时已经决定, 先生成记录不增加任何审核. 普通结果与例外结果都绑定当前审核对象的规范化身份. 有效结果只在 Engine 管理的临时工作区生成规范结果文件并返回路径. `generate` 不写 `.scratch` 或基线.
+`generate --issue --input <draft-path>` 要求路径与活动请求完全相同. 普通审核中, 零字节或仅含空白的草稿失败 (错误提示重新 `prepare` 并重发 Reviewer), 不生成规范结果文件; 去除首尾空白后精确为 `No problems.` 时结果为 `satisfied`, 否则为 `gap`. Engine 不解释问题条目, 只在 Effect Log 中按行首 `- ` 数条数, 问题的有效性由 Main Agent 独立核对, Main Agent 每轮自选一两处 Reviewer 应当检查的要求或代码位置抽查. 正式结果使用模式版本 7, 不含检查项. 例外只在应用治理设计和 ADR 触发条件后用户明确确认不需要治理设计, 且 effort 的 `issues/` 目录只含待审的这一个 issue 文件时可用, 失败的普通审核不得转为例外; 此时 `--input` 是 Main Agent 写在该 issue 当前 Agent 临时工作区内的绝对 `.json` 路径 (不经 Reviewer), 例外草稿必须包含明确理由和用户确认时间 (`exception.reason`, `exception.confirmedAt`), 且用户确认不能推断, 结果为 `not-applicable`. 用户确认须早于首次修改本 issue 的实现文件, `exception.confirmedAt` 是用户作出确认的时间, 不是生成时间. 满足这一条件时, 例外记录可以在实施开始后补生成, 在实施提交前完成 `generate -> promote -> verify`: 例外不经 Reviewer, 记录内容不随生成时机变化, 是否适用在用户确认时已经决定, 先生成记录不增加任何审核. 普通结果与例外结果都绑定当前审核对象的规范化身份. 有效结果只在 Engine 管理的临时工作区生成规范结果文件并返回路径. `generate` 不写仓库内的 `.scratch` 或基线.
 
 `promote --input <generated-path>` 在任何写入前重验 issue, 请求, 当前治理输入字节 (`architecture-evidence` 除外, `verify` 同此), 当前审核对象内容身份, 当前 Reviewer Role 字节, 结构, 路径归属和派生结果. 它是写 `.scratch/<NNNN>-<effort-slug>/issues/<NN>.spec-readiness.json` 和更新已完成基线的唯一边界. 有效的 `gap` 可以保存, 但不能满足最终就绪授权. 旧结构不能授权.
 
@@ -536,7 +536,55 @@ Main Agent 在仓库 `.tmp/` 下写一个 `input.json`, 只包含同一 effort �
 
 Implementation records 节定义的两个记录章节不是审核要求. Request 范围相同不能机械证明任意实现语义和字节未变, Main Agent 必须比较最终实际候选与受审版本.
 
-旧轮运行中 HEAD 和绑定输入保持不变, 不在同一仓库进行另一提交; 索引可以继续暂存修复. 旧轮完整结束后, 可以加入经过准确核对的两个记录章节变化, 再执行当前候选检查, 最终暂存树相对受审 `tree` 只能有这些记录差异; 其他实际变化按 Review versions and result validity 节形成替代版本并刷新受影响结果. `arw commit-audit verify` 在最终暂存候选上只读确认每个已提交 ARW Artifact 身份得到保留. 不带 `--non-implementation` 时它还读取当前会话 `_commit-audit/` 中编号最大的审核轮的 `request.json`, 并在以下情形报错, 每条都提示重新 `prepare` 并复审: 没有审核轮; `HEAD` 不等于 `base`; 暂存树不等于 `tree`, 且变化路径不都是授权 issue 文件, 或某个授权 issue 的 `Status` 或 `subjectContent` (准确的审核对象内容, 含验收任务列表标记, 所以验收勾选须在 `prepare` 之前完成) 与受审树不同 (授权 issue 其余部分的变化是否只在两个记录章节内, 由 Main Agent 按上述规则核对, verify 不检查); `requirements-reviewer` 或 `code-standards-reviewer` 在所有轮中没有非空的 `review.txt` (每个角色取最新的非空报告, 因为只重跑受影响的 Reviewer 时另一个沿用旧轮结果; 提示重发该 Reviewer 的 `.jsonl`). 它不解析报告条目, 不能证明未重跑的 Reviewer 未受影响, 这仍由 Main Agent 判断. 非零退出码或非空错误列表阻止提交.
+旧轮运行中 HEAD 和绑定输入保持不变, 不在同一仓库进行另一提交; 索引可以继续暂存修复. 旧轮完整结束后, 可以加入经过准确核对的两个记录章节变化, 再执行当前候选检查, 最终暂存树相对受审 `tree` 只能有这些记录差异; 其他实际变化按 Review versions and result validity 节形成替代版本并刷新受影响结果. `arw commit-audit verify` 在最终暂存候选上对仓库只读 (另按 Effect Log 追加记录) 地确认每个已提交 ARW Artifact 身份得到保留. 不带 `--non-implementation` 时它还读取当前会话 `_commit-audit/` 中编号最大的审核轮的 `request.json`, 并在以下情形报错, 每条都提示重新 `prepare` 并复审: 没有审核轮; `HEAD` 不等于 `base`; 暂存树不等于 `tree`, 且变化路径不都是授权 issue 文件, 或某个授权 issue 的 `Status` 或 `subjectContent` (准确的审核对象内容, 含验收任务列表标记, 所以验收勾选须在 `prepare` 之前完成) 与受审树不同 (授权 issue 其余部分的变化是否只在两个记录章节内, 由 Main Agent 按上述规则核对, verify 不检查); `requirements-reviewer` 或 `code-standards-reviewer` 在所有轮中没有非空的 `review.txt` (每个角色取最新的非空报告, 因为只重跑受影响的 Reviewer 时另一个沿用旧轮结果; 提示重发该 Reviewer 的 `.jsonl`). 它不解释报告条目, 只在 Effect Log 中按行首 `- ` 数条数, 不能证明未重跑的 Reviewer 未受影响, 这仍由 Main Agent 判断. 非零退出码或非空错误列表阻止提交.
+
+## Effect Log
+
+Effect Log 是默认关闭的离线追加日志: 用户在全局 `config.json` 里设置目录后, Engine 在自己亲眼看到的事件上追加一行 JSON. 日志只观察不控制, 没有任何关卡, 授权或 `verify` 读取它; 统计口径属于读取方, 不属于 ARW. 只有 Engine 能亲眼看到的事实进入这个日志; 其他事实由各自的本机工具按同一信封写入同一目录, ARW 既不写入也不校验这些记录, 读取方忽略自己不认识的类别.
+
+### Switch and location
+
+全局 `config.json` 增加可选对象 `effectLog`, 只有一个字段 `directory`, 必须是非空的绝对路径文本; 对象缺失时功能关闭. 它与 `backgroundAgent` 等全局字段同样只由用户拥有, 不接受仓库配置或单次命令覆盖, 因为日志属于使用者本人对自己使用情况的记录, 不应由仓库内容决定是否记录或写到哪里. `effectLog` 不是对象, 含 `directory` 之外的字段, 或 `directory` 缺失或不是非空绝对路径 (`effectLog: {}` 也无效) 时, 全局配置的唯一校验权威 (`../agent-repository-workflow-installation/spec.md` 列出的验证器) 把它判为无效配置, 与其他已知字段一致; 不因此增加 `configVersion`. 安装与安装更新不补入该对象, 因为默认关闭是产品行为, 不是缺失的默认结构.
+
+Effect Log 模块在自己所在进程第一次需要记录时, 从调用方传入的 `programDirectory` (见本节 Interface) 读取一次全局配置, 此前不读取, 所以日志模块不使任何命令新增失败路径: 配置文件不存在 (含源码检出下没有 `config.json` 时回退到 `config.install.json`) 时按关闭处理, 不告警; 配置无法读取或 `effectLog` 无效时, 本进程不记录并按写入失败规则告警一行, 宿主命令不受影响. 后台管理进程因此在重启前不感知配置修改 (与 `backgroundAgent` 的容量和保存间隔一致). 本规格不改变任何命令是否读取全局配置的既有规则, 也不改变既有读取全局配置的命令 (如启动 Reviewer) 对无效字段按配置合同关闭式失败的结果: `effectLog` 无效时这些命令照旧因配置错误失败, 这是配置合同而不是日志写入; 只有不读取全局配置的命令 (关卡 `prepare`, `generate`, `verify`, 脚本) 通过日志模块读取时, 读取失败才只告警. 不增加 `configVersion`: 该字段可选且不改变其他字段的含义, 增版本会使所有用户的配置被转换; 较早的 ARW 版本对根级字段 `effectLog` 的处理不由本规格规定: 其安装与更新按配置升级规则保留未知子树 (安装规格), 只多出 `Preserved unknown configuration path: ...` 提示; 若某个旧版本的验证器拒绝它, 回退前删除 `effectLog` 对象即可, 这就是默认关闭与可随时撤销的含义, 本规格不承诺回退无需任何操作.
+
+### Files and records
+
+日志按月分文件: `<directory>/effects-<YYYY-MM>.jsonl`, 月份取记录时间的 UTC 年月; 目录在第一次写入时创建. 每条记录是一行 UTF-8 JSON 对象, 以一次追加写入完成. 读取方必须跳过无法解析的行 (例如进程在写入中途被终止).
+
+每条记录有这些公共字段: `v` (格式版本, 当前 `1`), `ts` (Unix 秒, 整数), `kind` (类别), `repository` (目录名, 不含路径; 由调用方提供的 `cwd` 求得: 关卡记录的 `cwd` 是仓库根, 后台 Agent 记录的 `cwd` 是该运行记录的工作目录. 它是给读取方归并用的标签, 不是仓库发现: 先按长期规格的仓库发现规则取 `cwd` 所属的 Git 工作树根目录 (`git rev-parse --show-toplevel`), 取其目录名, 所以子目录, 子模块和独立 Git 目录的工作树都得到自己根目录的名字; 唯一例外是该工作树为链接工作树 (`--git-dir` 与 `--git-common-dir` 不同) 且公共 Git 目录名为 `.git` 时, 取公共 Git 目录的上一级目录名, 即主工作树的目录名, 所以在 `/tmp/<任务>/wt` 这类链接工作树运行时得到仓库名而不是 `wt`; 子模块或独立 Git 目录的链接工作树不满足该条件, 取链接工作树自己的目录名, 接受这一不精确. 三项用一次 `git rev-parse --path-format=absolute --show-toplevel --git-dir --git-common-dir` 取得; `cwd` 不在 Git 仓库内或该命令失败时取 `cwd` 自身的目录名. 它不改变任何命令的仓库发现; 安装与发布验证记录省略). 会被同一逻辑事件重复触发的类别另有 `key` (文本), 读取方对同一 `kind` 与 `key` 只保留最早的一条. 记录不含消息正文, 指令文本, 报告内容, 绝对路径, 会话或线程身份, 凭据和用户名: 记录只回答 "发生了什么, 何时, 结果如何", 因为日志目录可能被用户同步或分享, 内容越少越不会泄露.
+
+| 类别 | 何时写入 | 类别字段 | `key` |
+| --- | --- | --- | --- |
+| `gate-round` | `arw spec-readiness prepare` 或 `arw commit-audit prepare` 成功建出审核轮之后 | `gate` (`spec-readiness` 或 `commit-audit`), `issues` (本轮授权或审核的本地 Canonical ID 数组, Spec Readiness 一个, Commit Audit 为 `authorizingIssueIds`) | 无 |
+| `gate-result` (Spec Readiness) | `arw spec-readiness generate` 成功之后 | `gate: "spec-readiness"`, `issues` (只含该 issue 的一元数组), `result` (`satisfied`, `gap` 或 `not-applicable`), `findings` (对象, 键为当前会话中该 issue 的 Spec Readiness 工作区 `rounds/` 下草稿 `report/draft.txt` 非空的各审核轮目录名 (即该轮 Request 的 `requestId`, 随机生成, 不是会话身份), 值为该轮草稿以 `- ` 开头的行数; `not-applicable` 为 `{}`. 带上此前各轮, 因为按工作流只在 `ready` 且通常只在 `No problems.` 后运行 `generate`, 只数本轮会使有问题的轮永远不被计数; 同一会话再次 `generate` 时同一轮会重复出现, 读取方按轮目录名去重) | 无 |
+| `gate-verify` | `arw spec-readiness verify --issue` 不带 `--subject-only` 且退出码为 `0` 之后 (`implement` Skill 的 Entry 在首次修改实现文件前运行它) | `gate: "spec-readiness"`, `issues` (只含该 issue 的一元数组) | 无 |
+| `gate-result` (Commit Audit) | `arw commit-audit verify` 不带 `--non-implementation` 且退出码为 `0` 之后 | `gate: "commit-audit"`, `issues` (最新审核轮 `request.json` 的 `authorizingIssueIds` 数组), `result: "pass"`, `rounds` (当前会话工作区 `_commit-audit/` 中 `request.json` 的 `authorizingIssueIds` 与 `base` 都与最新审核轮相同的审核轮数: 会话工作区保留此前提交的审核轮, 不同 issue 的轮由 `authorizingIssueIds` 排除, 同一 issue 此前提交 (如实施提交后的收尾提交) 的轮由 `base` 排除, 因为审核轮进行期间 `HEAD` 不变, 每次提交都使后续轮的 `base` 改变), `findings` (对象, 键为 `requirements-reviewer` 与 `code-standards-reviewer`, 值为按这些轮次排列的数组, 元素是该轮该角色 `review.txt` 以 `- ` 开头的行数, 该文件为空或不存在时为 `null`), `dispositions` (对象, 键为 `follow-up`, `not-fixed`, `arbitration`, 值为 `verify` 时暂存树 (即将提交的内容) 中各授权 issue 的 `## Comments` 内对应台账行的合计, 是此刻的累计数, 含此前提交已记过的台账行) | `commit-audit:<request.json 的 tree>` |
+| `agent-task` | 后台管理 Module 把任务状态 (`task_state`) 由 `working` 改为 `ended` 或 `unknown` 时, 不论原因, 每次转换一条, 包括管理进程重启核对后把保存为 `working` 的任务改为 `unknown` (按既有恢复规则, 保存的当前任务对象带有 Reviewer 运行程序的阈值暂停, 即 `provider_work_json` 中的当前暂停 (`providerWork.paused` 为真) 时, 恢复后仍是 `working`, 此时不写, 等它日后离开 `working` 再写); 运行尚未取得原生线程就因启动失败置为 `ended` 时也写一条. 此前已不是 `working` 的任务在卸载或停止时置为 `ended` 不再记录, 因为它的结束已经记过 (见 Reading side) | `runId` (运行身份, 不透明文本), `role`, `provider` (运行绑定的 `modelProvider` ID), `model` 与 `effort` (运行设置的 `model` 与 `reasoningEffort`), `startedAt` 与 `finishedAt` (Unix 秒; `finishedAt` 取该任务的结束时间, 转为 `unknown` 时为 `null`; `startedAt` 未知或启动失败时为 `null`), `outcome` (`completed`, `failed`, `stopped`, `unknown`) | 无 |
+| `agent-continuation` | 后台管理 Module 受理 Reviewer task continuation 节所述的程序接续 (`continueTask` 新受理一条程序指示消息并沿原线程启动新回合) 时, 每次受理一条; 用已受理的 Main 工作消息恢复暂停的任务 (`continueTask` 带 `messageId`), 容量回收后的原线程恢复和管理进程重启恢复不记录 | `runId`, `role`, `provider` | 无 |
+| `install` | `install.mjs` 完成安装流程 (含失败) 时写一次; `--help` 和用法错误不记录; 配置按 Effect Log 的读取规则在记录时读取, 即安装流程结束时固定安装目录中的全局 `config.json` (成功时是本次安装写入后的配置; 失败时是失败时刻磁盘上的配置, 失败发生在配置事务之前是原配置, 之后则是已写入的配置), 所以首次安装和 `--reinitialize-config true` 的安装不记录, 只有已开启日志且配置被保留的安装有记录 | `result` (`success` 或 `failure`), `seconds` (从开始解析参数到结束的墙钟秒数, 整数), `version` (`install.mjs` 所在来源目录 `package.json` 的 `version`, 不带本地安装身份的 `-pre` 后缀), `platform` (`process.platform`) | 无 |
+| `release-validation` | `scripts/release-vm.mjs check` 结束时, 每台机器一条 | `machine` (`release-vm.mjs check <machine> ...` 命令行的机器键参数), `result` (`pass` 当该次 `check` 以退出码 `0` 结束, 否则 `fail`; 参数错误等未开始检查的退出码 `2` 不记录; 配置取自宿主机固定安装目录中已安装 ARW 的全局 `config.json` (不是 `release-vm.mjs` 所在源码检出的 Engine 目录, 与 `.arw.local.json` 的 VM 配置无关), 没有已安装的 ARW 或未开启时不记录), `seconds` (该次 `check` 的墙钟秒数, 整数), `version` (运行 `release-vm.mjs` 的源码检出根目录 `package.json` 的 `version`; 按发布规格的 Release procedure, 宿主检出就是候选 commit, 所以它是候选版本; `release-vm.mjs` 在候选检出中运行是前提, 从别的检出运行时记录的是那个检出的版本) | 无 |
+
+`agent-task` 的 `outcome` 只由任务结束时已有的事实决定, 不另做判断: 原生回合状态为 `completed` 时是 `completed`; 原生回合状态为 `failed` 或存在提供方错误时是 `failed`; 管理进程确认运行环境因停止, 卸载或中断而退出, 或原生回合状态为 `interrupted` (如 Codex 后端 `interrupt_agent` 中断当前回合而保留运行环境) 时是 `stopped`; 启动失败是 `failed`; 转为任务状态 `unknown` 的以及其余情况是 `unknown`. 一个已结束的任务被 `followup_task` 或 `newThread` 的 `spawn_agent` 取代后再次由 `working` 转为 `ended`, 是新的任务, 写新的 `agent-task`. `agent-continuation` 只在管理进程受理接续时记录 (是否接续仍由 Reviewer 运行层判定). 读取方按 `runId` 汇总: 接续次数是该运行的 `agent-continuation` 条数, 尝试次数是接续次数加一.
+
+`dispositions` 的三个类别来自 `commit` Skill 的处置台账 (每条一行, 格式 `台账: <文件和行或章节> <转入后续 issue|记录不修|冲突裁决> <理由>`, 本规格自带该格式, 不依赖 Skill 文本): 授权 issue 的 `## Comments` 章节内, 去掉行首可选的列表符 `- ` 后以 `台账:` 开头的行算一条台账, 该行中第一个出现的短语决定类别, `转入后续 issue` 记为 `follow-up`, `记录不修` 记为 `not-fixed`, `冲突裁决` 记为 `arbitration`, 都不出现的台账行不计入. 例子: `- 台账: a.mjs:5 记录不修 措辞` 计入 `not-fixed`; `台账: 规范 12 转入后续 issue 0140` 计入 `follow-up`; `- 台账: 冲突裁决 按 spec` 计入 `arbitration`; `记录不修` 单独出现在不以 `台账:` 开头的行, 或 `台账: 见上` 都不计入. 这是对既有台账格式的机械计数, 不判断问题是否有效, 也不改变台账的任何规则.
+
+`findings` 同样是机械计数: 只数报告文本中以 `- ` 开头的行 (行首无缩进), 内容精确为 `No problems.` 时为 `0`. 这与 Reviewer 报告规则一致: 每条问题以 `- ` 开头, 续行缩进. Engine 不解释条目内容, 也不判断问题是否有效.
+
+### Behavior contract of recording
+
+- 功能关闭时本功能不产生任何文件系统写入 (不创建日志目录或月文件), 宿主命令自身的既有写入 (如 `prepare` 新建审核轮目录) 不变, 宿主命令的标准输出, 标准错误和退出码与没有本功能时逐字相同.
+- 功能开启时, 记录是宿主命令成功路径上的附带动作: 追加失败 (目录不可创建, 文件不可写, 磁盘已满) 只向标准错误输出一行 `warning: effect log not written: <错误码>` (每个进程最多一行), 不改变宿主命令的标准输出, 退出码和已完成的工作. 记录写入先于宿主命令的最终输出还是之后不作规定.
+- 日志从不被 Engine 读取: 没有关卡, 授权, 容量, 恢复或验证判断依赖它, 删除整个目录不影响任何工作流.
+- Commit Audit `verify` 对仓库仍然只读; 它追加的日志在仓库之外. 重复运行 `verify` 得到同一 `key`, 读取方去重.
+
+### Reading side and what stays out
+
+读取方 (本机统计工具) 的口径不由 ARW 规定, 这里只给出读取方可以依赖的事实: 一个 issue 的首条 `gate-round` 到 `commit-audit` 的 `gate-result` 之间是它在关卡里的墙钟时间, 不含写 issue 之前的时间, 也不含没有经过任何关卡的 issue (行为保持重构按规则不做 Spec Readiness, 只有提交审核的记录). 没有 `gate-result` 的 `gate-round` 表示该尝试未完成或被放弃, 读取方应保留它们作分母. 同一 issue 有多次提交 (如实施提交与收尾提交) 时, Commit Audit `gate-result` 的 `rounds` 与 `findings` 只属于该次提交, 各次相加; `dispositions` 是 `verify` 时 `issues` 中全部授权 issue 的累计合计, 取 `issues` 相同的最后一条, 不相加. Spec Readiness 的 `findings` 只看得到当前会话工作区的轮, 设计审核跨会话进行时较早会话的轮只有 `gate-round` 而没有条数; Spec Readiness 的问题没有台账, 其采纳与否不可从日志得出. 任务状态离开 `working` 的每条路径都写一条 `agent-task`, 所以成功率的分母完整; 结束时间和结果未被核实的 (转为 `unknown`) 写 `outcome: "unknown"` 与 `finishedAt: null`, 不把未证实的结束写成事实. 只有管理进程异常退出后再未启动时, 其中进行中的任务没有记录. 反过来, 管理进程在任务结束后, 下一次批量保存前 (默认 1 秒内) 崩溃时, 重启恢复会把仍保存为 `working` 的同一任务再记一条 `outcome: "unknown"`; 它与先前那条的 `runId` 和 `startedAt` 相同, 读取方可以据此识别并保留先写的一条. 日志只覆盖开启之后由含本功能的 ARW 版本执行的事件; 同一机器上源码检出与已安装运行时版本不同时, 较旧的一方不写记录. Strata 分诊, codex20 套餐窗口与触顶, 各机器的发布环境和 issue 开始的人工标记都不在 ARW 范围内, 由本机工具以同一信封写入, 见 Solution.
+
+### Interface
+
+Effect Log 对外有一个写入操作 `record` 和两个纯计数函数. 计数函数按 Files and records 的规则, 由报告文本数出 `findings` 的条数, 由 `## Comments` 的行数出 `dispositions` 三类; Spec Readiness 与 Commit Audit 在组 `fields` 时调用它们, 使计数规则只有一份; 它们不读文件, 不写日志. `record(kind, fields, {cwd, programDirectory})`: `kind` 取上表类别, `fields` 是该类别的类别字段, 有 `key` 的类别连同 `key` 一起由调用方给出 (也可以是返回该对象的异步函数, 只在开启时调用, 使关闭时不为计数读取任何文件), `programDirectory` 是读取全局配置的 Engine 目录 (关卡命令和后台管理进程用自身入口所属的 Engine 目录, 与安装规格对全局配置的通常读取相同; `install.mjs` 与 `release-vm.mjs` 用固定安装目录), `cwd` 是每次调用提供的仓库根或运行工作目录的路径 (模块按 Files and records 的规则由它求得 `repository`, 只写目录名; 安装与发布验证调用省略它), 调用方不提供 `v`, `ts`; `record` 是异步操作, 返回的 Promise 在记录已追加 (Node `appendFile` 完成) 或已按失败规则吸收后兑现, 从不拒绝, 没有值. 关卡命令和两个脚本在退出前等待它兑现, 所以命令结束时记录已落盘; 后台管理 Module 不等待它, 以免记录写入延迟状态转换, 进程崩溃时尚未完成的追加可能丢失 (见 Dependencies and Data Flow). 配置未启用时 Promise 立即兑现, 不触碰文件系统. 同一进程内写入失败的告警至多一行. 类别字段由调用方保证形状, 模块不再校验 (调用方是仓库内部代码); 类别字段不含正文, 路径和身份由上表的字段定义保证, 调用方只传表中字段, 由每个类别的测试断言; 唯一的信任边界是全局配置, 由全局配置读取层在读取时校验一次. 失败: 目录不可创建, 文件不可追加时吸收并告警; 配置无法读取或 `effectLog` 无效时, 模块在第一次记录时按上文吸收并告警, 不在命令启动时失败.
 
 ## Repository Workflow
 
@@ -702,6 +750,8 @@ Main Agent 或用户负责语义决定. 独立 Reviewer 只返回结果. Module 
 
 `Commit Audit Module` 复用 Repository State Inspector, 通过 Git Runner 读取实时已暂存候选及 HEAD, 验证单 effort 授权范围并推导 Gate 1 和 Gate 2 范围 (含 effort 起点), 准备 Reviewer Request 和空报告, 并从同一份候选只读计算体积摘要, 下一个 ADR 编号和授权 issue 记录的提示行 (只比对文本片段, 不判断记录是否充分). 它还承担 `arw commit-audit verify` 的机械检查和审核轮核对, 额外复用 ARW Artifact 清单, 文本策略和 Platform Adapter 的会话身份. 它不判断语义, 不选择暂存范围, 不承担原生会话控制, 不写受 Git 跟踪文件. Main Agent 协调版本与准确记录差异, 独立 Reviewer 判断当前语义及历史覆盖.
 
+`Effect Log Module` (`lib/effect-log/`) 拥有 Effect Log 一节的合同: 取得已校验的 `effectLog` 配置, 补公共字段, 选择月文件, 追加写入并吸收写入失败, 另提供两个纯计数函数. 它不拥有任何事件的判定, 不读取日志, 不提供查询.
+
 `Agent CLI Launch Module` 接受已经验证的 Agent 配置, 本次参数, 当前目录和子进程 Adapter. 它稳定拼接固定参数与本次参数, 直接启动可执行文件, 等待结束并返回 `exited | failed`. 它不读取全局配置, 不解析公开命令, 不发现当前 Git 仓库, 不创建命令解释器或会话登记表.
 
 `Repository State Inspector` 一次批量只读收集当前 Git 与文件系统事实, 不决定任意变化的语义影响或哪些字节已经获准. `Platform Adapter` 只根据已安装的 Workflow Distribution 与所选平台计算投影. `Repository Workflow Module` 解释事实, 拥有 Profile, 计划, 授权, 写入前重验, 事务, 最后写锁文件, 验证, 移除和初始化后交接. 三者不交换责任.
@@ -807,7 +857,14 @@ flowchart TD
   ReviewerRoot --> BoundReport[绑定临时报告]
   BoundReport --> Readiness
   BoundReport --> Audit
+  Readiness --> EffectLog[Effect Log 模块]
+  Audit --> EffectLog
+  Manager --> EffectLog
+  ReleaseScript[scripts/release-vm.mjs] --> EffectLog
+  EffectLog --> LogFiles[用户配置目录中的月文件]
 ```
+
+Effect Log 的依赖方向: Spec Readiness, Commit Audit, 后台 Agent 管理 Module, `scripts/release-vm.mjs` 和安装 Installer (`install.mjs`, 见安装规格) 依赖 Effect Log; Effect Log 只依赖全局配置读取层 (只读), Node 文件系统和只读 `git rev-parse`, 不被任何判断读取.
 
 规范数据的权威来源如下:
 
@@ -816,6 +873,7 @@ flowchart TD
 | `../agent-repository-workflow-installation/spec.md` 的 Global Engine configuration 节 | 用户自有的 Agent, 编辑器, Reviewer 和后台 Agent 设置, 各字段的消费方与生效范围由安装配置规格拥有 | CLI, Agent CLI Launch Module, 后台 Agent 客户端与管理 Module, 共享 Reviewer 运行 Module | 用户; 安装只执行安装目录配置受治理的结构生命周期 |
 | `../agent-repository-workflow-installation/spec.md` 的 Shared model catalog 节 | 原生与自定义模型描述, ARW 专用提供方上限及 Strata 可变安装目录与档位选择 | 后台 Agent 管理 Module 与共享 App Server | 给原生进程的生成目录只含模型数组; 提供方设置来自 ARW 全局配置, 由管理进程读取, 不把独占 key 写回来源或生成目录 |
 | `../agent-repository-workflow-installation/spec.md` 的 Background Agent management 节 | 单一管理进程的本机控制凭据, Agent, 消息与提供方当前事实共用的 SQLite 数据库及恢复所需事实 | 后台 Agent 管理 Module 与机器入口 | Agent, 消息与提供方当前错误先在内存更新并按需批存, 消息首次成功分发后保留 24 小时; Strata key 领取后立即保存, 确认归还后删除; 重启核对可证实的原生进程, 归属与未确认归还事实, 不放宽容量和回收保证 |
+| 用户 `effectLog.directory` 下的月文件 `effects-<YYYY-MM>.jsonl` | 追加的观察记录, 不是任何事实的权威来源 | 外部读取方的本机统计工具; Engine 从不读取 | Effect Log 模块, 追加调用返回时 |
 | 已安装的 Workflow Distribution | 共享基线, Skill 和平台投影输入 | Platform Adapter, Repository Workflow | 安装过程复制 |
 | 目标 Git 仓库的当前字节 | 当前 Managed Content 和仓库自有状态 | Repository State Inspector, Repository Workflow | Repository Workflow 事务; 外部 Git 工作流提交 |
 | 当前 Git 可见的工作树路径与字节, 请求绑定的不可变候选树条目, 或用户显式选择的 Markdown 路径 | 工作树由当前 Git 仓库与文件系统共同拥有; 候选树由准确 Git 对象 ID 拥有; 显式路径由当前命令参数拥有 | 对应生产 Document Repository Adapter 形成一次稳定路径清单和封闭批量条目, Document Terms Module 从该结果发现并分别检查全部上下文; `language inspect` CLI Adapter 对完整验证后的显式集合执行安全读取 | 仓库级观察无法完整取得时不返回部分上下文; 单份封闭条目失败只进入适用上下文; 显式集合任一输入失败时不输出部分表格; 修复来源或重新绑定候选后完整重跑 |

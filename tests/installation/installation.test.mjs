@@ -1787,3 +1787,23 @@ test('help lists each accepted option without performing any installation operat
     }), 2);
     assert.equal(errors.join('\n'), 'Unknown or repeated option: --help.\nRun node install.mjs --help for usage.');
 });
+
+test('install records one effect per run when the installed configuration enables the log', async t => {
+    const home = await createHome(t);
+    const logDirectory = join(home, 'effects');
+    await mkdir(join(home, '.agent-repository-workflow'));
+    await writeFile(join(home, '.agent-repository-workflow', 'config.json'), `${JSON.stringify({...JSON.parse(TEST_INSTALLATION_PAYLOAD.configSeedBytes.toString('utf8')), effectLog: {directory: logDirectory}})}\n`);
+    assert.equal((await runNonInteractive(home)).result, 0);
+    const blocked = {diagnostics: [{code: 'test-blocked', message: 'simulated', severity: 'error'}], status: /** @type {'blocked'} */ ('blocked')};
+    assert.equal((await runNonInteractive(home, {loadInstallationPayload: async () => blocked})).result, 1);
+    assert.equal((await runInstaller(['--help'], {environment: {HOME: home}, platform: 'linux', stdout: () => {}})), 0);
+    assert.equal((await runInstaller(['--bogus'], {environment: {HOME: home}, platform: 'linux', stderr: () => {}})), 2);
+
+    const [file] = await readdir(logDirectory);
+    const lines = (await readFile(join(logDirectory, file), 'utf8')).trimEnd().split('\n').map(line => JSON.parse(line));
+    assert.deepEqual(lines.map(({v, kind, result, platform, version}) => ({v, kind, result, platform, version})), [
+        {v: 1, kind: 'install', result: 'success', platform: 'linux', version: JSON.parse(TEST_PACKAGE_BYTES.toString('utf8')).version},
+        {v: 1, kind: 'install', result: 'failure', platform: 'linux', version: JSON.parse(TEST_PACKAGE_BYTES.toString('utf8')).version},
+    ]);
+    assert.ok(lines.every(line => Number.isInteger(line.seconds) && !('repository' in line)));
+});

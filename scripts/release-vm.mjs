@@ -9,6 +9,9 @@ import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {isAbbreviatedCommitId} from '../lib/common/git-content.mjs';
+import {parsePackageIdentity} from '../lib/arw-common/product-identity.mjs';
+import {record} from '../lib/effect-log/effect-log.mjs';
+import {resolveInstallation} from '../lib/installation/installation-contract.mjs';
 
 const SSH_WAIT_ATTEMPTS = 60;
 const SSH_WAIT_INTERVAL_MS = 5000;
@@ -132,6 +135,7 @@ const check = async (/** @type {string} */ bundle) => {
 };
 
 let exitCode = 1;
+const startedAt = Date.now();
 try {
     if (operation === 'down') {
         down();
@@ -152,5 +156,14 @@ try {
 } finally {
     rmSync(workspace, {force: true, recursive: true});
 }
-if (operation === 'check') process.stdout.write(`${machineKey}: ${exitCode === 0 ? 'PASS' : 'FAIL'}\n`);
+if (operation === 'check') {
+    process.stdout.write(`${machineKey}: ${exitCode === 0 ? 'PASS' : 'FAIL'}\n`);
+    // The Effect Log reads the host's installed global configuration; a host without it or with the log off records nothing.
+    try {
+        await record('release-validation', {
+            machine: machineKey, result: exitCode === 0 ? 'pass' : 'fail', seconds: Math.round((Date.now() - startedAt) / 1000),
+            version: parsePackageIdentity(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'))).version,
+        }, {programDirectory: resolveInstallation(process.env, process.platform).directory});
+    } catch { /* the host has no resolvable installation */ }
+}
 process.exitCode = exitCode;

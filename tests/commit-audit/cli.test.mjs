@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import {mkdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
-import {dirname, join} from 'node:path';
+import {basename, dirname, join} from 'node:path';
 import {test} from 'node:test';
 
 import {parseCommand, UsageError} from '../../lib/arw.mjs';
 import {prepareCommitAudit, verifyCommitAudit} from '../../lib/commit-audit/commit-audit.mjs';
 import {reviewerRecoveryPath} from '../../lib/reviewer-runtime/reviewer-session-record.mjs';
-import {createRepository, run, writeArtifact, writeIssue} from '../helpers/arw-cli.mjs';
+import {createRepository, run, writeArtifact, writeConfig, writeIssue} from '../helpers/arw-cli.mjs';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {commitAll, runGit} from '../helpers/git.mjs';
 
 const issueText = (/** @type {string} */ status) => `# Implement workflow\n\nStatus: ${status}\n\n## What to build\n\nImplement.\n\n## Acceptance criteria\n\n- [ ] Complete.\n\n## Blocked by\n\n- None\n`;
@@ -516,4 +517,54 @@ test('verify retains diff-tree diagnostics alongside missing Reviewer reports', 
     assert.match(errors, /git diff-tree[^]*failed:[^]*bad (?:tree )?object/u);
     assert.match(errors, /code-standards-reviewer report is empty/u);
     assert.match(errors, /requirements-reviewer report is empty/u);
+});
+
+test('commit-audit commands append Effect Log records for rounds and the passing result, (nothing for --non-implementation)', async t => {
+    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    const environment = {CLAUDECODE: process.env.CLAUDECODE, CODEX_THREAD_ID: process.env.CODEX_THREAD_ID};
+    t.after(() => Object.assign(process.env, environment));
+    delete process.env.CLAUDECODE;
+    process.env.CODEX_THREAD_ID = 'effect-session';
+    const logDirectory = join(await createTemporaryDirectory(t, 'arw-effect-'), 'log');
+    await writeConfig(repository.programDirectory, {agents: {}, configVersion: 3, editor: {args: ['{file}'], command: 'code'}, effectLog: {directory: logDirectory}, jira: {listLimit: 50}, reviewEditor: {args: ['--wait', '{file}'], command: 'code'}});
+    const lines = async () => (await readFile(join(logDirectory, `effects-${new Date().toISOString().slice(0, 7)}.jsonl`), 'utf8').catch(() => '')).split('\n').filter(Boolean).map(line => JSON.parse(line));
+    const input = {authorizingIssueIds: ['issue:0001:01']};
+
+    const first = await run(['commit-audit', 'prepare', '--input', await writeInput(repository.root, input)], repository);
+    assert.equal(first.result, 0);
+    await writeReports(first.events[0].message, ['requirements-reviewer'], '- one\n- two\n');
+    await writeReports(first.events[0].message, ['code-standards-reviewer'], 'No problems.\n');
+    assert.equal((await run(['commit-audit', 'verify'], repository)).result, 0);
+    assert.deepEqual((await lines()).map(record => record.kind), ['gate-round', 'gate-result']);
+    assert.deepEqual((await lines())[1].findings, {'code-standards-reviewer': [0], 'requirements-reviewer': [2]});
+
+    await writeFile(join(repository.root, 'implementation.mjs'), `${implementation}export const fixed = true;\n`, 'utf8');
+    await runGit(repository.root, ['add', 'implementation.mjs']);
+    const second = await run(['commit-audit', 'prepare', '--input', await writeInput(repository.root, input)], repository);
+    await writeReports(second.events[0].message);
+    await stageIssue(repository.root, `${issueText('ready-for-agent')}\n## Comments\n\n- 台账: 转入后续 issue 0002\n- 台账: 记录不修 a\n- 台账: 记录不修 b\n- 台账: 冲突裁决 c\n- 普通评论\n`);
+    assert.equal((await run(['commit-audit', 'verify'], repository)).result, 0);
+    assert.equal((await run(['commit-audit', 'verify'], repository)).result, 0);
+
+    const records = await lines();
+    assert.deepEqual(records.map(record => record.kind), ['gate-round', 'gate-result', 'gate-round', 'gate-result', 'gate-result']);
+    assert.deepEqual(records[2].issues, ['issue:0001:01']);
+    assert.equal(records[0].repository, basename(repository.root));
+    const result = records[3];
+    assert.deepEqual([result.gate, result.result, result.rounds, result.issues], ['commit-audit', 'pass', 2, ['issue:0001:01']]);
+    assert.deepEqual(result.dispositions, {'follow-up': 1, 'not-fixed': 2, arbitration: 1});
+    assert.match(result.key, /^commit-audit:[0-9a-f]+$/u);
+    assert.equal(records[4].key, result.key);
+    assert.notEqual(records[1].key, result.key);
+    assert.equal(JSON.stringify(result).includes(repository.root), false);
+});
+
+test('commit-audit verify --non-implementation writes no Effect Log record', async t => {
+    const repository = await createRepository(t);
+    const logDirectory = join(await createTemporaryDirectory(t, 'arw-effect-'), 'log');
+    await writeConfig(repository.programDirectory, {agents: {}, configVersion: 3, editor: {args: ['{file}'], command: 'code'}, effectLog: {directory: logDirectory}, jira: {listLimit: 50}, reviewEditor: {args: ['--wait', '{file}'], command: 'code'}});
+    await writeArtifact(repository.root, '0001-notes', 'spec.md', '# Spec\n');
+    await runGit(repository.root, ['add', '.']);
+    assert.equal((await run(['commit-audit', 'verify', '--non-implementation'], repository)).result, 0);
+    await assert.rejects(readFile(logDirectory, 'utf8'), {code: 'ENOENT'});
 });

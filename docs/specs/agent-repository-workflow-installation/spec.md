@@ -77,7 +77,7 @@ Installation Payload Module 验证清单的封闭结构, 平台启动器选择, 
 
 ## Global Engine configuration
 
-使用全局配置的命令在解析公开命令后读取其入口自然所属 Engine 目录中的 `config.json`, 不使用配置的命令不读取它, 缺少配置时无效命令仍返回用法错误. 不增加模式参数, 路径探测或第二套选择逻辑. 源码仓库入口的 Engine 目录没有 `config.json` 时, 普通读取使用同目录 `config.install.json` 的内容作为默认值, 不写配置.
+使用全局配置的命令在解析公开命令后读取其入口自然所属 Engine 目录中的 `config.json`, 不使用配置的命令不读取它 (唯一例外: 开启 Effect Log 的记录读取一次, 关卡命令在记录时读取, `install.mjs` 与发布验证脚本读取固定安装目录, 读取失败只告警, 不使命令失败, 见 `../agent-repository-workflow/spec.md` 的 Effect Log 节), 缺少配置时无效命令仍返回用法错误. 不增加模式参数, 路径探测或第二套选择逻辑. 源码仓库入口的 Engine 目录没有 `config.json` 时, 普通读取使用同目录 `config.install.json` 的内容作为默认值, 不写配置.
 
 当前已知结构使用 `configVersion: 3`:
 
@@ -179,8 +179,10 @@ Reviewer 的全局设置来自调用入口自然所属 Engine 目录中的 `conf
 | v3 | `backgroundAgent.persistenceIntervalMs` | false | `1000` |
 | v3 | `backgroundAgent.earlyExitNotificationThreshold` | false | `10` |
 | v3 | `backgroundAgent.providers` | false | `{"openai":{"maxInstances":4},"anthropic":{"maxInstances":4}}` |
+| v3 | `effectLog` | false | - |
+| v3 | `effectLog.directory` | false | - |
 
-每个版本验证器是 `agents`, `editor`, `reviewEditor`, `jira`, `backgroundAgent` (含 `providers` 为对象且各条目为对象这一结构) 和 Reviewer 配置已知结构与取值的唯一校验权威; `providers` 条目内部字段由 Shared model catalog 节在后台运行时核对. `v1` 的 `conversions` 为空. `v3` 的唯一版本转换把 `configVersion` 从同路径的 `1` 转成 `3`. `agents` 和 `editor` 走普通保留流程; `reviewEditor` 和 `jira` 作为新必需父级创建, 并从 v3 叶字段默认值构造. `reviewers` 与 `backgroundAgent` 按上方配置合同补入缺失默认值, 已有的有效配置保留. 规则对象测试必须证明 `configVersion` 的旧默认值转换后与新默认值语义相等.
+每个版本验证器是 `agents`, `editor`, `reviewEditor`, `jira`, `backgroundAgent` (含 `providers` 为对象且各条目为对象这一结构), `effectLog` 和 Reviewer 配置已知结构与取值的唯一校验权威; `effectLog` 的消费方是 Effect Log 模块, 每个进程首次记录时从该进程读取全局配置的位置读取一次, 后台管理进程重启前不感知修改, 安装不补入它, 对象存在而缺 `directory` 判为无效, 记录合同见 `../agent-repository-workflow/spec.md` 的 Effect Log 节; `providers` 条目内部字段由 Shared model catalog 节在后台运行时核对. `v1` 的 `conversions` 为空. `v3` 的唯一版本转换把 `configVersion` 从同路径的 `1` 转成 `3`. `agents` 和 `editor` 走普通保留流程; `reviewEditor` 和 `jira` 作为新必需父级创建, 并从 v3 叶字段默认值构造. `reviewers` 与 `backgroundAgent` 按上方配置合同补入缺失默认值, 已有的有效配置保留. 规则对象测试必须证明 `configVersion` 的旧默认值转换后与新默认值语义相等.
 
 配置文件不存在时, 安装从当前 `configSeed` 创建完整 v3 配置, 包含上述三角色 Reviewer 默认值与四项后台 Agent 默认值; 初始文件不含 `backgroundAgent.providers`, 其默认值与遗留提供方迁移由同一配置事务按 Shared model catalog 节补入. `configSeed` 只负责首次创建和 `--reinitialize-config true`, 不参与现有配置的默认值, 字段顺序, 验证器或升级计算. 对现有配置执行安装或更新时, Installation 把当前完整 UTF-8 配置字节和全局规则对象交给 Configuration Conversion Module, 并只消费完整成功结果. 当前版本转换成功仍逐字节保留原输入; 缺失默认值的补入是明确的安装写入, 保留已有值及无关文本. 升级或默认补入后的完整配置字节统一进入安装事务, 没有缺失值或版本变化时不重写配置.
 
@@ -436,6 +438,7 @@ flowchart TD
   Runtime[Runtime Compatibility Module] --> Bootstrap
   Runtime --> Installer[Installer CLI Adapter]
   Installer --> Install
+  Installer --> EffectLog[Effect Log 模块]
   Local[本地源码仓库] --> Source[安装来源]
   Checkout --> ReleaseSource[Release Source Adapter]
   ReleaseSource --> Source

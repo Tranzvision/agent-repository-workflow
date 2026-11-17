@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0136:01",
+  "request": {
+    "digest": "4f622ee96e8c6b9e1efd178634c1369f0e41937181fa1b0f43974ac23de4f378",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0136_01/spec-readiness/requests/request-0c8d2397-dc4d-477a-8572-903066d09ec1.json",
+    "id": "0c8d2397-dc4d-477a-8572-903066d09ec1"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0136-effect-log/spec.md",
+      "role": "governing-spec",
+      "sha256": "f16e7c7eefae6b90ea0c5968d71805e4d76827f8f1a107908806db9fb777d59e"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/adr/0030-use-user-wide-background-agent-management.md",
+      "role": "adr",
+      "sha256": "afffe17adcf95c931864009d198408c2d8afb97d867c1ba20cef04fc7385abd1"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-installation/spec.md",
+      "role": "governing-spec",
+      "sha256": "014de88111962b9806b2de7ac0da82d207f47137f51ed0969a78ab02bf1ec399"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "31f90d570df841e9e011a159b70b70272f0ab731acf7e3d0dbf63cc3dd801bda"
+    },
+    {
+      "filePath": "lib/background-agent/recovery-state.mjs",
+      "role": "architecture-evidence",
+      "sha256": "6da2ae3240e7507b6f4f9fecb889c9765c55ed609df846c3c3609f5e1f793838"
+    },
+    {
+      "filePath": "scripts/release-vm.mjs",
+      "role": "architecture-evidence",
+      "sha256": "7600518a12116f777d974bb355149cb0628dad0dd3f9316239e2933b117d740b"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0136-effect-log/issues/01-effect-log.md",
+    "sha256": "338a1fc0279177532db5535efdefd728b6de724943370429c581ca7df3745697"
+  },
+  "result": "satisfied"
+}

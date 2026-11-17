@@ -3,7 +3,8 @@ import {mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {basename, dirname, join} from 'node:path';
 import test from 'node:test';
 
-import {createRepository, run, writeArtifact, writeIssue} from '../helpers/arw-cli.mjs';
+import {createRepository, run, writeArtifact, writeConfig, writeIssue} from '../helpers/arw-cli.mjs';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 
 test('spec readiness prepare accepts JSON stdin and emits a minimal reviewer request', async t => {
     const repository = await createRepository(t);
@@ -177,4 +178,71 @@ test('spec readiness CLI covers immutable request, generate, promote, verify, an
     assert.equal((await run(['spec-readiness', 'promote', '--input', exception.events[0].message], repository, {specReadinessDependencies: dependencies})).result, 0);
     assert.equal((await run(['spec-readiness', 'verify', '--issue', 'issue:0001:01', '--subject-only'], repository)).result, 0);
     assert.equal((await run(['spec-readiness', 'verify', '--subject-only'], repository)).result, 2);
+});
+
+test('spec readiness commands append Effect Log records when it is enabled, and a write failure only adds one warning', async t => {
+    const repository = await createRepository(t);
+    const spec = '# Test spec\n\n## Module Design\n\nNot required: No module boundary changes.\n';
+    const issue = '# Implement workflow\n\nStatus: ready-for-agent\n\n## What to build\n\nImplement.\n\n## Acceptance criteria\n\n- [ ] Complete.\n\n## Blocked by\n\n- None\n';
+    const dependencies = {platformAdapter: {getCurrentAgentIdentity: () => ({platform: /** @type {const} */ ('codex'), sessionId: 'effect-test'})}};
+    await writeArtifact(repository.root, '0001-workflow', 'spec.md', spec);
+    await writeIssue(repository.root, '0001-workflow', '01-implement.md', issue);
+    await mkdir(join(repository.root, 'docs', 'agents', 'roles'), {recursive: true});
+    await writeFile(join(repository.root, 'docs', 'agents', 'roles', 'spec-readiness-reviewer.md'), '# Reviewer\n', 'utf8');
+    await writeFile(join(repository.root, 'docs', 'agents', 'reviewer.md'), '# Reviewer rules\n', 'utf8');
+    const stdin = JSON.stringify({inputs: [{filePath: '.scratch/0001-workflow/spec.md', role: 'governing-spec'}]});
+    const prepareArgs = ['spec-readiness', 'prepare', '--issue', 'issue:0001:01'];
+    const logDirectory = join(await createTemporaryDirectory(t, 'arw-effect-'), 'log');
+    const lines = async () => (await readFile(join(logDirectory, `effects-${new Date().toISOString().slice(0, 7)}.jsonl`), 'utf8').catch(() => '')).split('\n').filter(Boolean).map(line => JSON.parse(line));
+
+    await writeConfig(repository.programDirectory, {agents: {}, configVersion: 3, editor: {args: ['{file}'], command: 'code'}, effectLog: {directory: logDirectory}, jira: {listLimit: 50}, reviewEditor: {args: ['--wait', '{file}'], command: 'code'}});
+    const prepared = await run(prepareArgs, repository, {specReadinessDependencies: dependencies, stdin});
+    assert.equal(prepared.result, 0);
+    assert.equal(prepared.events.some(event => event.message.includes('effect log')), false);
+    const draftPath = join(prepared.events[0].message, 'report', 'draft.txt');
+    const generate = ['spec-readiness', 'generate', '--issue', 'issue:0001:01', '--input', draftPath];
+    await writeFile(draftPath, '- a\n  - nested\n- b\n', 'utf8');
+    assert.equal((await run(generate, repository, {specReadinessDependencies: dependencies})).result, 0);
+    await writeFile(draftPath, 'No problems.\n', 'utf8');
+    const generated = await run(generate, repository, {specReadinessDependencies: dependencies});
+    assert.equal(generated.result, 0);
+    assert.equal((await run(['spec-readiness', 'promote', '--input', generated.events[0].message], repository, {specReadinessDependencies: dependencies})).result, 0);
+    assert.equal((await run(['spec-readiness', 'verify', '--issue', 'issue:0001:01', '--subject-only'], repository)).result, 0);
+    assert.equal((await run(['spec-readiness', 'verify', '--issue', 'issue:0001:01'], repository)).result, 0);
+
+    const records = await lines();
+    const roundName = basename(prepared.events[0].message);
+    assert.deepEqual(records.map(({kind, gate, result}) => [kind, gate, result]), [
+        ['gate-round', 'spec-readiness', undefined],
+        ['gate-result', 'spec-readiness', 'gap'],
+        ['gate-result', 'spec-readiness', 'satisfied'],
+        ['gate-verify', 'spec-readiness', undefined],
+    ]);
+    assert.equal(records[0].repository, basename(repository.root));
+    assert.deepEqual(records[0].issues, ['issue:0001:01']);
+    assert.deepEqual(records[1].findings, {[roundName]: 2});
+    assert.deepEqual(records[2].findings, {[roundName]: 0});
+    assert.equal(records.some(record => JSON.stringify(record).includes(repository.root)), false);
+
+    await rm(logDirectory, {recursive: true});
+    await writeFile(logDirectory, 'not a directory', 'utf8');
+    const failed = await run(['spec-readiness', 'verify', '--issue', 'issue:0001:01'], repository);
+    assert.equal(failed.result, 0);
+    assert.deepEqual(failed.events.map(event => event.channel), ['stdout', 'stderr']);
+    assert.match(failed.events[1].message, /^warning: effect log not written: \w+$/u);
+});
+
+test('spec readiness prepare writes no Effect Log file when it is not enabled', async t => {
+    const repository = await createRepository(t);
+    await writeArtifact(repository.root, '0001-workflow', 'spec.md', '# Test spec\n\n## Module Design\n\nNot required: No module boundary changes.\n');
+    await writeIssue(repository.root, '0001-workflow', '01-implement.md', '# Implement workflow\n\nStatus: ready-for-agent\n\n## What to build\n\nImplement.\n\n## Acceptance criteria\n\n- [ ] Complete.\n\n## Blocked by\n\n- None\n');
+    await mkdir(join(repository.root, 'docs', 'agents', 'roles'), {recursive: true});
+    await writeFile(join(repository.root, 'docs', 'agents', 'roles', 'spec-readiness-reviewer.md'), '# Reviewer\n', 'utf8');
+    await writeFile(join(repository.root, 'docs', 'agents', 'reviewer.md'), '# Reviewer rules\n', 'utf8');
+    const prepared = await run(['spec-readiness', 'prepare', '--issue', 'issue:0001:01'], repository, {
+        specReadinessDependencies: {platformAdapter: {getCurrentAgentIdentity: () => ({platform: 'codex', sessionId: 'off-test'})}},
+        stdin: JSON.stringify({inputs: [{filePath: '.scratch/0001-workflow/spec.md', role: 'governing-spec'}]}),
+    });
+    assert.equal(prepared.result, 0);
+    assert.equal(prepared.events.some(event => event.message.includes('effect log')), false);
 });

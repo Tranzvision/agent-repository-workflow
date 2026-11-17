@@ -206,3 +206,14 @@ test('global configuration rules upgrade v1 directly to the complete ordered v3 
         unknownPaths: ['extension'],
     });
 });
+
+test('effectLog accepts only an absolute directory and is never defaulted', () => {
+    const base = {agents: {}, configVersion: 3, editor: {args: ['{file}'], command: 'code'}, jira: {listLimit: 50}, reviewEditor: {args: ['--wait', '{file}'], command: 'code'}};
+    assert.equal(validateConfig(base).effectLog, undefined);
+    assert.deepEqual(validateConfig({...base, effectLog: {directory: '/var/arw-effects'}}).effectLog, {directory: '/var/arw-effects'});
+    for (const effectLog of ['x', null, [], {}, {directory: ''}, {directory: 'relative/dir'}, {directory: 7}, {directory: '/abs', extra: 1}]) {
+        assert.throws(() => validateConfig({...base, effectLog}), /effectLog/u);
+    }
+    const paths = GLOBAL_CONFIGURATION_RULES.versions[1].fields.filter((/** @type {{path: string}} */ field) => field.path.startsWith('effectLog'));
+    assert.deepEqual(paths.map((/** @type {{path: string, required: boolean, defaultValue?: unknown}} */ field) => [field.path, field.required, field.defaultValue]), [['effectLog', false, undefined], ['effectLog.directory', false, undefined]]);
+});

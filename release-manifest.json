@@ -107,6 +107,8 @@
     "lib/common/windows-powershell.mjs",
     "lib/document-terms/document-terms-repository.mjs",
     "lib/document-terms/document-terms.mjs",
+    "lib/effect-log/effect-log.mjs",
+    "lib/effect-log/gate-counts.mjs",
     "lib/installation/cli-prompt.mjs",
     "lib/installation/installation-contract.mjs",
     "lib/installation/uninstallation.mjs",

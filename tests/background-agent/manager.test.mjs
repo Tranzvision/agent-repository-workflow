@@ -42,7 +42,7 @@ function nativeHarness({blockedStart=false,unsafeIdle=false,failStart=false,inco
   /** @type {(() => void)|null} */
   let releaseStart=null;
   const startGate=blockedStart?new Promise(resolve=>{releaseStart=()=>resolve(undefined);}):Promise.resolve();
-  /** @type {Map<string,{id:string,ended:boolean,active:boolean,turnId:string|null,turnCount:number,onNotification:(notification:import('../../lib/background-agent/native-session.mjs').NativeNotification)=>void}>} */
+  /** @type {Map<string,{id:string,ended:boolean,active:boolean,turnId:string|null,turnStatus:string|null,turnCount:number,onNotification:(notification:import('../../lib/background-agent/native-session.mjs').NativeNotification)=>void}>} */
   const roots=new Map();
   const nativeSessions=/** @type {import('../../lib/background-agent/native-session.mjs').NativeSessions} */ ({
     async ensureServer({onPreviousExit}={}){
@@ -58,10 +58,10 @@ function nativeHarness({blockedStart=false,unsafeIdle=false,failStart=false,inco
       openCount++;
       openedSettings.push(actualSettings);
       openedProviderConnections.push(providerConnection);
-      const item={id:`thread-${openCount}`,ended:false,active:false,turnId:/** @type {string|null} */(null),turnCount:0,onNotification};
+      const item={id:`thread-${openCount}`,ended:false,active:false,turnId:/** @type {string|null} */(null),turnStatus:/** @type {string|null} */(null),turnCount:0,onNotification};
       roots.set(/** @type {string} */(runId),item);
       const member=()=>({threadId:item.id,parentThreadId:null,state:item.ended?'exited':item.active?'active':'idle',
-        turnId:item.turnId,sessionPath:`/native/${item.id}.jsonl`,modelProvider:'test',
+        turnId:item.turnId,turnStatus:item.turnStatus,sessionPath:`/native/${item.id}.jsonl`,modelProvider:'test',
         contexts:[],usage:{inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:0,outputTokens:0,
           reasoningOutputTokens:0,totalTokens:0},finalResponse:null,hasConversationHistory:true});
       return {
@@ -69,7 +69,7 @@ function nativeHarness({blockedStart=false,unsafeIdle=false,failStart=false,inco
           return{threadId:item.id,sessionPath:`/native/${item.id}.jsonl`};},
         async resume({threadId}){if(failResume)throw new Error('Native thread restore failed.');resumedThreads.push(threadId);item.id=threadId;return{threadId,sessionPath:`/native/${threadId}.jsonl`};},
         async startTurn({handoff}){turnInputs.push(handoff);if(failTurn)throw new Error('Native reply was lost.');
-          item.active=true;item.turnCount++;item.turnId=item.turnCount===1?'turn':`turn-${item.turnCount}`;return{turnId:item.turnId};},
+          item.active=true;item.turnStatus='inProgress';item.turnCount++;item.turnId=item.turnCount===1?'turn':`turn-${item.turnCount}`;return{turnId:item.turnId};},
         async steer({turnId}){return{turnId};},
         async snapshot(){return{rootThreadId:item.id,environmentState:item.ended?'exited':'running',
           members:[member()],factsComplete:!incompleteFacts,unknownReasons:incompleteFacts?['member discovery incomplete']:[],
@@ -88,9 +88,11 @@ function nativeHarness({blockedStart=false,unsafeIdle=false,failStart=false,inco
   return {nativeSessions,openedSettings,openedProviderConnections,resumedThreads,turnInputs,releaseStart:()=>releaseStart?.(),
     get openCount(){return openCount;},get closeCount(){return closeCount;},get rootStops(){return rootStops;},get startCount(){return startCount;},
     get serverStarts(){return serverStarts;},set failResume(/** @type {boolean} */ value){failResume=value;},
+    /** @param {string} runId */
+    vanish(runId){const item=roots.get(runId);assert.ok(item);item.ended=true;},
     exitServer(){serverRunning=false;serverExited=true;for(const item of roots.values())if(!item.ended)item.onNotification({type:'exited',reason:null});},
     /** @param {string} runId */
-    finish(runId){const item=roots.get(runId);assert.ok(item);item.active=false;
+    finish(runId,/** @type {string|null} */ turnStatus=null){const item=roots.get(runId);assert.ok(item);item.active=false;item.turnStatus=turnStatus;
       item.onNotification({type:'changed',threadId:item.id,turnId:null});},
   };
 }
@@ -113,8 +115,10 @@ async function harness(t,options={}){
     clearTimeout:/** @param {{handler:()=>void,delay:number,unref:()=>void}} timer */timer=>{timers.delete(timer);}}));
   const native=nativeHarness(options);
   const stateStore=createBackgroundAgentStateStore({runtimeDirectory:directory,clock});
+  /** @type {Array<{kind:string,fields:Record<string,unknown>,cwd:string}>} */
+  const effects=[];
   const manager=created=await createBackgroundAgentManager({nativeSessions:native.nativeSessions,maxInstances:options.maxInstances??2,
-    stateStore,clock,modelCatalog:options.providers?{getProviders:async()=>options.providers??{}}:undefined,
+    stateStore,clock,recordEffect:async(kind,fields,cwd)=>{effects.push({kind,fields,cwd});},modelCatalog:options.providers?{getProviders:async()=>options.providers??{}}:undefined,
     createStrataDriver:options.createStrataDriver});
   const start=(ownerId='main-1',runSettings=settings,stateDirectory=directory)=>manager.execute({ownerId,controllerId:ownerId,operation:'spawn_agent',input:{
     role:'generic',settings:runSettings,cwd:directory,stateDirectory,readPaths:[],writePaths:[],
@@ -123,7 +127,7 @@ async function harness(t,options={}){
   /** @param {string} runId @param {string} operation @param {Record<string,unknown>} [input] @param {string} [ownerId] */
   const execute=(runId,operation,input={},ownerId='main-1')=>
     manager.execute({ownerId,controllerId:ownerId,operation,input:{runId,...input}});
-  return {manager,native,stateStore,clock,start,execute,directory,
+  return {manager,native,stateStore,clock,start,execute,directory,effects,
     /** @param {number} delay */ fireTimeout(delay){const timer=[...timers].find(item=>item.delay===delay);
       assert.ok(timer);timers.delete(timer);timer.handler();}};
 }
@@ -1531,4 +1535,72 @@ test('a task with changed settings unloads the idle root although another caller
   try{await preparing;}finally{releaseInspection();releaseTask();}
   assert.equal(fake.native.rootStops,1);
   assert.equal(fake.native.openCount,2);
+});
+
+test('agent-task records each working to ended or unknown transition once, with the outcome from native facts',async t=>{
+  const fake=await harness(t,{maxInstances:3});
+  const task=async(/** @type {string|null} */ turnStatus)=>{
+    const started=result(await fake.start(`owner-${fake.effects.length}`));
+    await waitDelivered(fake.stateStore,started.messageId);
+    fake.native.finish(started.runId,turnStatus);await tick();
+    return started.runId;
+  };
+  const runId=await task('completed');
+  assert.deepEqual(fake.effects,[{kind:'agent-task',cwd:fake.directory,fields:{runId,role:'generic',provider:'test',model:'test',effort:'high',startedAt:1,finishedAt:1,outcome:'completed'}}]);
+  await task('failed');await task(null);await task('interrupted');
+  assert.deepEqual(fake.effects.map(item=>item.fields.outcome),['completed','failed','unknown','stopped']);
+  assert.equal(fake.effects[2].fields.finishedAt,1,'an ended task keeps its finish time even when the outcome is unknown');
+  const stopped=result(await fake.start('owner-stop'));await waitDelivered(fake.stateStore,stopped.messageId);
+  await fake.manager.proxy(fake.manager.owned(stopped.runId,'owner-stop','owner-stop')).stop();
+  assert.equal(fake.effects.at(-1)?.fields.outcome,'stopped');
+  const before=fake.effects.length;
+  await fake.execute(runId,'unload_agent',{},'owner-0');
+  assert.equal(fake.effects.length,before,'a task already ended writes nothing when unloaded');
+});
+
+test('agent-task records a start failure as failed and a task turned unknown with no finish time',async t=>{
+  const failing=await harness(t,{failStart:true});
+  const started=result(await failing.start());
+  await waitFailedDelivery(failing.stateStore,started.messageId,'failed');
+  await tick();
+  assert.deepEqual(failing.effects.map(item=>[item.kind,item.fields.outcome,item.fields.startedAt]),[['agent-task','failed',null]]);
+  const lost=await harness(t);
+  const run=result(await lost.start());await waitDelivered(lost.stateStore,run.messageId);
+  lost.native.vanish(run.runId);await lost.execute(run.runId,'list_agents');
+  assert.deepEqual(lost.effects.map(item=>[item.fields.outcome,item.fields.finishedAt]),[['unknown',null]]);
+});
+
+test('restart recovery records a working task that became unknown, and nothing for an idle one', async t=>{
+  const fake=await harness(t,{maxInstances:2});
+  const working=result(await fake.start('main-1'));await waitDelivered(fake.stateStore,working.messageId);
+  const idle=result(await fake.start('main-2'));await waitDelivered(fake.stateStore,idle.messageId);
+  fake.native.finish(idle.runId,'completed');await tick();
+  fake.effects.length=0;
+  await fake.stateStore.flush();await fake.manager.close();
+  /** @type {unknown[]} */
+  const recorded=[];
+  const stateStore=createBackgroundAgentStateStore({runtimeDirectory:fake.directory,clock:fake.clock});
+  const restored=await createBackgroundAgentManager({nativeSessions:{...fake.native.nativeSessions,async close(){return {environmentState:/** @type {const} */('exited'),previousProcessState:/** @type {const} */('ended')};}},
+    maxInstances:2,stateStore,clock:fake.clock,recordEffect:async(kind,fields)=>{recorded.push([kind,fields.runId,fields.outcome,fields.finishedAt]);}});
+  assert.deepEqual(recorded,[['agent-task',working.runId,'unknown',null]]);
+  await restored.close();
+});
+
+test('agent-continuation is recorded for a newly accepted program instruction and not for a resumed Main message',async t=>{
+  const fake=await harness(t);
+  const started=result(await fake.start());await waitDelivered(fake.stateStore,started.messageId);
+  const observed=result(await fake.execute(started.runId,'list_agents'));
+  const session=fake.manager.proxy(fake.manager.owned(started.runId,'main-1','main-1'));
+  await session.protectTurn({rootThreadId:observed.threadId,turnId:observed.turnId});
+  fake.native.finish(started.runId,'completed');await tick();
+  if(!session.continueTask)throw new Error('Managed continuation missing');
+  await session.continueTask({rootThreadId:observed.threadId,endedTurnId:observed.turnId,instruction:'Continue.',onAccepted:()=>{}});
+  assert.deepEqual(fake.effects.filter(item=>item.kind==='agent-continuation'),[{kind:'agent-continuation',cwd:fake.directory,fields:{runId:started.runId,role:'generic',provider:'test'}}]);
+  const again=result(await fake.execute(started.runId,'list_agents'));
+  fake.native.finish(started.runId,'completed');await fake.execute(started.runId,'list_agents');
+  await session.releaseProtectedTurn({rootThreadId:again.threadId,turnId:again.turnId});
+  const queued=result(await fake.execute(started.runId,'send_message',{message:'queued instruction'}));
+  await session.protectTurn({rootThreadId:again.threadId,turnId:again.turnId});
+  await session.continueTask({rootThreadId:again.threadId,endedTurnId:again.turnId,instruction:'ignored',messageId:queued.messageId,onAccepted:()=>{}});
+  assert.equal(fake.effects.filter(item=>item.kind==='agent-continuation').length,1);
 });

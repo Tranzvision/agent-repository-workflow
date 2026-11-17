@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {chmod, copyFile, mkdir, readFile, writeFile} from 'node:fs/promises';
-import {join} from 'node:path';
+import {chmod, copyFile, mkdir, readdir, readFile, symlink, writeFile} from 'node:fs/promises';
+import {join, resolve} from 'node:path';
 import test from 'node:test';
 
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
@@ -75,8 +75,8 @@ const setup = async t => {
     const root = async (name, local) => {
         await mkdir(join(directory, name, 'scripts'), {recursive: true});
         await copyFile('scripts/release-vm.mjs', join(directory, name, 'scripts', 'release-vm.mjs'));
-        await mkdir(join(directory, name, 'lib', 'common'), {recursive: true});
-        await copyFile('lib/common/git-content.mjs', join(directory, name, 'lib', 'common', 'git-content.mjs'));
+        await symlink(resolve('lib'), join(directory, name, 'lib'));
+        await copyFile('package.json', join(directory, name, 'package.json'));
         if (local !== undefined) await writeFile(join(directory, name, '.arw.local.json'), local);
         return (/** @type {string[]} */ args, cwd = directory) => runProcess(process.execPath, [join(directory, name, 'scripts', 'release-vm.mjs'), ...args], {cwd, env: process.env});
     };
@@ -211,3 +211,26 @@ esac
         assert.equal(result.stderr.includes('cleanup revert failure'), !keep);
     });
 }
+
+test('release-vm check records one release-validation effect per machine unless the arguments were invalid', async t => {
+    const {directory, write, machine, bundle, archive} = await setup(t);
+    const home = join(directory, 'home');
+    const logDirectory = join(directory, 'effects');
+    await mkdir(join(home, '.agent-repository-workflow'), {recursive: true});
+    await writeFile(join(home, '.agent-repository-workflow', 'config.json'), JSON.stringify({agents: {}, configVersion: 3, editor: {args: ['{file}'], command: 'code'}, jira: {listLimit: 50}, reviewEditor: {args: ['--wait', '{file}'], command: 'code'}, effectLog: {directory: logDirectory}}));
+    await write('vm.json', {fixturesDirectory: directory, machines: {M: machine, Down: {...machine, nodeExecutables: {recommended: '/missing/node'}}}});
+    await installFakeCommand(t, directory, 'ssh', 'case "$*" in *missing*) exit 1;; esac\n');
+    const script = join(directory, 'repo', 'scripts', 'release-vm.mjs');
+    const check = (/** @type {string[]} */ args) => runProcess(process.execPath, [script, 'check', ...args, '--config', join(directory, 'vm.json')], {env: {...process.env, HOME: home}});
+    assert.equal((await check(['M', bundle, '--archive', archive])).status, 'exited');
+    assert.ok((await check(['Down', bundle, '--archive', archive])).status === 'exited');
+    assert.ok((await check(['M', bundle])).status === 'exited');
+    const [file] = await readdir(logDirectory);
+    const lines = (await readFile(join(logDirectory, file), 'utf8')).trimEnd().split('\n').map(line => JSON.parse(line));
+    const {version} = JSON.parse(await readFile('package.json', 'utf8'));
+    assert.deepEqual(lines.map(({v, kind, machine: name, result, version: recorded}) => ({v, kind, machine: name, result, version: recorded})), [
+        {v: 1, kind: 'release-validation', machine: 'M', result: 'pass', version},
+        {v: 1, kind: 'release-validation', machine: 'Down', result: 'fail', version},
+    ]);
+    assert.ok(lines.every(line => Number.isInteger(line.seconds) && !('repository' in line)));
+});
