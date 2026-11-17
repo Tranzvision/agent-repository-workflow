@@ -1,6 +1,6 @@
 # 修复 Strata 核实的低严重度行为缺陷 (先复现)
 
-Status: ready-for-agent
+Status: wontfix
 
 ## What to build
 
@@ -31,3 +31,4 @@ Status: ready-for-agent
 - 暂不含两项中严重度行为 (Code Map 身份三处规则不一, 两个 `compareText` 排序不同): 要先定哪套规则为准, 是设计决定, 见报告.
 - Spec Readiness 记 `not-applicable` (逐项修成与已有规格一致的行为, 不新增规则).
 - 2026-11-18: 原 Blocked by 0131 (同改 `reviewer-runtime.mjs`) 已取消: 0131 被 0135 (`182c925`) 取代, 0135 的第 1 项未复现, 未改该文件.
+- 2026-11-18: 已被 effort 0140 (issue:0140:01) 取代, 取消单独实施: 其全部内容并入 0140. wontfix 只表示取消单独实施, 不表示放弃原发现.
