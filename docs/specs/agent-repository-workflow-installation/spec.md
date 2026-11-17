@@ -77,7 +77,7 @@ Installation Payload Module 验证清单的封闭结构, 平台启动器选择, 
 
 ## Global Engine configuration
 
-使用全局配置的命令在解析公开命令后读取其入口自然所属 Engine 目录中的 `config.json`, 不使用配置的命令不读取它 (唯一例外: 开启 Effect Log 的记录读取一次, 关卡命令在记录时读取, `install.mjs` 与发布验证脚本读取固定安装目录, 读取失败只告警, 不使命令失败, 见 `../agent-repository-workflow/spec.md` 的 Effect Log 节), 缺少配置时无效命令仍返回用法错误. 不增加模式参数, 路径探测或第二套选择逻辑. 源码仓库入口的 Engine 目录没有 `config.json` 时, 普通读取使用同目录 `config.install.json` 的内容作为默认值, 不写配置.
+使用全局配置的命令在解析公开命令后读取其入口自然所属 Engine 目录中的 `config.json`, 不使用配置的命令不读取它 (唯一例外: 开启 Effect Log 的记录读取一次, 关卡命令在记录时读取, `install.mjs`, `uninstall.mjs` 与发布验证脚本读取固定安装目录, 读取失败只告警, 不使命令失败, 见 `../agent-repository-workflow/spec.md` 的 Effect Log 节), 缺少配置时无效命令仍返回用法错误. 不增加模式参数, 路径探测或第二套选择逻辑. 源码仓库入口的 Engine 目录没有 `config.json` 时, 普通读取使用同目录 `config.install.json` 的内容作为默认值, 不写配置.
 
 当前已知结构使用 `configVersion: 3`:
 

@@ -3,7 +3,7 @@ import {mkdir, readdir, readFile, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
-import {record} from '../../lib/effect-log/effect-log.mjs';
+import {forgetConfiguration, record, recorderFor} from '../../lib/effect-log/effect-log.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {commitAll, runGit} from '../helpers/git.mjs';
 import {createRepository} from '../helpers/repository-fixture.mjs';
@@ -115,4 +115,7 @@ test('a second failing record in one process adds no warning and the configurati
     await record('install', {}, {programDirectory, warn});
     assert.equal((await readLines(logDirectory)).length, 2);
     await assert.rejects(readdir(other), {code: 'ENOENT'});
+    forgetConfiguration(programDirectory);
+    await recorderFor(programDirectory)('install', {}, await createTemporaryDirectory(t, 'plain-dir-'));
+    assert.equal((await readLines(other)).length, 1);
 });

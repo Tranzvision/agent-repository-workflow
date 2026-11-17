@@ -1788,11 +1788,17 @@ test('help lists each accepted option without performing any installation operat
     assert.equal(errors.join('\n'), 'Unknown or repeated option: --help.\nRun node install.mjs --help for usage.');
 });
 
-test('install records one effect per run when the installed configuration enables the log', async t => {
+/** A home whose installed configuration enables the Effect Log. @param {import('node:test').TestContext} t */
+const createLoggingHome = async t => {
     const home = await createHome(t);
     const logDirectory = join(home, 'effects');
     await mkdir(join(home, '.agent-repository-workflow'));
     await writeFile(join(home, '.agent-repository-workflow', 'config.json'), `${JSON.stringify({...JSON.parse(TEST_INSTALLATION_PAYLOAD.configSeedBytes.toString('utf8')), effectLog: {directory: logDirectory}})}\n`);
+    return {home, logDirectory};
+};
+
+test('install records one effect per run when the installed configuration enables the log', async t => {
+    const {home, logDirectory} = await createLoggingHome(t);
     assert.equal((await runNonInteractive(home)).result, 0);
     const blocked = {diagnostics: [{code: 'test-blocked', message: 'simulated', severity: 'error'}], status: /** @type {'blocked'} */ ('blocked')};
     assert.equal((await runNonInteractive(home, {loadInstallationPayload: async () => blocked})).result, 1);
@@ -1806,4 +1812,16 @@ test('install records one effect per run when the installed configuration enable
         {v: 1, kind: 'install', result: 'failure', platform: 'linux', version: JSON.parse(TEST_PACKAGE_BYTES.toString('utf8')).version},
     ]);
     assert.ok(lines.every(line => Number.isInteger(line.seconds) && !('repository' in line)));
+});
+
+test('install passes the Effect Log writer to maintenance, so offline recovery records land in the installed configuration log', async t => {
+    const {home, logDirectory} = await createLoggingHome(t);
+    const acquireMaintenance = async (/** @type {{recordEffect?: (kind: string, fields: Record<string, unknown>, cwd: string) => Promise<void>}} */ input) => {
+        await input.recordEffect?.('agent-task', {runId: 'run-1', outcome: 'unknown'}, home);
+        return {status: /** @type {const} */ ('acquired'), stoppedAgents: []};
+    };
+    assert.equal((await runNonInteractive(home, {acquireMaintenance})).result, 0);
+    const [file] = await readdir(logDirectory);
+    const kinds = (await readFile(join(logDirectory, file), 'utf8')).trimEnd().split('\n').map(line => JSON.parse(line).kind);
+    assert.deepEqual(kinds, ['agent-task', 'install']);
 });

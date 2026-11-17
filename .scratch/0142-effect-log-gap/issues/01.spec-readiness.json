@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0142:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "依据 AGENTS.md 的 Source Checkout Baseline 例外中用户常设确认 (2026-11-02): 本 issue 不含设计决定且不依赖共用 spec, 单独成为一个实施 issue 的 effort, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0142-effect-log-gap/issues/01-offline-recovery-record.md",
+    "sha256": "82cd431c77d6beea8cc86c41c9a5b7b6e6f7c3de07ba750cb05d9b32993b0235"
+  },
+  "result": "not-applicable"
+}

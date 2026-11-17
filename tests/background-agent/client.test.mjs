@@ -3,8 +3,10 @@ import {chmod,readdir,readFile,writeFile} from 'node:fs/promises';
 import {createServer} from 'node:net';
 import {join} from 'node:path';
 import test from 'node:test';
-import {controlProof,createBackgroundAgentClient,sendBackgroundAgentRequest} from '../../lib/background-agent/client.mjs';
+import {acquireBackgroundAgentMaintenance,controlProof,createBackgroundAgentClient,sendBackgroundAgentRequest} from '../../lib/background-agent/client.mjs';
+import {createBackgroundAgentStateStore} from '../../lib/background-agent/state-store.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {appServerProcessIdentityPath,recordProcessIdentity} from '../../lib/background-agent/process-identity.mjs';
 import {installFakeCommand} from '../helpers/process.mjs';
 
 const secret='1'.repeat(64);
@@ -227,4 +229,27 @@ test('a missing credential fails with ENOENT before any PowerShell process start
     await assert.rejects(client.execute({operation:'list_agents',input:{}}),{code:'ENOENT'});
     await assert.rejects(readFile(log),{code:'ENOENT'});
   }finally{await client.close();}
+});
+
+test('offline maintenance records each working task it turns unknown, and nothing for an ended or paused one',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-offline-recovery-');
+  await writeFile(join(runtimeDirectory,'credential'),secret,{mode:0o600});
+  const store=createBackgroundAgentStateStore({runtimeDirectory});
+  await store.loadAgents();
+  const row=(/** @type {string} */ runId,/** @type {Partial<import('../../lib/background-agent/state-store.mjs').BackgroundAgentRow>} */ patch)=>/** @type {import('../../lib/background-agent/state-store.mjs').BackgroundAgentRow} */ ({
+    runId,ownerId:'main',role:'worker',ownerTitle:null,ownerSessionPath:null,threadId:null,turnId:null,sessionPath:null,
+    settings:{model:'m',modelProvider:'p',reasoningEffort:'high'},cwd:'/work',readPaths:[],writePaths:[],instructions:'review',recoveryPath:null,
+    state:'running',taskState:'working',stateVersion:1,lastUsedAtMs:1000,taskStartedAtMs:5000,taskFinishedAtMs:null,knownThreadIds:[],...patch});
+  store.upsertAgent(row('working',{}));
+  store.upsertAgent(row('ended',{state:'exited',taskState:'ended',taskFinishedAtMs:6000}));
+  store.upsertAgent(row('paused',{providerWork:{paused:true}}));
+  await store.flush();await store.close();
+  // A recorded App Server whose process is gone: the earlier manager died and its roots are confirmed ended.
+  await recordProcessIdentity({runtimeDirectory,path:appServerProcessIdentityPath(runtimeDirectory),identity:{pid:4194303,createdAt:'1'}});
+  /** @type {unknown[]} */
+  const recorded=[];
+  const acquired=await acquireBackgroundAgentMaintenance({runtimeDirectory,port:await closedPort(),maintenancePort:0,observeManagerProcess:async()=>'absent',
+    recordEffect:async(kind,fields,cwd)=>{recorded.push([kind,fields,cwd]);}});
+  assert.deepEqual([acquired.status,'reason' in acquired?acquired.reason:''],['acquired','']);
+  assert.deepEqual(recorded,[['agent-task',{runId:'working',role:'worker',provider:'p',model:'m',effort:'high',startedAt:5,finishedAt:null,outcome:'unknown'},'/work']]);
 });
