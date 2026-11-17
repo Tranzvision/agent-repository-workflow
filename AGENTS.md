@@ -101,6 +101,8 @@ ARW 必须在 Codex 和 Claude Code 中都完整可用, 包括 `arw background-a
 
 # Source Checkout Baseline 例外
 
+- 用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计, 单独成为只有一个实施 issue 的 effort, 按例外流程将 Spec Readiness 记录为 `not-applicable`; `exception.reason` 可以引用本条.
+
 - `rule-and-design-changes` Skill 的 User confirmation: 本仓库中, 与用户沟通的 Main Agent 对 Agent 指令和设计文档改动的确认等同于用户确认. Main Agent 可以自行拟定并确认这类改动, subagent 以 Main Agent 分配的改动内容为确认; 维护者按实施 issue 复核整体 diff. 确认依据写入授权 issue 的 `## Comments` 或提交说明.
 - `tests/fixtures/reviewer-capability/**` 中供合成场景使用的 Agent 指令, 规范和其他文档 (含盲裁 `brief.md`) 是测试数据, 不触发 `rule-and-design-changes` Skill 的用户确认, 不论其文档形式或文件名. 本例外不包括治理验证工作流本身的真实规则或长期规范.
 - 单个测试回调耗时阈值为 100 毫秒. 作为 `validation` 与 `test-performance-optimization` Skill 要求逐例批准超阈值案例的 Baseline 例外, 本仓库不为缩短测试耗时修改生产代码 (含为测试增加的注入接缝); 不改生产代码就降不到阈值以下的测试保留超时, 不逐例请求批准.

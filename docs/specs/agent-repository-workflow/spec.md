@@ -487,7 +487,7 @@ Codex 与 Claude Code 都完整支持静态 Skill 与 `AGENTS.md` / `CLAUDE.md` 
 
 ### Prepare and independent review
 
-`prepare --issue` 从 `stdin` 或 `--input <temp-json-path>` 接受只含 `inputs` 的显式治理输入. 治理输入每项是 `{role, filePath}`, `role` 取 `governing-spec`, `governing-prd`, `adr`, `domain-context`, `architecture-evidence` 之一, 至少包含一个 `governing-spec` 或 `governing-prd`, 其余按适用性加入. Agent 指令与 Reviewer Role 正文不属于治理输入. 输入路径必须是安全的仓库相对普通文件, 且不能指向本地跟踪器 issue. `prepare` 写出审核轮后对审核对象和 Input 文本做三项机械预检, 每个命中向标准错误输出一行 `warning: ...`, 不阻断, 不改变标准输出 (仍只有轮目录) 和退出码, 不进入 Request: `path:line` 引用指向已存在的文件而行号超过其行数; 以反引号包裹且首段是仓库根目录下已存在目录的带扩展名路径不存在 (该行含 "新建", "新增", "创建" 时跳过); `## Acceptance criteria` 中既无 "观察" 也无反引号内容的任务列表项.
+`prepare --issue` 从 `stdin` 或 `--input <temp-json-path>` 接受只含 `inputs` 的显式治理输入. 治理输入每项是 `{role, filePath}`, `role` 取 `governing-spec`, `governing-prd`, `adr`, `domain-context`, `architecture-evidence` 之一, 至少包含一个 `governing-spec` 或 `governing-prd`, 其余按适用性加入. Agent 指令与 Reviewer Role 正文不属于治理输入. 输入路径必须是安全的仓库相对普通文件, 且不能指向本地跟踪器 issue. `prepare` 写出审核轮后对审核对象和 Input 文本做四项机械预检, 每个命中向标准错误输出一行 `warning: ...`, 不阻断, 不改变标准输出 (仍只有轮目录) 和退出码, 不进入 Request: `path:line` 引用指向已存在的文件而行号超过其行数; 以反引号包裹且首段是仓库根目录下已存在目录的带扩展名路径不存在 (该行含 "新建", "新增", "创建" 时跳过); `## Acceptance criteria` 中既无 "观察" 也无反引号内容的任务列表项; 该节中以提交后的事实或其他审核结果为条件的任务列表项 (如 Commit Audit, 提交号, 提交本身, 提交后, 已提交, 推送, 或审核和审查通过或无问题).
 
 Engine 在当前 Main Agent 会话与 issue 的 `spec-readiness` 用途工作区下新建审核轮目录 `rounds/<requestId>/`, 草稿固定为其中的 `report/draft.txt`, 也是 Reviewer 的绑定报告. Engine 创建零字节草稿, 从 Canonical ID 定位准确 issue, 然后把以下内容绑定到 `requests/` 下的不可变 Reviewer Request, 并按 Review rounds 节写出本轮其余文件, 只输出轮目录路径:
 
