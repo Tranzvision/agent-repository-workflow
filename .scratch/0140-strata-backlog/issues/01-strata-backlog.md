@@ -107,3 +107,7 @@ next ADR number: 0041
 - 台账: lib/repository-workflow/workflow-lock.mjs:320-323 的 normalizeLegacyLock 排序表达式中 canonicalObjectId 后备比较 记录不修 第 3 轮仅修行为缺陷; 此比较只影响随后被 assertUniquePaths 拒绝的输入, 属重复清理, 不再开修复轮. 原 firstHeading 冗余条件的台账未被本轮变化触及, 继续有效.
 - 本轮回归抽查: 已恢复 deleteJsonPath 及其原型路径测试, 已恢复 Native Session Adapter 公开消息合同; 冻结规则选择保留根和固定指令并按实际受审路径保留嵌套指令. Reviewer 暂停退出仍保留原有未知 finishedAt 恢复语义. 没有发现使本轮结果失效的漏检.
 - 最终检查结果由提交前运行的 commit-audit verify 与 spec-readiness verify --subject-only 取得; 全部实现和验收状态在受审树内固定, 本次收尾只补充记录.
+
+### Overlap with f268ff1
+
+- firstHeading 和 precheck 验收区间两项实际由 f268ff1 (issue:0138:01) 交付, 本 issue 保留的是对应测试; 正文把它们列为本 issue 的修复是并行造成的重叠.
