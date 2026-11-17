@@ -492,7 +492,7 @@ Application 暂存区始终不变.
 
 ## Application validation and completion
 
-每个包含 Application Source Issue 的 Application effort 必须在 spec 中准确声明一个 Application 验证 issue:
+每个关联 JIRA 的 Application effort 必须在 spec 中准确声明一个 Application 验证 issue:
 
 ~~~markdown
 Application validation issue: 05

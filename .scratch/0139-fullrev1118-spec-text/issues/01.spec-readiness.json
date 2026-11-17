@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0139:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "依据 AGENTS.md 的 Source Checkout Baseline 例外中用户常设确认 (2026-11-02): 本 issue 不含设计决定且不依赖共用 spec, 单独成为一个实施 issue 的 effort, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0139-fullrev1118-spec-text/issues/01-fullrev1118-spec-text.md",
+    "sha256": "415bc3031db804916460bd18e9651d622c158e2802b9cb3c413265a950511d3d"
+  },
+  "result": "not-applicable"
+}
