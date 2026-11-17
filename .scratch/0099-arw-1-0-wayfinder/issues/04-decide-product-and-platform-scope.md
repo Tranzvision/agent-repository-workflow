@@ -22,7 +22,7 @@ Blocked by: issue:0099:01, issue:0099:03
 用户 11-14 (原话): "arw 1.0 先只支持 windows 和 linux 两种平台, 不支持 macos." 因此 1.0 首版支持的操作系统只有 Windows 与 Linux (glibc 与 musl 两类发行版, WSL 算 Linux), 不支持 macOS, 0.x 的 "实验性 macOS" 也不保留. 范围随之收窄:
 
 - 安装与配置 ([确定判断模型与兼容端点的安装与配置](20-decide-installation-and-configuration.md)): 安装位置, 自启, 证书与防火墙步骤只写 Windows 原生, Linux 与 WSL, 不写 macOS 分支.
-- 发布: 发布产物只覆盖 Windows 与 Linux (glibc, musl), 构建目标随 07 选定的 Engine 语言定.
+- 发布: 发布产物只覆盖 Windows 与 Linux (glibc, musl); Engine 用 Rust (07), 产物是各目标的原生可执行文件, 不要求安装 Node.js.
 - 验证: 跨操作系统的安装与端到端验证只在 Windows 与 Linux (含一个 musl 发行版) 的虚拟机中进行, 不为 macOS 准备环境或测试.
 - 以后要支持 macOS 时另开 issue, 首版设计不为它预留选项.
 
@@ -31,3 +31,5 @@ Blocked by: issue:0099:01, issue:0099:03
 ## Comments
 
 11-18 (任务 v1-scopeans): 按用户 11-14 "先只支持 windows 和 linux" 新增 Operating systems 节; 20 中提到 macOS 的一处同改.
+
+11-18 (任务 v1-sync): Operating systems 节的发布一条, "构建目标随 07 选定的 Engine 语言定" 改为 Engine 用 Rust, 产物是各目标的原生可执行文件, 不要求 Node.js. 其余 (语音, 安装与配置) 与 Rust 和 1.0 范围无矛盾, 未改.

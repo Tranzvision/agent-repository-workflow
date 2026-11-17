@@ -46,12 +46,12 @@ Blocked by: issue:0099:07, issue:0099:16, issue:0099:18
 
 #### Start script
 
-- 内容: 一个由配置命令生成的 Node.js 脚本 (ARW 本身只依赖 Node.js, 所以各平台同一种脚本), 顶部是全部可调参数: 运行时与模型文件路径, 绑定地址 (默认 `127.0.0.1`), 端口, 上下文, GPU 层数, 并行数, 设备, 让出列表. 提供 `start` 与 `stop` 两个动作, Engine 只经这两个动作开启和释放, 用户也可以手工运行排查.
+- 内容: Engine 与 `arw` 命令用 Rust (07), 不要求 Node.js, 所以不生成 Node.js 脚本: 由配置命令生成一个参数文件, 写全部可调参数: 运行时与模型文件路径, 绑定地址 (默认 `127.0.0.1`), 端口, 上下文, GPU 层数, 并行数, 设备, 让出列表; `start` 与 `stop` 两个动作由 `arw` 命令提供 (子命令名留给规范正文), 读这个参数文件, 各平台同一种实现. 本 issue 其他处的 "开启脚本" 即指这组动作加参数文件. Engine 只经这两个动作开启和释放, 用户也可以手工运行排查.
 - 开启时机 (原写在 07, 11-14 移到这里): 第一个需要判断模型的流程开始时 Engine 执行 `start`, 没有流程运行超过配置的时长后执行 `stop`; 不在 Engine 进程启动时就开启, 因为 Engine 常驻到关机, 否则判断模型会长期占用显卡. `start` 失败或判断模型运行中退出时按 16 不出提示, 流程照常, 下一个流程开始时再试.
 - `start`: 按让出列表让出显卡 (见下节), 确认空闲显存足够, 启动 `llama-server` 并记录 PID 与进程创建时间 (Engine 识别崩溃用同样做法), 轮询 `/health` 到 200 (加载中为 503), 再做一题兼容核对, 输出写日志. 任何一步失败都停止已启动的进程并恢复已让出的占用者, 返回失败原因.
 - `stop`: 按 PID 与创建时间结束本脚本启动的进程, 再按让出列表恢复占用者. 不按命令行文本查找或结束进程.
 - 端口在配置时选一个空闲端口写入脚本, 不沿用其他服务的端口 (本机曾用 8000 与 Strata 前端冲突).
-- 依赖: Node.js, 所选运行时目录 (含 CUDA 运行库), 模型文件, 显卡驱动; Engine 在 WSL 而判断模型在 Windows 侧时另需 WSL 互操作 (默认开启). 不依赖 Python, 包管理器或管理员权限 (下文的一次性防火墙步骤除外).
+- 依赖: `arw` 命令本身, 不要求 Node.js (开启脚本不引入 ARW 之外的脚本解释器); 所选运行时目录 (含 CUDA 运行库), 模型文件, 显卡驱动; Engine 在 WSL 而判断模型在 Windows 侧时另需 WSL 互操作 (默认开启). 不依赖 Python, 包管理器或管理员权限 (下文的一次性防火墙步骤除外).
 
 #### Windows and WSL placement
 
@@ -151,3 +151,5 @@ Engine 跟随用户安装的 Claude Code 与 Codex (用户 11-13 确认, D19), �
 11-14 (任务 v1-rulewrite): 用户 11-14 D30 (原话见 Reply language 节), Main Agent 的理解: 配置 schema 加一项回复语言, 安装时选, Engine 的语言检查按它判; 允许的缩写不新增设置, 仓库根 `CONTEXT.md` 中定义过的名称和缩写视为用户认识. 据此新增 Reply language 节, Scenarios 与 Interfaces 各加一条. 自定的取舍 (Main Agent 可改): 留空时不推断语言, 不查, 只提示设置, 理由见该节; 非交互安装不强制给出回复语言, 以免现有的无人值守安装因缺参数失败.
 
 11-18 (任务 v1-scopeans): 按用户 11-14 "先只支持 windows 和 linux" (见 04 的 Operating systems 节) 删去 Windows and WSL placement 节的 macOS; 按 "老用户只会卸载之前的版本然后安装它" (见 13) 删去 Reply language 节 "含从 0.x 升级" 的说法, 1.0 没有从 0.x 升级的配置; Repository ignore rules 节与 Interfaces 中的 "0.x 升级" 随 13 改称接管.
+
+11-18 (任务 v1-sync): Engine 定为 Rust (07), Start script 节 "内容" 一条原写 "ARW 本身只依赖 Node.js", "依赖" 一条原写 "Node.js", 两处都改为不要求 Node.js. 自定的取舍 (Main Agent 可改): 不改成 PowerShell 或 shell 脚本 (各平台要两种实现, 且 WSL 场景要从 WSL 启动 Windows 侧进程), 也不保留 Node.js 脚本 (会让只为开判断模型的用户多装 Node.js, 与本节 "不依赖 Python, 包管理器" 的取向不符); 改由 `arw` 命令提供 `start` 与 `stop`, 参数放在生成的参数文件里. 判断模型的开启与释放首版不实现 (见 Answer), 以后实现时再核对这一做法.
