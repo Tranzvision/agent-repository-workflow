@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0137:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "依据 AGENTS.md 的 Source Checkout Baseline 例外中用户常设确认 (2026-11-02): 本 issue 不含设计决定且不依赖共用 spec, 单独成为一个实施 issue 的 effort, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0137-strata-medium-1117/issues/01-strata-medium-defects.md",
+    "sha256": "1577a8c004b11e538d66a7286dbb5fa100e509509b2ddacd492f71d2448a0910"
+  },
+  "result": "not-applicable"
+}

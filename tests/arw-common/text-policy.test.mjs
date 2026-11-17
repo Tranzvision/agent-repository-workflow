@@ -256,6 +256,23 @@ test('scope negation cannot reinclude a file below an excluded directory', () =>
     assert.deepEqual(filterAgentManagedPaths(['docs/sub/keep.md'], 'docs/*\n!docs/sub/keep.md\n'), []);
 });
 
+test('Text Policy Module 字符类保留反斜杠转义并在非法范围时阻断', async () => {
+    assert.deepEqual(filterAgentManagedPaths(['-.md', 'a.md', 'b.md', 'c.md'], '[a\\-b].md\n'), ['c.md']);
+    const result = await runTextPolicy({
+        filesystem: {
+            async inspectPath({path}) { return {kind: 'file', path}; },
+            async readBytes() { return Buffer.from('[a-\\]]x.md\n'); },
+        },
+        git: {
+            async run() { return {code: 0, failure: null, stderr: '', stdout: Buffer.from('a.md\0')}; },
+        },
+        intent: 'check',
+        repositoryRoot: '.',
+    });
+    assert.equal(result.satisfied, false);
+    assert.deepEqual(result.diagnostics, [{code: 'invalid-agent-scope-policy', path: '.arwignore'}]);
+});
+
 test('Text Policy Module 原样传播 .arwignore 读取错误', async () => {
     const error = Object.assign(new Error('permission denied'), {code: 'EACCES'});
     await assert.rejects(runTextPolicy({

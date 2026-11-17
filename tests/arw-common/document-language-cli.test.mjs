@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {createRepository, run} from '../helpers/arw-cli.mjs';
+import {createRepository, createRepositoryWithMockGit, run} from '../helpers/arw-cli.mjs';
 
 test('arw language inspect 固定 grammar 并传递全部路径', async t => {
     const repository = await createRepository(t);
@@ -56,5 +56,20 @@ test('arw language inspect 失败时只输出诊断', async t => {
     assert.deepEqual(output.events, [{
         channel: 'stderr',
         message: '[language-inspection-path-invalid] missing.md: Missing.',
+    }]);
+});
+
+test('arw language inspect 转义诊断 path 与 message 中的控制字符', async t => {
+    const repository = await createRepositoryWithMockGit(t);
+    const output = await run(['language', 'inspect', 'x.md'], repository, {
+        documentLanguageDependencies: {inspect: async () => ({
+            diagnostics: [{code: 'language-inspection-path-invalid', message: 'Bad \u001b[31m.', path: 'a\u001b[2Jb.md'}],
+            rows: [],
+            status: 'failed',
+        })},
+    });
+    assert.deepEqual(output.events, [{
+        channel: 'stderr',
+        message: '[language-inspection-path-invalid] a\\u001b[2Jb.md: Bad \\u001b[31m.',
     }]);
 });

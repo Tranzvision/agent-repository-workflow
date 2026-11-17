@@ -3,13 +3,23 @@ import {mkdir, rm, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
-import {createMockChild, createRepository, run, writeArtifact, writeConfig, writeIssue} from '../helpers/arw-cli.mjs';
+import {createMockChild, createRepository, createRepositoryWithMockGit, run, writeArtifact, writeConfig, writeIssue} from '../helpers/arw-cli.mjs';
 import {runGit} from '../helpers/git.mjs';
 import {launchEditor} from '../../arw.mjs';
 import {createScopedFilesystem} from '../../lib/common/filesystem.mjs';
 
 /** @typedef {NonNullable<NonNullable<Parameters<typeof import('../../arw.mjs').runArw>[1]>['spawnProcess']>} ArwSpawn */
 /** @typedef {{args: readonly string[], command: string, spawnOptions: Parameters<ArwSpawn>[2]}} EditorSpawnCall */
+
+test('artifact list escapes control characters in malformed diagnostics', async t => {
+    const repository = await createRepositoryWithMockGit(t);
+    await mkdir(join(repository.root, '.scratch', '0001-esc\u001b[2J', 'spec.md'), {recursive: true});
+
+    const {events} = await run(['list', 'specs'], repository);
+
+    assert.ok(events.length > 0);
+    for (const event of events) assert.doesNotMatch(event.message, /\u001b/u);
+});
 
 test('open and print route one local canonical artifact ID and reject removed forms', async t => {
     const repository = await createRepository(t);

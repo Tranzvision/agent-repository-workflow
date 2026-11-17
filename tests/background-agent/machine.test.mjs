@@ -221,6 +221,23 @@ test('--wait follows each accepted Reviewer task until a completion or a program
     assert.equal(io.responses.length, 5);
 });
 
+test('--wait reports a thrown runtime wait as the failed done response', async () => {
+    const io = capture();
+    const code = await runBackgroundAgent({
+        ...io,
+        input: Readable.from([request('a', 'spawn_agent')]),
+        runtime: {
+            async execute() { return {status: 'succeeded', result: {runId: 'run'}}; },
+            async wait() { throw new Error('Client closed.'); },
+            async close() { return {status: 'succeeded', result: null}; },
+        },
+        waitForCompletion: true,
+    });
+    assert.equal(code, 0);
+    assert.equal(io.diagnostics(), '');
+    assert.deepEqual(io.responses.at(-1), {id: 'a:done', ok: false, error: {code: 'background-agent-operation-failed', message: 'Client closed.'}});
+});
+
 test('--wait ends an ordinary task once and keeps waiting for Reviewer completion after turn end', async () => {
     for (const operation of ['spawn_agent', 'followup_task']) {
         for (const reviewer of [false, true]) {
