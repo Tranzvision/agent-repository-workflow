@@ -468,7 +468,7 @@ Downstream Changes Document Interface 新增的稳定诊断信息代码是 `down
 
 Downstream changes 只通知 Application 当前仍有效的下游修正. 同步不根据这些条目创作或修改 Application spec, `## What to build`, `## Acceptance criteria`, `## Blocked by` 或关联, 也不把它们加入 JIRA 接收或完成资格. Application Leader 读取同步结果后另行决定是否建立上层工作.
 
-Application Sync Module 在内存中解析全部关联 Module 和 Application 来源 issue, 聚合全部诊断信息后才返回替换内容. 任一双向关联不匹配, 重复映射, 关联 Module issue 仍有非终态本地阻断项 (`application-module-blocked`), 重复或位置错误的子章节, 不安全列表或 issue 解析阻断问题都返回 `blocked` 和零替换内容. 各仓库 issue 清单本身的解析诊断由 Application CLI 在调用本 Module 前报告: CLI 先检查 Application Repository, 再按配置顺序检查各 Module, 在第一个有解析诊断的仓库处输出其诊断并停止. 诊断信息按 `path ?? ""`, `code`, `message` 的升序稳定排列. 成功替换内容按 Application 路径排序, 同时反映需要变化的状态和 Downstream changes; 两者都未变化的 issue 不产生替换内容.
+Application Sync Module 在内存中解析全部关联 Module 和 Application 来源 issue, 聚合全部诊断信息后才返回替换内容. 任一双向关联不匹配, 重复映射, 重复或位置错误的子章节, 不安全列表或 issue 解析阻断问题都返回 `blocked` 和零替换内容. 各仓库 issue 清单本身的解析诊断由 Application CLI 在调用本 Module 前报告: CLI 先检查 Application Repository, 再按配置顺序检查各 Module, 在第一个有解析诊断的仓库处输出其诊断并停止. 诊断信息按 `path ?? ""`, `code`, `message` 的升序稳定排列. 成功替换内容按 Application 路径排序, 同时反映需要变化的状态和 Downstream changes; 两者都未变化的 issue 不产生替换内容.
 
 Submodule Coordination 把每个 Module 工作树收敛到该 Module 的远端末端, 因而 Application Repository 观察到对应 Module HEAD 的 gitlink 变化. 这些已经完成的 Module HEAD 变化不属于 Application 文件事务, 后续 Module 失败时与已经完成的拉取一起保留.
 

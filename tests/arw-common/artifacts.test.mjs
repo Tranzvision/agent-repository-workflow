@@ -118,6 +118,7 @@ test('projection kinds share path safety, heading, diagnostics, and lookup rules
     await mkdir(join(repository.root, '.scratch', '0002-directory-map', 'map.md'), {recursive: true});
     await writeArtifact(repository, '.scratch/0003-fenced/map.md', '```md\n# Fake\n```\n# Real map\n');
     await writeArtifact(repository, '.scratch/0004-unreadable/spec.md', '# Hidden\n');
+    await writeArtifact(repository, '.scratch/0005-nested/map.md', '~~~\n```\n# Inside\n```\n~~~\n# Real nested\n');
     const baseFilesystem = await createInventoryFilesystem(repository);
     const fileSystem = {
         ...baseFilesystem,
@@ -133,6 +134,7 @@ test('projection kinds share path safety, heading, diagnostics, and lookup rules
     const missing = resolveArtifactTarget(inventory, 'spec:9999');
 
     assert.match(maps.output, /map:0003  Real map/);
+    assert.match(maps.output, /map:0005  Real nested/);
     assert.deepEqual(maps.diagnostics, [
         {message: 'Registered artifact path must be a regular file.', path: '.scratch/0002-directory-map/map.md'},
         {message: 'Artifact directory name is not a valid canonical ID.', path: '.scratch/Demo/map.md'},

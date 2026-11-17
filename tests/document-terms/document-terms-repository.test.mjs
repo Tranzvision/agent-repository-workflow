@@ -181,6 +181,33 @@ test('Document Terms working-tree Adapter 隔离 symbolic link 和 unreadable en
     assert.equal(parentObservations, 1);
 });
 
+test('Document Terms working-tree Adapter 限制同时打开的文件数', async () => {
+    const paths = Array.from({length: 200}, (_, index) => `docs/${String(index).padStart(3, '0')}.md`);
+    const git = {async run(/** @type {{argv: string[]}} */ call) {
+        return gitResult(call.argv[0] === 'ls-files' ? `${paths.join('\0')}\0` : '');
+    }};
+    let open = 0;
+    let peak = 0;
+    const stats = {isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false, mode: 0};
+    const filesystem = {
+        async lstat(/** @type {string} */ path) {
+            return path.endsWith('docs') ? {...stats, isDirectory: () => true, isFile: () => false} : stats;
+        },
+        async readFile() {
+            open += 1;
+            peak = Math.max(peak, open);
+            await new Promise(resolve => setImmediate(resolve));
+            open -= 1;
+            return Buffer.from('x');
+        },
+    };
+    const repository = createWorkingTreeDocumentRepository({filesystem, git, repositoryRoot: 'unused'});
+    await repository.listPaths();
+    const entries = await repository.readEntries(paths);
+    assert.ok(entries.every(entry => entry.kind === 'file'));
+    assert.ok(peak <= 64, `peak ${peak}`);
+});
+
 test('Document Terms directory inspector 要求 working-tree include 目录可读且可进入', async () => {
     const directoryStats = {
         isDirectory: () => true,

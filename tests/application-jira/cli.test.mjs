@@ -178,6 +178,14 @@ test('Module correction check accepts a tracked same-effort spec soft-lock chang
     assert.equal((await run(['module', 'check-correction', 'issue:0007:01'], repository)).result, 0);
 });
 
+test('Module correction check treats an unchanged tracked spec with a byte order mark as unchanged', async t => {
+    const {issuePath, repository} = await preparePublishedCorrection(t, {specText: '\uFEFF# Original spec\n'});
+    await writeFile(issuePath, correctionIssueText({downstream: '- Only the downstream changed.'}), 'utf8');
+    const result = await run(['module', 'check-correction', 'issue:0007:01'], repository);
+    assert.equal(result.result, 1);
+    assert.ok(result.events.some(event => event.channel === 'stderr' && event.message === 'At least one Module correction soft lock must change.'));
+});
+
 for (const [name, changes, message] of /** @type {Array<[string, CorrectionIssueOptions, string]>} */ ([
     ['association change', {association: 'issue:payments:0001:02', downstream: '- Changed the association.', what: 'Corrected.'}, 'Application source issue association must not change.'],
 ])) {
@@ -662,6 +670,15 @@ test('Application associate writes bidirectional fields through two Repository t
     assert.equal(result.result, 0);
     assert.match(await readFile(applicationPath, 'utf8'), /^Module implementation issue: `issue:billing:0007:07`$/mu);
     assert.match(await readFile(modulePath, 'utf8'), /^Application source issue: `issue:payments:0001:02`$/mu);
+});
+
+test('Application associate reports an inherited property name as an unconfigured Module', async t => {
+    const repository = await createRepository(t);
+    await writeConfig(repository.programDirectory, globalConfiguration);
+    await writeJsonRecord(repository.root, 'arw.config.json', applicationConfiguration);
+    const result = await run(['application', 'associate', 'issue:0001:02', 'issue:constructor:0007:07'], repository);
+    assert.equal(result.result, 1);
+    assert.deepEqual(result.events, [{channel: 'stderr', message: 'Configured Application Module not found: constructor.'}]);
 });
 
 /** @param {import('node:test').TestContext} t */

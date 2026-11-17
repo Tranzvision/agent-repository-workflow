@@ -1387,6 +1387,21 @@ test('local measured work budget sends its reminder once and stops only its task
 });
 
 
+test('local work policy stops its task once after the budget has been reached',async()=>{
+  let state=initialStrataWorkState(true);
+  let stops=0;
+  const policy=createStrataWorkPolicy({
+    readState:()=>state,saveState:next=>{state=next;},workDuration:()=>61*60_000,
+    send:async()=>{throw new Error('No hint was requested.');},
+    stop:async()=>{stops+=1;},
+  });
+  try {
+    await policy.refresh();await policy.refresh();
+    assert.equal(policy.canContinue(),false);await policy.refresh();
+    assert.equal(stops,1);
+  } finally {policy.close();}
+});
+
 test('missing command results break repetition without hiding complete zero-exit empty-output results',async t=>{
   const fake=await harness(t);
   const started=result(await fake.start());await waitDelivered(fake.stateStore,started.messageId);

@@ -70,8 +70,10 @@ test('Application Sync blocks the complete replacement set on a reverse associat
     assert.equal(result.status, 'blocked');
     assert.equal('replacements' in result, false);
     assert.equal(result.diagnostics[0].code, 'application-association-mismatch');
+});
 
-    const blockedModule = synchronizeApplicationIssues({
+test('Application Sync mirrors a Module status while a Module blocker is unfinished', () => {
+    const unfinishedBlocker = synchronizeApplicationIssues({
         applicationIssues: [{
             path: 'application.md',
             record: {
@@ -97,10 +99,9 @@ test('Application Sync blocks the complete replacement set on a reverse associat
             }],
         },
     });
-    assert.deepEqual(blockedModule, {
-        diagnostics: [{code: 'application-module-blocked', message: 'Module issue billing:issue:0007:07 has a nonterminal blocker.', path: 'module.md'}],
-        status: 'blocked',
-    });
+    assert.deepEqual(unfinishedBlocker.diagnostics, []);
+    assert.equal(unfinishedBlocker.status, 'succeeded');
+    assert.equal('replacements' in unfinishedBlocker && unfinishedBlocker.replacements.length, 1);
 });
 
 test('Application Sync replaces the complete current list and writes None for an empty Module source', () => {

@@ -420,6 +420,20 @@ test('migration renders canonical documents that round-trip through strict read'
     assert.deepEqual(repeated.outputs.map(output => output.changed), [false, false, false]);
 });
 
+test('migration keeps a canonical Application association field directly after Status', () => {
+    const documents = ['Application source issue', 'Module implementation issue'].map((field, index) => ({
+        effort: 'billing',
+        number: `0${index + 1}`,
+        sourceKey: field,
+        text: `# Build\n\nStatus: ready-for-agent\n${field}: \`issue:payments:0001:0${index + 1}\`\n\n## Blocked by\n\n- None - can start immediately\n`,
+    }));
+    const migration = migrateIssueDocuments(documents);
+
+    assert.deepEqual(migration.diagnostics, []);
+    assert.deepEqual(migration.outputs.map(output => output.changed), [false, false]);
+    assert.deepEqual(readIssueDocuments(documents.map((document, index) => ({...document, text: migration.outputs[index].text}))).diagnostics, []);
+});
+
 test('migration preserves structurally valid unknown status for strict runtime diagnostics', () => {
     const document = {
         effort: 'future',
@@ -513,6 +527,30 @@ test('strict read excludes records invalidated by blocker graph semantics', () =
         },
         {message: 'Blocking cycle detected: issue:0001:05, issue:0001:06.', sourceKey: 'e-cycle-a'},
         {message: 'Blocking cycle detected: issue:0001:05, issue:0001:06.', sourceKey: 'f-cycle-b'},
+    ]);
+});
+
+test('strict read reports a repeated issue number once per source and accepts only precise None blockers', () => {
+    const issue = (/** @type {string} */ sourceKey, /** @type {string} */ number, /** @type {string} */ blockers) => ({
+        effort: 'graph',
+        number,
+        sourceKey,
+        text: `# ${sourceKey}\n\nStatus: ready-for-agent\n\n## Blocked by\n\n${blockers}\n`,
+    });
+    const result = readIssueDocuments([
+        issue('a', '01', '- None - can start immediately'),
+        issue('b', '01', '- None'),
+        issue('c', '01', '- None - explained'),
+        issue('d', '02', '- None garbage text'),
+        issue('e', '03', '- None-of-it'),
+    ]);
+
+    assert.deepEqual(result.diagnostics, [
+        {message: 'Duplicate issue number 01 in effort 0001.', sourceKey: 'a'},
+        {message: 'Duplicate issue number 01 in effort 0001.', sourceKey: 'b'},
+        {message: 'Duplicate issue number 01 in effort 0001.', sourceKey: 'c'},
+        {message: 'Blocked by cannot be parsed: None garbage text.', sourceKey: 'd'},
+        {message: 'Blocked by cannot be parsed: None-of-it.', sourceKey: 'e'},
     ]);
 });
 

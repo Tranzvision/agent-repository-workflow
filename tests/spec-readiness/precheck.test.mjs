@@ -28,6 +28,23 @@ test('precheck warns about out-of-range references, missing paths and criteria w
     ]);
 });
 
+test('precheck reads acceptance criteria only up to the next section', async t => {
+    const root = await createTemporaryDirectory(t, 'precheck-');
+    const warnings = (/** @type {string} */ after) => precheckSpecReadiness({repositoryRoot: root, subject: {content: `${subjectOf('做事.', '- [ ] 行为正确.')}\n${after}`, filePath: 'issue.md'}, texts: []});
+    const expected = ['warning: issue.md: 验收项没有观察方式: - [ ] 行为正确.'];
+    assert.deepEqual(await warnings('## Comments\n\n- [ ] 评论条目没有观察方式.\n'), expected);
+    assert.deepEqual(await warnings('## Comments\n\n见 `lib/x.mjs`.\n'), expected);
+});
+
+test('precheck keeps reading acceptance criteria past a second-level heading inside a fence', async t => {
+    const root = await createTemporaryDirectory(t, 'precheck-');
+    const criteria = '- [ ] 第一项正确.\n\n~~~\n## 示例标题\n~~~\n\n- [ ] 第二项正确.';
+    assert.deepEqual(await precheckSpecReadiness({repositoryRoot: root, subject: {content: subjectOf('做事.', criteria), filePath: 'issue.md'}, texts: []}), [
+        'warning: issue.md: 验收项没有观察方式: - [ ] 第一项正确.',
+        'warning: issue.md: 验收项没有观察方式: - [ ] 第二项正确.',
+    ]);
+});
+
 test('precheck warns about criteria conditioned on post-commit facts or other reviews', async t => {
     const root = await createTemporaryDirectory(t, 'precheck-');
     const criteria = '- [ ] 观察: Commit Audit 通过.\n- [ ] 观察: 提交号已记录.\n- [ ] 观察: Spec Readiness 通过.\n- [ ] 观察: 审核结果为通过.\n- [ ] 观察: 审核全部通过.\n- [ ] 观察: Spec Readiness 已通过.\n- [ ] 观察: 输出含 ok.\n- [ ] 观察: Reviewer 角色文档检查通过.\n- [ ] 观察: 审核脚本输出通过.';

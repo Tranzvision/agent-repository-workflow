@@ -209,3 +209,15 @@ test('Application Association blocks text containing a lone CR instead of mispla
     assert.equal(result.status, 'blocked');
     assert.deepEqual(result.diagnostics.map(diagnostic => diagnostic.code), ['association-document-invalid']);
 });
+
+test('Application Association treats an inherited property name as an unconfigured Module', () => {
+    const result = associateApplicationIssue({
+        moduleIssueId: 'issue:0007:07',
+        moduleIssues: {},
+        moduleName: 'constructor',
+        applicationIssueId: 'issue:0001:02',
+        applicationIssues: [],
+        applicationName: 'payments',
+    });
+    assert.equal(result.status, 'blocked');
+});

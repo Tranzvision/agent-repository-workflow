@@ -114,6 +114,31 @@ test('daemon decodes a multibyte request split across TCP chunks',async t=>{
   }
 });
 
+test('daemon survives a client that resets the control connection after hello',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-reset-');
+  const daemon=await createBackgroundAgentDaemon({runtimeDirectory,port:0,maintenancePort:await freePort(),
+    dispatch:async ()=>({status:'succeeded'}),
+    list:()=>[],prepareMaintenance:async()=>({status:'busy',stoppedAgents:[]}),
+  });
+  try{
+    const socket=createConnection({host:'127.0.0.1',port:daemon.port});
+    await once(socket,'connect');
+    const challenged=once(socket,'data');
+    socket.write(`${JSON.stringify({hello:'4'.repeat(32)})}\n`);
+    await challenged;
+    socket.resetAndDestroy();
+    await once(socket,'close');
+    /** @type {Error[]} */
+    const uncaught=[];
+    const record=(/** @type {Error} */ error)=>uncaught.push(error);
+    process.on('uncaughtException',record);
+    try{
+      await new Promise(resolve=>setTimeout(resolve,20));
+    }finally{process.off('uncaughtException',record);}
+    assert.deepEqual(uncaught.map(error=>error.message),[]);
+  }finally{await daemon.close();}
+});
+
 test('authenticated wait returns one batch after a successful output and cancellation only ends the connection', async t => {
   const runtimeDirectory = await createTemporaryDirectory(t,'arw-background-agent-wait-auth-');
   let delivered = false;

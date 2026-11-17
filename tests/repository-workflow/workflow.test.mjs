@@ -676,6 +676,39 @@ test('interactive init asks for one Profile and final authorization before writi
     assert.ok(initialized.handoff?.checklist.some(item => item.includes('.gitignore ignores the engine temporary root .tmp/')));
 });
 
+test('interactive init still asks about orphan Code Map READMEs after a declined Agent document transformation', async t => {
+    const distribution = await createDistribution(t);
+    const root = await createRepositoryWithMockGit(t);
+    await write(root, 'AGENTS.md', '# Local instructions\n');
+    await write(root, 'src/module/index.js', 'export const value = 1;\n');
+    await write(root, 'src/orphan/README.md', '---\ncode-map-version: 1\ncode-map-kind: directory\ntitle: Keep me\n---\nOrphan prose.\n');
+    await git(root, ['add', 'AGENTS.md', 'src']);
+    await git(root, ['commit', '--quiet', '-m', 'repository content']);
+    const answers = new Map([
+        ['platforms', 'codex'],
+        ['domain-layout', 'single-context'],
+        ['code-map-roots', 'src'],
+        ['code-map-includes', 'src/**/*.js'],
+        ['code-map-excludes', ''],
+        ['transform-existing-agent-doc:AGENTS.md', 'no'],
+        ['orphan-code-map-readmes', 'demote'],
+        ['confirm-plan', 'yes'],
+    ]);
+    /** @type {string[]} */
+    const asked = [];
+    await runRepositoryWorkflow({
+        choices: {mode: 'interactive'},
+        distribution,
+        operation: 'init',
+        prompt: async question => {
+            asked.push(question.id ?? '');
+            return answers.get(question.id ?? '');
+        },
+        repositoryRoot: root,
+    });
+    assert.ok(asked.includes('orphan-code-map-readmes'), asked.join(','));
+});
+
 test('non-interactive init normalizes one trailing Code Map root slash and rejects other unsafe forms', async t => {
     const distribution = await createDistribution(t);
     const root = await createRepositoryWithMockGit(t);
