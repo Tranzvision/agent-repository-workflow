@@ -1,6 +1,6 @@
 # 清理 Strata 核实的重复, 死代码和文档文字问题 (无行为变化)
 
-Status: ready-for-agent
+Status: wontfix
 
 ## What to build
 
@@ -75,3 +75,4 @@ Status: ready-for-agent
 - 来源: `~/projects/.tasks/ARW/daily-report-1117.md`; 逐条结论 `.tasks/ARW/strata-review/triage/2026-11-17.jsonl` 与 `2026-11-16.jsonl`.
 - Spec Readiness 记 `not-applicable` (清理与文字修正, 无设计决定, 不依赖共用 spec; 依据 `~/projects/docs/ARW.md` "拆分工作时" 一条), 单独成 effort.
 - 2026-11-18: 并入 D 项 (Issue Y, 提交前文本检查提前); 原因: `ARW/daily` 规则要求小 issue 合并, D 是无设计决定的文档改动. 草稿: `~/projects/.tasks/ARW/daily-1118-issue-draft.md`.
+- 2026-11-18: 已被 effort 0140 (issue:0140:01) 取代, 取消单独实施: 其全部内容并入 0140. wontfix 只表示取消单独实施, 不表示放弃原发现.
