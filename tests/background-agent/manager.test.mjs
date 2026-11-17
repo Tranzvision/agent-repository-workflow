@@ -1564,6 +1564,7 @@ test('agent-task records a start failure as failed and a task turned unknown wit
   await waitFailedDelivery(failing.stateStore,started.messageId,'failed');
   await tick();
   assert.deepEqual(failing.effects.map(item=>[item.kind,item.fields.outcome,item.fields.startedAt]),[['agent-task','failed',null]]);
+  assert.equal(typeof failing.effects[0].fields.finishedAt,'number','a start failure is ended, so it has a finish time');
   const lost=await harness(t);
   const run=result(await lost.start());await waitDelivered(lost.stateStore,run.messageId);
   lost.native.vanish(run.runId);await lost.execute(run.runId,'list_agents');

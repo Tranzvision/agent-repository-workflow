@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0143:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "依据 AGENTS.md 的 Source Checkout Baseline 例外中用户常设确认 (2026-11-02): 本 issue 不含设计决定且不依赖共用 spec, 单独成为一个实施 issue 的 effort, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0143-effect-log-fix2/issues/01-start-failure-finished-at.md",
+    "sha256": "7187114d57e2b3cb64b1a8d6379ef90bbc1eaed916f809ef1d68a08a846c65bc"
+  },
+  "result": "not-applicable"
+}
