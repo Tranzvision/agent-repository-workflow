@@ -27,7 +27,7 @@
 
 ## Reviewer capability tests
 
-Reviewer 能力测试不是发布门禁. 维护者需要时显式调用源码专用的 `$reviewer-capability` Skill (`.agents/skills/reviewer-capability/`): 用 `tests/fixtures/reviewer-capability/<role>/<scenario>/` 中带隐藏预期的场景 (qwen_strata benchmark v2 (`benchmarks/multi-model-v2`) 的 4 个计划, 夹具直接保存物化结果, 不含补丁链), 通过 `arw background-agent` 在 Codex 和 Claude 后端运行 Reviewer, 再用 `scripts/reviewer-capability.mjs` 计分, 组盲池, 生成视图并统计, 由盲裁裁判 (至少 sonnet high) 裁决候选的召回和误报. 套件只属于 Source Checkout, 不进入 Workflow Distribution 和 release 安装包; 评分与盲裁工具的合同由 `../agent-repository-workflow-development/spec.md` 的 Module Design 节拥有. 结果用于评估角色指令, 模型和报告格式, 不授权审核, 提交或发布. 发布时可选的漂移检查见 Optional checks, 它不是门禁, 判定漂移后继续或放弃发布由维护者决定.
+Reviewer 能力测试不是发布门禁. 维护者需要时显式调用源码专用的 `$reviewer-capability` Skill (`.agents/skills/reviewer-capability/`): 用 `tests/fixtures/reviewer-capability/<role>/<scenario>/` 中带隐藏预期的场景 (4 个计划, 夹具直接保存物化结果, 不含补丁链), 通过 `arw background-agent` 在 Codex 和 Claude 后端运行 Reviewer, 再用 `scripts/reviewer-capability.mjs` 计分, 组盲池, 生成视图并统计, 由盲裁裁判 (至少 sonnet high) 裁决候选的召回和误报. 套件只属于 Source Checkout, 不进入 Workflow Distribution 和 release 安装包; 评分与盲裁工具的合同由 `../agent-repository-workflow-development/spec.md` 的 Module Design 节拥有. 结果用于评估角色指令, 模型和报告格式, 不授权审核, 提交或发布. 发布时可选的漂移检查见 Optional checks, 它不是门禁, 判定漂移后继续或放弃发布由维护者决定.
 
 ## Failure recovery and authorization
 
@@ -140,7 +140,7 @@ Reviewer 能力测试不是发布门禁. 维护者需要时显式调用源码专
 
 公告之前无人下载该 tag 与 Release, 所以失败后整体回滚重试比停下等待更安全也更快; 公告之后 tag 可能已被依赖, 仍然保留. 回滚是删除后重建, 不是原地移动, 是对"不移动已推送 tag"的受限例外. 接受的成本: 公开 Bootstrap 验证与公告前可能的偶然获取者, 其持有的旧 tag 可能与重建的 tag 不一致, 公告前不预期有消费者, 接受该残余风险. 本例外的决定见 `docs/adr/0031-use-github-and-local-validation-sources.md`.
 
-Reviewer 能力测试只在角色指令, 模型或报告格式变化时才有意义, 不随每次发布运行. 旧的发布能力门禁用程序准备, 评分, 折减和会话检查, 这些代码大多校验程序自己产生的数据; 现在由 Agent 按 Skill 运行场景; 保留场景, 隐藏预期, 一个入口脚本及其评分, 报告修复, 格式罚, 暂停扣分与盲裁实现, 这些是评估角色指令的方法本身 (与 qwen_strata 的评分体系一致, 结果可比), 不是对 ARW 程序产物的发布门禁. 残差折减, 暂停计数与基线归档校验是评分体系的一部分: 归档基线是固定标尺, 其校验保证评分尺度不被意外改动, 不是校验程序运行时自己产生的数据.
+Reviewer 能力测试只在角色指令, 模型或报告格式变化时才有意义, 不随每次发布运行. 旧的发布能力门禁用程序准备, 评分, 折减和会话检查, 这些代码大多校验程序自己产生的数据; 现在由 Agent 按 Skill 运行场景; 保留场景, 隐藏预期, 一个入口脚本及其评分, 报告修复, 格式罚, 暂停扣分与盲裁实现, 这些是评估角色指令的方法本身 (评分体系固定, 结果可比), 不是对 ARW 程序产物的发布门禁. 残差折减, 暂停计数与基线归档校验是评分体系的一部分: 归档基线是固定标尺, 其校验保证评分尺度不被意外改动, 不是校验程序运行时自己产生的数据.
 
 VM 验证的范围由 Validation coverage 节按 "情形的代码路径是否因操作系统而不同" 分配. 它由 Agent 按 Skill 运行一个短检查脚本, 程序不维护场景登记表, 归档和一致性校验, 因为这些机制校验的大多是验证程序自己产生的数据, 维护成本远高于它们发现问题的价值.
 

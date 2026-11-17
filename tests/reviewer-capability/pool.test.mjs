@@ -10,7 +10,7 @@ import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {control, item} from '../helpers/reviewer-capability-items.mjs';
 
 const FIXTURES = join(import.meta.dirname, '..', 'fixtures', 'reviewer-capability');
-const golden = JSON.parse(await readFile(join(FIXTURES, 'qwen-golden.json'), 'utf8'));
+const golden = JSON.parse(await readFile(join(FIXTURES, 'pure-function-golden.json'), 'utf8'));
 /** @param {...string} path */
 const read = async (...path) => JSON.parse(await readFile(join(...path), 'utf8'));
 
@@ -28,7 +28,7 @@ const build = async (/** @type {import('node:test').TestContext} */ t, /** @type
     return {result: await pool({action: 'build', candidates: [join(root, 'candidates.json')], name: 'p', root: join(root, 'pools'), scenario, ...input}), root: join(root, 'pools'), scenario};
 };
 
-test('pool build matches the pools qwen_strata builds for the same candidates', async t => {
+test('pool build reproduces the saved golden pools for the same candidates', async t => {
     const root = await createTemporaryDirectory(t, 'arw-pool-');
     await writeFile(join(root, 'candidates.json'), JSON.stringify(golden.pools.candidates));
     const built = await pool({action: 'build', candidates: [join(root, 'candidates.json')], limit: golden.pools.limit, name: 'g', root, scenario: join(FIXTURES, 'requirements-reviewer', 'code-spec')});

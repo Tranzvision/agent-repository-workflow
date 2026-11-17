@@ -143,9 +143,9 @@ node scripts/check-workflow-distribution.mjs
 
 ### Reviewer 配置和能力验证
 
-当你修改规范 Reviewer Role, Reviewer 专属审核运行逻辑或用于检验审核质量的基准场景时, 需要走这条路线验证 Reviewer 能力. 规范 Role 位于 `docs/agents/roles/`, 共同执行与通信规则见 [Reviewer 责任](../agents/reviewer.md). 跨仓库共享的后台 Agent 容量, 连接和恢复由 [产品后台 Agent 规则](../specs/agent-repository-workflow/spec.md#background-agent-control) 与 [安装管理规则](../specs/agent-repository-workflow-installation/spec.md#background-agent-management) 拥有; 用户模型与档位设置保存在 ARW 程序目录的 `config.json` 和仓库的 `arw.config.json` 中, 其格式及默认值见 [Reviewer 配置规格](../specs/agent-repository-workflow-installation/spec.md#reviewer-configuration).
+当你修改规范 Reviewer Role, Reviewer 专属审核运行逻辑或用于检验审核质量的能力测试场景时, 需要走这条路线验证 Reviewer 能力. 规范 Role 位于 `docs/agents/roles/`, 共同执行与通信规则见 [Reviewer 责任](../agents/reviewer.md). 跨仓库共享的后台 Agent 容量, 连接和恢复由 [产品后台 Agent 规则](../specs/agent-repository-workflow/spec.md#background-agent-control) 与 [安装管理规则](../specs/agent-repository-workflow-installation/spec.md#background-agent-management) 拥有; 用户模型与档位设置保存在 ARW 程序目录的 `config.json` 和仓库的 `arw.config.json` 中, 其格式及默认值见 [Reviewer 配置规格](../specs/agent-repository-workflow-installation/spec.md#reviewer-configuration).
 
-运行能力测试时, 由维护者显式调用源码专用的 `$reviewer-capability` Skill. 测试场景 (物化后的夹具, 答案键, 盲裁 brief 与锚点, 来自 qwen_strata benchmark v2) 保存在 `tests/fixtures/reviewer-capability/` 中. 该 Skill 会调用以下三组命令, 每组命令都输出 JSON, 成功退出 `0`, 被阻断或失败退出 `1`, 用法错误退出 `2`:
+运行能力测试时, 由维护者显式调用源码专用的 `$reviewer-capability` Skill. 测试场景 (物化后的夹具, 答案键, 盲裁 brief 与锚点) 保存在 `tests/fixtures/reviewer-capability/` 中. 该 Skill 会调用以下三组命令, 每组命令都输出 JSON, 成功退出 `0`, 被阻断或失败退出 `1`, 用法错误退出 `2`:
 
 ```text
 node scripts/reviewer-capability.mjs setup <scenario-directory> <new-target-directory>

@@ -6,8 +6,8 @@ import test from 'node:test';
 import {cellStatistics, summaryMarkdown, tQuantile, tTwoSidedP} from '../../lib/reviewer-capability/statistics.mjs';
 import {normalizedFinding, sequenceMatcherRatio, templateFindings} from '../../lib/reviewer-capability/templates.mjs';
 
-// Golden values: the outputs of qwen_strata's pure functions (t_quantile, statistics, difflib, template_findings), saved once.
-const golden = JSON.parse(await readFile(join(import.meta.dirname, '..', 'fixtures', 'reviewer-capability', 'qwen-golden.json'), 'utf8'));
+// Golden values: the saved outputs of the reference pure functions (t_quantile, statistics, difflib, template_findings), computed once.
+const golden = JSON.parse(await readFile(join(import.meta.dirname, '..', 'fixtures', 'reviewer-capability', 'pure-function-golden.json'), 'utf8'));
 const close = (/** @type {number | null} */ actual, /** @type {number | null} */ expected) => {
     if (expected === null) assert.equal(actual, null);
     else assert.ok(Math.abs(/** @type {number} */ (actual) - expected) <= 1e-9 * Math.abs(expected), `${actual} vs ${expected}`);
