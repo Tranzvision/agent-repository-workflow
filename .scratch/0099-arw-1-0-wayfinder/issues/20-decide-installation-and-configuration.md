@@ -55,7 +55,7 @@ Blocked by: issue:0099:07, issue:0099:16, issue:0099:18
 
 #### Windows and WSL placement
 
-- Engine 与判断模型在同一操作系统环境时 (Windows 原生, Linux, macOS), 判断模型只绑 `127.0.0.1`, 不触发防火墙, 也不需要认证.
+- Engine 与判断模型在同一操作系统环境时 (Windows 原生或 Linux; 1.0 不支持 macOS, 见 04), 判断模型只绑 `127.0.0.1`, 不触发防火墙, 也不需要认证.
 - Engine 在 WSL 中时 (用户 11-13 确认, D19), 判断模型作为 Windows 原生进程运行 (显卡驱动在 Windows 侧, 模型文件放在 Windows 磁盘, 维护者本机已验证). 开启脚本在 WSL 中经互操作启动 Windows 侧的 `llama-server.exe`, 绑定 WSL 虚拟网卡的主机侧地址; 该地址每次启动时取 WSL 默认网关, 不写死, 因为重启后会变. Engine 按同一地址访问.
 - 这需要一条入站放行规则, 只能由管理员建立: 配置命令生成精确的 PowerShell 命令 (只放行该程序路径, 该 TCP 端口, 远端本地子网), 先说明用途与撤销方法, 由用户在管理员 PowerShell 中执行; ARW 不自行提权, 不修改防火墙. 必须在第一次非回环绑定之前建好: 没有规则时第一次监听会弹框, 无人应答就生成 Block 规则并压过放行规则.
 - `start` 的就绪检查从 Engine 所在环境经该地址实际连接, 不只看进程已启动; 连不上时报告可能存在名为 "Query User" 的 Block 规则, 给出删除命令, 不自动改动. 运行时升级会改变程序路径, 按程序路径的规则要随之重建, 配置命令在升级后重新生成该命令.
@@ -95,7 +95,7 @@ Engine 跟随用户安装的 Claude Code 与 Codex (用户 11-13 确认, D19), �
 
 - 谁保证: Engine, 经 `arw workflow` 命令和打开仓库时的核对; 用户与 Agent 不手写. 每个由 ARW 采用的 Git 仓库各自一份 (Application 的 Module 仓库同样).
 - 写什么: 仓库根 `.gitignore` 加 `.tmp/` 与本机层目录两行, 前面一行固定注释, 写给用户看 (说明这两行为什么在, 可以留着; 不是撤销标记, 没有程序读它, 文字留给规范正文). 写入后这两行归仓库所有 (repository owned, 用户 11-14 D28 补充: "加了之后就属于 repository owned 了, 不应该被清理"), Engine 以后只在缺失时补写, 不改不撤. 加之前先对两个目录下的探测路径 (如 `.tmp/probe`) 运行 `git check-ignore -v`: 来源是受跟踪的 `.gitignore` 的规则就是已有等价规则, 该行不重复加, 也不加注释 (只缺一行时只加那一行); 来源是 `.git/info/exclude`, 用户级忽略文件或查不到的都照加, 前两者的内容不属于 ARW, 不改不删, 只在输出中提示可自行删去重复项. `.gitignore` 不存在时创建; 沿用文件已有的换行风格.
-- 何时写: `arw workflow init` 随 init 的其他改动一并写入 (提交方式沿用 init 的现行规则); 0.x 升级时进升级提交 ([确定现有 ARW 合同在 1.0 中的继承范围](13-decide-legacy-contracts.md)); 以后发现缺了, 由 `arw workflow update` 补写 (见下条). `.tmp/` 与本机层目录在第一次使用前已写好, 因为 init 与升级都早于任何流程实例.
+- 何时写: `arw workflow init` 随 init 的其他改动一并写入 (提交方式沿用 init 的现行规则); 1.0 接管已采用 0.x 的仓库时进接管提交 ([确定现有 ARW 合同在 1.0 中的继承范围](13-decide-legacy-contracts.md)); 以后发现缺了, 由 `arw workflow update` 补写 (见下条). `.tmp/` 与本机层目录在第一次使用前已写好, 因为 init 与接管都早于任何流程实例.
 - 怎样检查: Engine 打开仓库时, 以及每次创建实例临时工作区, 写本机层文件前, 对两个目录运行 `git check-ignore -q -- <目录>/probe`, 退出码 0 为通过; `arw workflow verify` 也核对同一项. 缺失时给出修复提示: Engine 补写缺的行 (经用户同意, 作为非实施提交写入, 这是一次需要令牌的写入, 按 10 排队), 或用户自己写. `.tmp/` 缺失: 流程照常, 因为 Engine 自己的 Git 操作按路径排除 `.tmp/` (10), 只是用户的 `git status` 会看到它; 本机层目录缺失: Engine 拒绝写本机层文件 (用户可改选仓库层, 或先补写规则), 已有的本机层文件照常读取并提示. 用户不同意补写时不再逐次追问, 只在 `arw workflow verify` 与入口状态中留一行.
 - 卸载时: `arw workflow remove` (把 ARW 从仓库移出) 不撤也不改 `.gitignore` 的这两行 (写入后归仓库所有, D28 补充), 不论是 Engine 加的还是用户原有的. `.tmp/` 的内容按现行规则不自动清理, 命令输出列出仍存在的目录请用户自行删除. 本机层目录的内容 (保留的本机裁决) 仍由命令像对其他仓库自有内容那样询问保留或删除 (`--local-layer <retain|delete>`), 只决定目录内容的去留, 与 `.gitignore` 无关. 卸载 Engine (`uninstall.mjs`) 不改任何仓库.
 - 未采用: `.git/info/exclude` 或用户级忽略文件 (用户否决: 隐式, 其他克隆与协作者看不到); 只靠 Engine 的路径排除 (用户的 Git 操作, 编辑器和其他工具仍会看到 `.tmp/`); 卸载时撤掉这两行 (用户 11-14 D28 补充: 写入后属于仓库, 不该清理).
@@ -107,7 +107,7 @@ Engine 跟随用户安装的 Claude Code 与 Codex (用户 11-13 确认, D19), �
 
 - 配置项: 用户级 ARW 配置新增顶层一项 `replyLanguage`, 即 Agent 交给用户的文字 (对话回复, 问用户, 报告) 使用的自然语言. 取值是 07 语言检查能区分的语言, 与 `arw language inspect` 同一种计数, 首版为中文与英文两值, 精确取值由规范正文定. 仓库文本的语言仍按仓库的写作规则, 与它无关.
 - 何时设: 交互安装时问一次并列出可选值; 非交互安装用安装参数给出; 都没有时留空. 之后可以改, 改后从下一条交给用户的文字起生效.
-- 留空时 (含从 0.x 升级, 配置里还没有这一项): Engine 照常工作, 07 的语言检查不运行, 提醒不写语言, 入口状态留一行提示设置. 不从系统区域设置或用户级指令文件推断: 推断错了, 语言检查会把正确的回复判为命中并逼会话改写.
+- 留空时: Engine 照常工作, 07 的语言检查不运行, 提醒不写语言, 入口状态留一行提示设置. 不从系统区域设置或用户级指令文件推断: 推断错了, 语言检查会把正确的回复判为命中并逼会话改写.
 - 不另设允许缩写表: 07 的缩写检查以仓库根 `CONTEXT.md` 中定义的名称与缩写为白名单, 它由各仓库自己维护.
 
 ### Scenarios
@@ -128,7 +128,7 @@ Engine 跟随用户安装的 Claude Code 与 Codex (用户 11-13 确认, D19), �
 - 以后: 开启脚本的 `start` 与 `stop` 两个动作及其退出状态与失败原因; 安装归属清单新增判断模型目录与 Windows 侧文件 (Engine 在 WSL 时).
 - Engine 状态中的兼容自检记录 ((harness 版本, 端点, 模型) 与结果).
 - 用户级配置的 `replyLanguage` (D30, Reply language 节): 安装时选定, 可以为空; 07 的语言检查与 19 的提醒读它.
-- 仓库忽略规则 (D28): 写入与核对的命令行为 (卸载不撤) 见 Repository ignore rules 节; 10 的 `.tmp/` 路径排除是它的双保险, 22 的本机层目录依赖它, 13 的 0.x 升级按它处理已有规则.
+- 仓库忽略规则 (D28): 写入与核对的命令行为 (卸载不撤) 见 Repository ignore rules 节; 10 的 `.tmp/` 路径排除是它的双保险, 22 的本机层目录依赖它, 13 接管 0.x 仓库时按它处理已有规则.
 - [整理 ARW 1.0 规范的结构与验收场景](14-prototype-spec-outline.md): 验收场景加上面三个忽略规则情景.
 
 ## Comments
@@ -149,3 +149,5 @@ Engine 跟随用户安装的 Claude Code 与 Codex (用户 11-13 确认, D19), �
 11-14 (任务 v1-23fix): D28 补充 (用户, 终端 09:4x), 原话: "而且加了后不用卸载时清理, 加了之后就属于 repository owned 了, 不应该被清理." 据此 Repository ignore rules 节: 注释改为给用户看的说明, 不再是撤销标记; `workflow remove` 不撤不改这两行; `--local-layer <retain|delete>` 只决定本机层目录内容的去留; 删去 "0.x 或用户手写的等价规则不撤" 的取舍与 "不加注释标记" 的未采用理由.
 
 11-14 (任务 v1-rulewrite): 用户 11-14 D30 (原话见 Reply language 节), Main Agent 的理解: 配置 schema 加一项回复语言, 安装时选, Engine 的语言检查按它判; 允许的缩写不新增设置, 仓库根 `CONTEXT.md` 中定义过的名称和缩写视为用户认识. 据此新增 Reply language 节, Scenarios 与 Interfaces 各加一条. 自定的取舍 (Main Agent 可改): 留空时不推断语言, 不查, 只提示设置, 理由见该节; 非交互安装不强制给出回复语言, 以免现有的无人值守安装因缺参数失败.
+
+11-18 (任务 v1-scopeans): 按用户 11-14 "先只支持 windows 和 linux" (见 04 的 Operating systems 节) 删去 Windows and WSL placement 节的 macOS; 按 "老用户只会卸载之前的版本然后安装它" (见 13) 删去 Reply language 节 "含从 0.x 升级" 的说法, 1.0 没有从 0.x 升级的配置; Repository ignore rules 节与 Interfaces 中的 "0.x 升级" 随 13 改称接管.

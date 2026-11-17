@@ -17,4 +17,17 @@ Blocked by: issue:0099:01, issue:0099:03
 
 可行性依据见 [Claude Code 与 Codex 接入本地和第三方模型的路径](../research/agent-platform-models/report.md) (11-08 核对). 它更正了 [核对 Engine 控制 Agent 会话的平台能力](03-research-engine-session-control.md) 中 "本地模型只能挂在 Codex 后端" 的推论: Anthropic 文档明确不支持把 Claude Code 路由到非 Claude 模型, 但 Claude Code 只要求对端暴露 Anthropic Messages 格式; Ollama, llama.cpp, LM Studio, vLLM 以及多家托管模型厂商都提供该端点, 其中多家给出 Claude Code 配置, 维护者本机的 Strata 部署也已经用 Claude Code 实际跑过. 按进程设置环境变量即可让单个 `claude -p` 进程指向别的端点, 不影响用户自己的会话. Claude Code 一侧的风险写入后续合同: 不受官方支持, 每个版本可能新增请求字段使兼容端点报错, 只设端点不设凭据时订阅登录会随请求发出, thinking, 缓存和服务端工具的行为因端点而异. Codex 一侧仍只支持 Responses 协议的自定义提供方和 `--oss`.
 
+### Operating systems
+
+用户 11-14 (原话): "arw 1.0 先只支持 windows 和 linux 两种平台, 不支持 macos." 因此 1.0 首版支持的操作系统只有 Windows 与 Linux (glibc 与 musl 两类发行版, WSL 算 Linux), 不支持 macOS, 0.x 的 "实验性 macOS" 也不保留. 范围随之收窄:
+
+- 安装与配置 ([确定判断模型与兼容端点的安装与配置](20-decide-installation-and-configuration.md)): 安装位置, 自启, 证书与防火墙步骤只写 Windows 原生, Linux 与 WSL, 不写 macOS 分支.
+- 发布: 发布产物只覆盖 Windows 与 Linux (glibc, musl), 构建目标随 07 选定的 Engine 语言定.
+- 验证: 跨操作系统的安装与端到端验证只在 Windows 与 Linux (含一个 musl 发行版) 的虚拟机中进行, 不为 macOS 准备环境或测试.
+- 以后要支持 macOS 时另开 issue, 首版设计不为它预留选项.
+
 问题中的另外两部分尚未得到用户答复, 移到 [确定 ARW 1.0 首版覆盖的工作流与跨平台组合](17-decide-workflow-coverage-and-platform-mix.md).
+
+## Comments
+
+11-18 (任务 v1-scopeans): 按用户 11-14 "先只支持 windows 和 linux" 新增 Operating systems 节; 20 中提到 macOS 的一处同改.
