@@ -43,10 +43,10 @@ Reviewer 能力验证的一个实例今天要由 Main Agent 按 `$reviewer-capab
 | 情形 | 返回 | 已写入 | 调用方下一步 |
 | --- | --- | --- | --- |
 | 正常完成 (含模型失败) | `succeeded`, `validity.valid` 为真 | `agent.json`, 修复副本与记录, `score.json`, `candidates.json`, `run.json` | 按 Skill 盲裁, 定稿后覆盖 `score.json` |
-| 超时, 没有结论就退出, `inspect` 不通过 | `succeeded`, `validity.status` 为 `void`, `notes` 写原因 | `agent.json`, `run.json` (检查不通过时没有计分文件) | 用新实例路径重跑 |
+| 超时, 没有结论就退出, `inspect` 的 `blocked` 或标记 | `succeeded`, `validity.status` 为 `void`, `notes` 写原因 | `agent.json`, `run.json` (检查不通过时没有计分文件) | 用新实例路径重跑 |
 | 未安装 ARW, 场景或目标不合法 | `blocked` | 无 (`setup` 自己的合同) | 修正输入 |
 | 读取出处失败 (`provenance-read`), 机器入口不能启动, 提前退出或除超时中断外任一请求返回 `ok: false` (`agent-control`), 写实例文件失败 (`instance-write`) | `failed` | 失败之前各阶段的文件, 没有 `run.json` | 按诊断排除原因后用新实例路径重跑 |
-| `setup`, `inspect`, `repair` 或 `score` 的 `blocked` 或 `failed` (上述模型失败回退除外) | 原样返回 | 失败之前各阶段的文件, 没有 `run.json` | 按诊断修正输入或排除原因后用新实例路径重跑 |
+| `setup`, `inspect` 的 `failed`, `repair` 或 `score` 的 `blocked` 或 `failed` (上述模型失败回退除外) | 原样返回 | 失败之前各阶段的文件, 没有 `run.json` | 按诊断修正输入或排除原因后用新实例路径重跑 |
 
 新增的三个 `stage` 都来自外部进程 (Git, 机器入口) 或文件系统; 机器入口拒绝请求的原因 (含设置不合法) 由入口判定, `run` 不解析错误码去区分输入问题与环境故障, 所以三者统一记为 `failed`, 开发长期规格中 `failed` 的适用范围随之列入它们. 作废是 Reviewer 实例的结果, 不是 `run` 自身的失败, 所以返回 `succeeded`, 由 `validity` 区分, 使调用方循环能把作废实例照样记入出处并按 Skill 重跑. 机器入口请求失败时 (`stage` 为 `agent-control`, 诊断给出 `runId` 与原始错误码和消息; 设置被拒, 容量不足, 调用方身份缺失与入口进程故障都归此类, 不再细分, 因为调用方的处理相同: 读诊断, 排除原因, 换新实例重跑), 后台运行可能仍在进行, `run` 不自动中断或重发, 因为请求结果不确定时盲目重发可能产生第二个运行; Main 按 `reviewer-launch` Skill 的机器操作说明观察或中断它. 同一格因同一原因连续作废的处理 (连续 2 次停止, 连续 3 次没有结论不记分) 仍由调用方按 Skill 判断, `run` 只负责一个实例.
 

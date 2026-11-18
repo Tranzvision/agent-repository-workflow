@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Reviewer capability suite entry: node scripts/reviewer-capability.mjs <setup|repair|score|baseline|summary|pool|inspect> ...
+// Reviewer capability suite entry: node scripts/reviewer-capability.mjs <run|export|setup|repair|score|baseline|summary|pool|inspect> ...
+//   run <scenario-directory> <new-instance-directory> --settings JSON
+//   export <instance-directory> ...
 //   inspect <instance-directory>
 //   setup <scenario-directory> <new-target-directory>
 //   repair <scenario-directory> <report> <new-output> [--spill FILE ...]
@@ -16,6 +18,9 @@
 // JSON goes to stdout, diagnostics to stderr; exit 0 succeeded, 1 blocked or failed, 2 usage error.
 
 import {setupScenario} from '../lib/reviewer-capability-setup.mjs';
+import {runInstance} from '../lib/reviewer-capability-run.mjs';
+import {exportInstances} from '../lib/reviewer-capability/export.mjs';
+import {isJsonObject, parseJsonText} from '../lib/common/json.mjs';
 import {poolView} from '../lib/reviewer-capability-view.mjs';
 import {inspect} from '../lib/reviewer-capability/inspection.mjs';
 import {baseline, pool, repair, score, summary} from '../lib/reviewer-capability/operations.mjs';
@@ -26,7 +31,7 @@ const usage = (/** @type {string} */ message) => {
 };
 
 const [command, ...rest] = process.argv.slice(2);
-const VALUE_OPTIONS = ['agent', 'by', 'confirmed-by', 'family', 'id', 'instance', 'limit', 'model', 'provisional', 'repair'];
+const VALUE_OPTIONS = ['agent', 'by', 'confirmed-by', 'family', 'id', 'instance', 'limit', 'model', 'provisional', 'repair', 'settings'];
 const LIST_OPTIONS = ['decisions', 'hard', 'spill'];
 const FLAGS = ['enumerate', 'markdown', 'no-repair'];
 /** @type {string[]} */
@@ -64,7 +69,12 @@ for (let index = 0; index < rest.length; index += 1) {
 
 const [action, ...args] = command === 'pool' ? positional : ['', ...positional];
 let result;
-if (command === 'setup' && args.length === 2) result = await setupScenario({scenario: args[0], target: args[1]});
+if (command === 'run' && args.length === 2) {
+    const parsed = parseJsonText(values.settings ?? '');
+    if (parsed.status !== 'succeeded' || !isJsonObject(parsed.value)) usage('--settings must be a JSON object.');
+    result = await runInstance({scenario: args[0], target: args[1], settings: /** @type {any} */ (parsed).value});
+} else if (command === 'export') result = await exportInstances({instances: args});
+else if (command === 'setup' && args.length === 2) result = await setupScenario({scenario: args[0], target: args[1]});
 else if (command === 'repair' && args.length === 3) result = await repair({out: args[2], report: args[1], scenario: args[0], spills: lists.spill});
 else if (command === 'score' && args.length === 2) {
     result = await score({agent: values.agent, decisions: lists.decisions, enumerate: flags.enumerate, instance: values.instance, noRepair: flags['no-repair'],
@@ -82,7 +92,7 @@ else if (command === 'pool' && action === 'override' && args.length === 5) {
     result = await pool({action, by: values.by, decision: args[3], id: args[2], name: args[1], reason: args[4], root: args[0]});
 } else if (command === 'pool' && action === 'anchor-add' && args.length === 3 && values.family && values.model && values['confirmed-by']) {
     result = await pool({action, candidate: args[1], confirmedBy: values['confirmed-by'], expected: args[2], family: values.family, id: values.id, model: values.model, scenario: args[0]});
-} else usage('Usage: reviewer-capability.mjs setup|repair|score|baseline|summary|pool|inspect ... (see the header of this file)');
+} else usage('Usage: reviewer-capability.mjs run|export|setup|repair|score|baseline|summary|pool|inspect ... (see the header of this file)');
 
 const {diagnostics = [], ...payload} = /** @type {{diagnostics?: string[], status: string}} */ (result);
 for (const diagnostic of diagnostics) process.stderr.write(`${diagnostic}\n`);

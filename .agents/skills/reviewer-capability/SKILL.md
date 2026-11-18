@@ -22,26 +22,19 @@ disable-model-invocation: true
 ## Run
 
 1. 确认本次的角色, 场景, 后端和设置 (`model`, `modelProvider`, `reasoningEffort`, `serviceTier`). 每格先跑一次, 只对结果接近的格增加重复. 改动前后的评分对比 (A/B, 回归) 的 Reviewer 各组一律用 Codex `gpt-6-luna` `xhigh` (改动只能在 Claude 后端体现时除外): 两阶段 A/B 本来就要跑足够多的次数来吸收波动, 且 ARW 用户多数运行 Codex, 比较应当测量 Codex Reviewer. 判定 Reviewer 规则改动的 A/B 按事先固定的两阶段进行: 对照组 (改动前) 与候选组 (改动后) 交替启动, 各先跑 3 次, 两组候选并入同一批盲裁, 用 `summary --compare` 看差值 (候选减对照) 的 95% 区间: 整体低于 0 就拒绝, 候选均值不低于对照就接受, 其余情况两组各加跑到 10 次 (中途不看结果, 不提前停), 再按全部 10 次只判一次: 区间整体低于 0 就拒绝, 否则接受. 每个受测场景分别判定, 任一场景拒绝即拒绝. 结果表写出每阶段的差值与区间, 区间下界就是本次不能排除的降幅, 不把 "未拒绝" 写成 "没有降低". 不看两格各自区间是否重叠. A/B 两组使用同一版场景, 答案键, 简报和评分器并同期运行, 不与旧版本的历史分数比较, 也不在同一改动里顺手修场景或答案键; Reviewer 没遵循已有规则时先查原因, 不靠叠加同义指令代替诊断.
-2. 在当前会话临时目录 `.tmp/<platform>/<session>/<run>/` 下为每个实例搭建场景仓库 (实例目录必须是新路径; 返回的 `stateDirectory` 是它的同级 `state`, 恢复记录必须在会话临时目录内, 所以实例不能放在别处):
+2. 在当前会话临时目录 `.tmp/<platform>/<session>/<run>/` 下为每个实例运行 `run` (实例目录必须是新路径, 恢复记录必须在会话临时目录内, 所以实例不能放在别处; 流程与结果见 `docs/specs/agent-repository-workflow-development/spec.md` 的 `run` 接口条目). `--settings` 是 JSON 对象, 例如 Codex `{"model":"gpt-6-luna","modelProvider":"openai","reasoningEffort":"xhigh","serviceTier":"default"}`, Claude `{"model":"haiku","modelProvider":"anthropic","reasoningEffort":"high","serviceTier":"default"}`:
 
    ```sh
-   node scripts/reviewer-capability.mjs setup <scenario-directory> .tmp/<platform>/<session>/<run>/<instance>
+   node scripts/reviewer-capability.mjs run <scenario-directory> .tmp/<platform>/<session>/<run>/<instance> --settings '<json>'
    ```
 
-   输出 `{"status":"succeeded","input":{...}}`, `input` 是 `spawn_agent` 输入 (角色指令, 交接, 空报告, 恢复目录). 比较别的报告格式时, 改写场景仓库中的角色文件和 `input` 的 `instructions`, `handoff`, `reportPath`, `writePaths`.
-3. 按 `reviewer-launch` Skill 通过 `arw background-agent` 启动: 给 `input` 加上 `settings`, 例如 Codex `{"model":"gpt-6-luna","modelProvider":"openai","reasoningEffort":"xhigh","serviceTier":"default"}`, Claude `{"model":"haiku","modelProvider":"anthropic","reasoningEffort":"high","serviceTier":"default"}`. 用 `wait_agent` 等到完成, 记录 `measurement`. 本流程覆盖 `reviewer-launch` 对阈值暂停通知的处理 (不询问用户): `wait_agent` 返回来源 `provider-program` 且正文以 `The Reviewer runtime paused this same task after ` 开头的通知时, Main 对同一运行发 `send_message` "继续" 后再 `wait_agent`, 直到 `completion` 非空. 完成后, `unload_agent` 之前, 把该运行的 `list_agents {runId}` 结果存为 `<instance>/agent.json` (已送达消息卸载后或超过 24 小时即丢失), 供计分统计暂停.
-   时限: 每个实例从 `spawn_agent` 返回起最多 60 分钟 (含暂停后的继续), `wait_agent` 的 `timeout_ms` 不超过剩余时间 (`reviewer-launch` Skill 规定下限 10 秒). 到点或剩余不足 10 秒时 `completion` 仍为 `null` 的实例, 先用 `interrupt_agent` (当前 `turnId`) 停止它, 再保存 `agent.json`; 该实例作废: 不 `inspect`, 不计分, 不入盲池, 用新实例路径从 `setup` 重跑, 重跑实例的开始时间是它自己的 `spawn_agent` 返回时刻. 结果表记录超时数.
-   保存 `agent.json` 后, 计分之前运行 `node scripts/reviewer-capability.mjs inspect <instance>` 检查该 Reviewer 是否读了禁止来源 (答案键, 其他实例, 源码仓库, 以前的运行). 输出 `blocked` (记录不完整, 无法证明没读过) 或 `flags` 非空的实例默认作废: 不计分, 不入盲池, 用相同设置换新实例路径从 `setup` 重跑. 输出 `failed` 表示检查没有完成: 排除原因后重跑 `inspect`, 完成之前不计分. 只有 Main 从所列条目确认实际没有读到禁止内容 (例如 `/` 只是分隔符, 读取被拒绝, 读回自己的报告时措辞巧合) 时才保留, 理由写进结果表. 同一格因同一原因连续作废 2 次就停止并向用户报告 (多半是记录格式变了或 Reviewer 配置有问题). 匹配规则, 输出字段与已知缺口见 `docs/specs/agent-repository-workflow-development/spec.md` 的 Reviewer capability suite 节的 `inspect` 接口.
-4. 计分: 报告是当前角色的自由格式 (`.txt` 或 `.md`, 要点 `- ... path:line`), 基线格式用 `.jsonl`:
-
-   ```sh
-   node scripts/reviewer-capability.mjs repair <scenario-directory> <reportPath> <repaired-path> [--spill <溢出文件> ...]
-   node scripts/reviewer-capability.mjs score <scenario-directory> <reportPath 或 repaired-path> (--repair <repaired-path>.changes.json | --no-repair) --agent <instance>/agent.json --instance <唯一实例名> [--decisions <root>/<name>/decisions.json ...]
-   ```
-
-   先对每份报告做 `repair` (规范化副本与修复记录); 记录有修改时对副本计分并给 `--repair`, 无修改时对原报告计分并给 `--no-repair`; 二者必须声明其一, 缺少 `--agent` 也返回 `blocked`.
-
-   输出 `{status, candidates, scores}`. `candidates` 是尚未裁决的候选 (关联候选与发现候选), `scores` 是按现有裁决计的分 (未裁决的候选按机械规则暂计), 含 `reportDiagnostics`, `scoreBeforePenalty` 与残差折减后的 `score`. `score` 对没有可评分内容的报告返回 `succeeded` 且分数为 0 (带 `modelFailure`); 是否调用它由下面的 `completion` 判据决定. 报告为空或缺失时, 计分前先看 `agent.json`: `completion` 非空 (`ready` 或 `incomplete`, 不论 `reason` 文本) 而报告没有可评分内容是模型失败, 记 0 并把理由写进结果表. `completion` 为 `null` (含状态 `exited` 而没有结论) 或额度, 传输, 准备, 凭据错误导致没有生成记录是运行故障, 不运行 `score`, 修复后用新实例路径重跑; 启动前先确认场景文件和交接路径可读; 同一场景, 设置和实例序号用新实例路径连续尝试三次都是 `completion` 为 `null` 时不记分, 停止并报告维护者. `--instance` 在不同报告间必须唯一, 因为候选的稳定 id 含它. `scores` 另含格式罚, 暂停扣分与 `final`. Commit Audit 的 txt 报告没有 satisfied 行, 只计问题召回. `baseline <unit>` (评分单元 `code-standards`, `code-spec`, `commit-audit`, `spec-readiness`) 校验该评分单元登记的 pBase 基线及其归档; 场景答案键改动后须重测基线并重新登记.
+   `run` 用已安装的运行时 (`~/.agent-repository-workflow`), 不用检出中的实现; 两者不一致时照常运行, 记录里 `runtime.matchesCheckout` 为假, 需要严格同配置比较时测量期间不升级安装. Codex 沙盒中在沙盒外运行 (与 `reviewer-launch` Skill 对 `arw background-agent` 的说明相同).
+3. 看 `run` 的输出 `{status, record}`:
+   - `succeeded` 且 `record.validity.valid` 为真: 实例已计分, 目录里有 `score.json`, `candidates.json` (供 `pool build`), `agent.json`, `run.json`; 进入步骤 5. 计分报告是当前角色的自由格式 (`.txt` 或 `.md`, 要点 `- ... path:line`), 基线格式用 `.jsonl`; 没有可评分内容的报告记为模型失败 0 分, 不是故障.
+   - `succeeded` 且 `validity.status` 为 `void` (`notes` 写原因: `timeout`, `no-completion`, `inspect-blocked`, `inspect-flags`): 实例作废, 不入盲池, 用新实例路径重跑. 同一格因同一原因连续作废 2 次就停止并向用户报告 (多半是记录格式变了或 Reviewer 配置有问题); `no-completion` 连续 3 次不记分, 停止并报告维护者. `inspect-flags` 与 `inspect-blocked` 的完整条目或诊断对该实例重跑 `inspect` 查看 (`run` 不保留人工复核的例外). 结果表记录超时数.
+   - `blocked` (未安装 ARW, 场景或目标不合法, `repair` 或 `score` 的输入问题) 或 `failed` (`stage` 为 `agent-control` 时后台运行可能仍在进行, 按 `reviewer-launch` Skill 观察或中断): 按诊断排除原因后用新实例路径重跑.
+   报告由 `run` 取自 `completion.reportPath`; `--instance` 用实例目录名, 在不同报告间唯一. `baseline <unit>` (评分单元 `code-standards`, `code-spec`, `commit-audit`, `spec-readiness`) 校验该评分单元登记的 pBase 基线及其归档; 场景答案键改动后须重测基线并重新登记. `score` 的输出 `{status, candidates, scores}`: `candidates` 是尚未裁决的候选, `scores` 按现有裁决计分 (未裁决的候选按机械规则暂计), 含 `reportDiagnostics`, `scoreBeforePenalty`, 残差折减后的 `score`, 格式罚, 暂停扣分与 `final`. Commit Audit 的 txt 报告没有 satisfied 行, 只计问题召回.
+4. 手工重算用 `run.json` 的 `report` 与 `repair` (本机路径, `export` 不输出): 需要对溢出文件 (Harness 把大输出保存成的文件) 引用的行号计分时, 对 `report` 重跑带 `--spill` 的 `repair` 再 `score`.
 5. 盲裁: 把 `candidates` 数组存成 JSON 文件, 同一裁决批次的所有报告并入同一次建池:
 
    ```sh
@@ -58,7 +51,7 @@ disable-model-invocation: true
    ```
 
    锚点一致率不低于 0.9 且合成对照全对才通过, 通过后裁决写入 `<root>/<name>/decisions.json`; 不通过返回 `blocked` 且不写任何裁决, 整池重裁. 输出含分族与分模型的一致率, 并在 `<root>/<name>/split-<name>.json` 给出 Main 复核清单 (全部 `supported`, 以及有争议的 `unsupported`: 裁判点名最难 (`--hard`), 理由含犹豫措辞, 或证据与别的候选相交). Main Agent 复核清单, 需要改的用 `pool override <root> <name> <stable-id> <decision> <reason> [--by <谁>]` (保留历史). 复核确认为稳定的关联裁决可登记为新锚点: `pool anchor-add <scenario-directory> <candidate.json> <matched|not-matched> --family <openai|anthropic|strata> --model <来源模型> --confirmed-by <谁> [--id <id>]`, 这是唯一写夹具的命令, 随后经 Git 提交.
-7. 带上裁决库重新 `score ... --decisions <root>/<name>/decisions.json`. 简报改动后旧裁决不再套用, 输出的 `staleDecisions` 列出它们, 须重裁. 关联候选被裁为 `not-matched` 后, 对应 finding 成为新的发现候选, `candidates` 非空时对它们再做步骤 5 和 6 (新池名), 并把新旧裁决库都传给 `--decisions`, 重复到 `candidates` 为空, 此时分数为定稿. 想先看分数区间可加 `--provisional lower|upper` (未裁决候选按最低或最高界值暂计, 结果不是定稿), `--enumerate` 只列出候选全集 (不要求 `--agent`, 无分数). 输出的 `templateFindings` 标出同一实例内文字雷同的 finding, 只作提示, 不改分数.
+7. 带上裁决库用 `run.json` 的 `report` 与 `repair` 重新计分: `score <scenario-directory> <report> (--repair <repair> | --no-repair) --agent <instance>/agent.json --instance <实例目录名> --decisions <root>/<name>/decisions.json`, 定稿后把输出写回 `<instance>/score.json` (`export` 只接受定稿的 `score.json`). 简报改动后旧裁决不再套用, 输出的 `staleDecisions` 列出它们, 须重裁. 关联候选被裁为 `not-matched` 后, 对应 finding 成为新的发现候选, `candidates` 非空时对它们再做步骤 5 和 6 (新池名), 并把新旧裁决库都传给 `--decisions`, 重复到 `candidates` 为空, 此时分数为定稿. 想先看分数区间可加 `--provisional lower|upper` (未裁决候选按最低或最高界值暂计, 结果不是定稿), `--enumerate` 只列出候选全集 (不要求 `--agent`, 无分数). 输出的 `templateFindings` 标出同一实例内文字雷同的 finding, 只作提示, 不改分数.
 8. 统计: 每格 (一个模型 × 场景 × 设置) 的重复实例按开始先后给出定稿的 `score` 输出:
 
    ```sh
@@ -66,7 +59,7 @@ disable-model-invocation: true
    ```
 
    每格前 5 个实例入主统计 (平均, SD, SE, 95% 区间, 负分数个数, 最小, 中位数), 其余列入 `extraIds` 并提示 (超时作废的实例不算入, 不给 `summary` 或 `--compare`); 未定稿的输入返回 `blocked`. `--compare` 用两格给出的全部实例 (不受前 5 个限制) 计算差值 (候选减对照), Welch SE, 自由度与 95% 区间, 只供第 1 步的 A/B 使用, 调用方只给该步规定的前 3 个或前 10 个实例.
-9. 在活动 issue 中写结果表: 每个模型 × 场景 (× 格式) 的 `score`, 耗时 (第 3 步记录的 `measurement`), 召回, 误报和偷懒迹象 (未检查却声称满足, 批量填写, 错误定位, 格式损坏), 以及作废数与原因 (`inspect` 的标记). 说明样本量和天花板效应.
+9. 可用 `node scripts/reviewer-capability.mjs export <instance> ...` 取得带出处 (ARW 提交, 夹具树, 已安装运行时版本) 的实例记录. 在活动 issue 中写结果表: 每个模型 × 场景 (× 格式) 的 `score`, 耗时 (`run.json` 的 `time`), 召回, 误报和偷懒迹象 (未检查却声称满足, 批量填写, 错误定位, 格式损坏), 以及作废数与原因 (`inspect` 的标记). 说明样本量和天花板效应.
 
 Strata 提供方先读 `docs/specs/agent-repository-workflow/strata.md`. 直接启动的 `claude -p` 不在本流程内.
 

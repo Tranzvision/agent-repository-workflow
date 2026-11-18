@@ -1,6 +1,6 @@
 # Reviewer 能力验证增加单实例 `run` 与实例记录 `export`
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 
@@ -30,13 +30,40 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `node scripts/reviewer-capability.mjs run <scenario> <instance> --settings <json>` 按 spec 的 Run flow 节运行一个实例: 测试中正常完成且有一次暂停通知时, 请求日志对该通知恰有一个 `send_message` "继续", 实例目录含 `agent.json`, `score.json`, `candidates.json`, `run.json`, 返回 `succeeded` 且 `record.validity.valid` 为真; `run` 经已安装的 `<HOME>/.agent-repository-workflow/arw.mjs` 而不是检出的 `arw.mjs` 发请求.
-- [ ] 运行环境退出而 `completion` 为 `null` 时记录作废 `no-completion`, `inspect` 产生 `flags` 时记录作废 `inspect-flags`, 两者都返回 `succeeded`, 没有 `score.json`, 前者记录中未知的 `startedAt`, `time.durationSeconds` 与 `tokens` 分量为 `null`; `inspect-flags` 作废实例的 `run.json` 不含本机绝对路径 (`report` 与 `repair` 以外) 与答案键片段; Spec Readiness 场景 `completion` 为 `incomplete` 且 `.txt` 报告有前言和一个不合格式的 `- ` 要点时, 回退计分后返回 `succeeded`, `validity.valid` 为真, `run.json` 的 `report` 为原报告且 `repair` 为 `null`, `score.json` 含 `modelFailure` 且分数为 0; 假入口对 `spawn_agent` 返回 `ok: false` 时返回 `failed` (`stage` 为 `agent-control`) 且没有 `run.json`; 实例目录已存在时返回 `blocked` 且请求日志为空; 未安装时返回 `blocked` 且不创建实例目录; `--settings` 不是 JSON 对象时退出 `2`. 以上由测试覆盖. 剩余不足 10 秒时发 `interrupt_agent` 并作废 `timeout` 的分支在代码中存在, 由审查确认.
-- [ ] `run.json` 含 spec 的 Instance record 节所列字段中除 `pauses` 与 `scoring` 外的全部字段, 另有 `report` 与 `repair`: 测试子进程的工作目录不在检出内时, `arw.commit` 仍等于检出 `HEAD`, `arw.fixtureTree` 等于 `git rev-parse HEAD:tests/fixtures/reviewer-capability`, `runtime.arwVersion` 取自已安装 `manifest.json`; 测试中假安装的一个受管文件与检出字节不同时, `runtime.matchesCheckout` 为假, `stderr` 有诊断, 运行照常完成.
-- [ ] `node scripts/reviewer-capability.mjs export <instance> ...` 返回 `{status: "succeeded", schemaVersion: 1, instances}`, 有效实例的 `scoring` 与 `pauses` 按 spec 的 Instance record 节映射 (含模型失败时 `scoring.status` 为 `modelFailure`), 作废实例的 `scoring` 为 `null` 且 `pauses.known` 为假, 记录不含 `report` 与 `repair`; 未定稿的 `score.json`, 缺少 `run.json`, 重复 `id` 都返回 `blocked` 且没有 `instances`. 由测试覆盖.
-- [ ] 开发长期规格按 What to build 第 4 项更新: Modules 段写明该 Module 拥有单实例的运行与导出, 不拥有成本, 依赖模型配置表的统计和发布; Rationale 段不再写 "多模型 benchmark 的记录与运行层内容不属于能力测试本身"; 入口子命令列表, Interfaces, Seams, 依赖方向, ADR Evaluation 与 Validation strategy 中没有与 `run`/`export` 矛盾的句子 (例如 "启动 Reviewer... 由 Skill 经 `arw background-agent` 完成"); 不引用 `.scratch`.
-- [ ] `$reviewer-capability` Skill 的 `Run` 第 2 到 4 步改为调用 `run`, 第 7 步把定稿输出写回 `<instance>/score.json`, 第 9 步提到 `export`; `.agents/skills` 与 `.claude/skills` 两份一致 (`node scripts/project-claude-skills.mjs --check` 通过).
-- [ ] What to build 预期验证所列命令全部通过, 真实端到端的 `run` 与 `export` 输出摘要记入 `## Validation`.
+- [x] `node scripts/reviewer-capability.mjs run <scenario> <instance> --settings <json>` 按 spec 的 Run flow 节运行一个实例: 测试中正常完成且有一次暂停通知时, 请求日志对该通知恰有一个 `send_message` "继续", 实例目录含 `agent.json`, `score.json`, `candidates.json`, `run.json`, 返回 `succeeded` 且 `record.validity.valid` 为真; `run` 经已安装的 `<HOME>/.agent-repository-workflow/arw.mjs` 而不是检出的 `arw.mjs` 发请求.
+- [x] 运行环境退出而 `completion` 为 `null` 时记录作废 `no-completion`, `inspect` 产生 `flags` 时记录作废 `inspect-flags`, 两者都返回 `succeeded`, 没有 `score.json`, 前者记录中未知的 `startedAt`, `time.durationSeconds` 与 `tokens` 分量为 `null`; `inspect-flags` 作废实例的 `run.json` 不含本机绝对路径 (`report` 与 `repair` 以外) 与答案键片段; Spec Readiness 场景 `completion` 为 `incomplete` 且 `.txt` 报告有前言和一个不合格式的 `- ` 要点时, 回退计分后返回 `succeeded`, `validity.valid` 为真, `run.json` 的 `report` 为原报告且 `repair` 为 `null`, `score.json` 含 `modelFailure` 且分数为 0; 假入口对 `spawn_agent` 返回 `ok: false` 时返回 `failed` (`stage` 为 `agent-control`) 且没有 `run.json`; 实例目录已存在时返回 `blocked` 且请求日志为空; 未安装时返回 `blocked` 且不创建实例目录; `--settings` 不是 JSON 对象时退出 `2`. 以上由测试覆盖. 剩余不足 10 秒时发 `interrupt_agent` 并作废 `timeout` 的分支在代码中存在, 由审查确认.
+- [x] `run.json` 含 spec 的 Instance record 节所列字段中除 `pauses` 与 `scoring` 外的全部字段, 另有 `report` 与 `repair`: 测试子进程的工作目录不在检出内时, `arw.commit` 仍等于检出 `HEAD`, `arw.fixtureTree` 等于 `git rev-parse HEAD:tests/fixtures/reviewer-capability`, `runtime.arwVersion` 取自已安装 `manifest.json`; 测试中假安装的一个受管文件与检出字节不同时, `runtime.matchesCheckout` 为假, `stderr` 有诊断, 运行照常完成.
+- [x] `node scripts/reviewer-capability.mjs export <instance> ...` 返回 `{status: "succeeded", schemaVersion: 1, instances}`, 有效实例的 `scoring` 与 `pauses` 按 spec 的 Instance record 节映射 (含模型失败时 `scoring.status` 为 `modelFailure`), 作废实例的 `scoring` 为 `null` 且 `pauses.known` 为假, 记录不含 `report` 与 `repair`; 未定稿的 `score.json`, 缺少 `run.json`, 重复 `id` 都返回 `blocked` 且没有 `instances`. 由测试覆盖.
+- [x] 开发长期规格按 What to build 第 4 项更新: Modules 段写明该 Module 拥有单实例的运行与导出, 不拥有成本, 依赖模型配置表的统计和发布; Rationale 段不再写 "多模型 benchmark 的记录与运行层内容不属于能力测试本身"; 入口子命令列表, Interfaces, Seams, 依赖方向, ADR Evaluation 与 Validation strategy 中没有与 `run`/`export` 矛盾的句子 (例如 "启动 Reviewer... 由 Skill 经 `arw background-agent` 完成"); 不引用 `.scratch`.
+- [x] `$reviewer-capability` Skill 的 `Run` 第 2 到 4 步改为调用 `run`, 第 7 步把定稿输出写回 `<instance>/score.json`, 第 9 步提到 `export`; `.agents/skills` 与 `.claude/skills` 两份一致 (`node scripts/project-claude-skills.mjs --check` 通过).
+- [x] What to build 预期验证所列命令全部通过, 真实端到端的 `run` 与 `export` 输出摘要记入 `## Validation`.
+
+## Validation
+
+提交审核 `prepare` 摘要块:
+
+```
+code: +212 lines (files: 5)
+  lib/reviewer-capability-run.mjs +163
+  lib/reviewer-capability/export.mjs +36
+  lib/reviewer-capability/operations.mjs 0
+  lib/reviewer-capability/results.mjs +3
+  scripts/reviewer-capability.mjs +10
+documents: +1714 characters (files: 3)
+  .agents/skills/reviewer-capability/SKILL.md -922
+  .claude/skills/reviewer-capability/SKILL.md -922
+  docs/specs/agent-repository-workflow-development/spec.md +3558
+tests: +233 lines (files: 2)
+  tests/reviewer-capability/export.test.mjs +64
+  tests/reviewer-capability/run.test.mjs +169
+```
+
+- `pnpm typecheck` 通过; `pnpm test` 全部通过 (约 3.3 秒); `node --check lib/reviewer-capability-run.mjs`, `node scripts/project-claude-skills.mjs --check` (先运行 `node scripts/project-claude-skills.mjs`), `node scripts/check-workflow-distribution.mjs`, `node scripts/generate-install-arw.mjs --check`, `node arw.mjs text check`, `node arw.mjs terms check --include .scratch/0144-reviewer-capability-run-export/` 与 `git diff --check` 均通过.
+- 验收命令的实际运行: `node scripts/reviewer-capability.mjs run <scenario> <instance> --settings <json>` (假入口见 `tests/reviewer-capability/run.test.mjs`, 真实入口见下面的端到端); `git rev-parse HEAD:tests/fixtures/reviewer-capability` 与记录的 `arw.fixtureTree` 相等; `node scripts/reviewer-capability.mjs export <instance> ...` (见 `tests/reviewer-capability/export.test.mjs` 与真实实例); 开发长期规格不再写 "由 Skill 经 `arw background-agent` 启动 Reviewer" (Modules, Seams, 依赖方向已改写); 两份 Skill 副本一致.
+- 真实端到端 (沙盒外, 已安装 0.5.4-pre 运行时, Codex `gpt-6-luna` `xhigh`, 场景 `spec-readiness-reviewer/spec-readiness`): `run` 带 `--settings '{"model":"gpt-6-luna","modelProvider":"openai","reasoningEffort":"xhigh","serviceTier":"default"}'` 返回 `succeeded`, `validity.valid` 为真, `arw.commit` 为 `a8332d40f84fe785d96f8df54d9ac42a89fdcae0` (等于 `git rev-parse HEAD`), `arw.fixtureTree` 为 `de393c3afb5081830335622f16c962dff17cb0c7`, `arw.treeDirty` 为真 (当时实现未提交), `runtime.arwVersion` 为 `0.5.4-pre`, `runtime.matchesCheckout` 为真, `time.durationSeconds` 1860.4 (估计值), token 为未缓存输入 183420, 缓存输入 4925056, 输出 95583. 真实机器入口的响应形状与假入口一致; 本次没有出现暂停通知.
+- 按 Skill 盲裁: 池 `p1` 20 个候选 (裁判 Sonnet high, 锚点一致率 1.0, 合成对照全对), `not-matched` 产生的 1 个新发现候选在池 `p2`; 之后 `score ... --decisions` 的 `candidates` 为空, 定稿分数 0.5681 (`pauseCount` 0), 已写回 `<instance>/score.json`.
+- `export <instance>` 返回 `{"status":"succeeded","schemaVersion":1,"instances":[...]}`: `scoring` 为 `{status: final, score: 0.5681, formatPenalty: 0, overallDeduction: 0, repairs: 0}`, `pauses` 为 `{known: true, count: 0}`, 没有 `report` 与 `repair`.
+- 运行后该实例空闲, 已手工 `unload_agent` (`run` 按设计不卸载); 没有残留运行中的 Reviewer. 运行期间设置了 `ARW/codex20` 的 STOP 文件, 运行后已删除.
 
 ## Blocked by
 
@@ -48,3 +75,9 @@ Status: ready-for-agent
 - `export` 字段名的来源是外部 benchmark v1 结果文件格式说明的 `instances` 字段 (外部仓库 tag `reviewer-bench-v1` 中的 `benchmarks/multi-model-v1/export-format.md`), 本 issue 只沿用 ARW 能亲自观察的字段, 其余见 spec 的 Instance record 节.
 - 执行: codex
 - Spec Readiness: 4 轮 (Claude haiku high), 最后 `No problems.`. 前 3 轮的修改经 Main Agent 与独立 subagent 按 `rule-and-design-changes` Skill 的 Reviewer-proposed changes 节共同决定, 双方一致: 补入机器入口宿主与管理进程的结果字段来源, 新增 `stage` 统一为 `failed`, 检出定义为脚本所在仓库, 作废说明不写 `match`, 超时中断的 `turnId` 来源, `run.json` 字段范围与 `repair` 取值, 不传 spill 的理由, 以及 Spec Readiness 报告格式不合时的模型失败回退.
+- 实施分工: Codex 写代码与测试, Claude worker 同步开发长期规格 (9 处), Skill 与 Claude 副本, 跑端到端并填写 Validation 与本节.
+- 体积: 非测试代码净增 212 行, 低于预计的 250 到 330 行. 文档净增 1714 字符, 低于预计的 +2500; 其中开发长期规格单独约 3558 字符, 超过预计的约 +1800, 因为 Interfaces 中 `run` 与 `export` 两条要写全合同 (记录字段, `stage` 含义), 而两份 Skill 副本各减少约 922 字符. 测试净增 233 行, 高于预计的 150 到 220 行, 因为包含假的已安装入口.
+- `lib/reviewer-capability-run.mjs` 放在 `lib/` 顶层符合 spec: 它导入同为顶层连接实现的 `lib/reviewer-capability-setup.mjs`, 产品身份与 `lib/reviewer-capability/` 的操作, 而 `lib/reviewer-capability/` 内的文件不能依赖顶层同级文件, 所以与 `setup`, `pool view` 并列放在顶层, 与 effort spec 及更新后的开发长期规格一致.
+- 端到端实例是机器入口形状的证据, 不是发布分数; 盲裁中 `supported` 与有争议的 `unsupported` 条目未做 Main 复核.
+- 提交审核第 1 轮: 采纳 (已修改): 清单文件名改用 `INSTALLATION_MANIFEST_FILE`, 去掉只有 0 或 1 项的诊断数组与死初始化 `turnId`, `timeLimitSeconds` 取 `LIMIT_MS / 1000`, `export` 与 `summary` 共用 `isFinalScore`, 测试改用 `createTemporaryDirectory` 与 `runExitedProcess` 且 `treeDirty` 断言不假定检出状态, 本 issue 新增文字改为中文, 开发长期规格 `run` 条目改为有序列表并删去 Seams 中重复的边界句, Skill 第 2 步不再复述 `run` 内部流程; 要求符合审核提出的 effort spec 结果表与第 6 步冲突, 经独立 Agent 与 Main 一致决定改结果表 (`inspect` 的 `blocked` 作废, 开发长期规格同步). 第 2 轮后另采纳: 用 `parseInstallationManifest` 读取清单 (复用拥有者的格式, 测试的假清单补齐字段), Skill 第 2 步引用写全路径. 不采纳: 把 `runInstance` 拆成五个函数 (见台账).
+- 台账: lib/reviewer-capability-run.mjs 的 `runInstance` 函数整体 记录不修 这是 Main 对第 3 轮同一条意见的判断: 拆分会把共享的会话, 请求与列表状态改成对象传递, 净增代码, 不带来可测性 (时限分支即使可单独调用, 本仓库也不为测试加注入接缝, 超时分支按 spec 由审查确认); 各阶段只在 `runInstance` 一处调用, 读完整个函数仍是 163 行顺序流程; 与根 `AGENTS.md` Efficiency First 第 4 条一致, 是否仍要拆分留给维护者复核整体 diff.
