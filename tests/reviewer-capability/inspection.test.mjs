@@ -16,6 +16,7 @@ const lines = (/** @type {any[]} */ records) => `${records.map(record => JSON.st
 const codex = {
     meta: (id = THREAD) => ({type: 'session_meta', payload: {id}}),
     call: (/** @type {string} */ id, input = 'const r = await tools.exec_command({cmd: "ls"});', name = 'exec') => ({type: 'response_item', payload: {type: 'custom_tool_call', call_id: id, name, input}}),
+    fn: (/** @type {string} */ id) => ({type: 'response_item', payload: {type: 'function_call', call_id: id, name: 'exec_command', arguments: '{"cmd":"ls"}'}}),
     out: (/** @type {string} */ id, text = 'ok') => ({type: 'response_item', payload: {type: 'custom_tool_call_output', call_id: id, output: [{type: 'input_text', text}]}}),
     run: (/** @type {string} */ command, /** @type {string} */ cwd) => ({type: 'event_msg', payload: {type: 'item_completed', item: {type: 'CommandExecution', command: ['/bin/bash', '-lc', command], cwd: `file://${cwd}`}}}),
     done: {type: 'event_msg', payload: {type: 'task_complete'}},
@@ -78,6 +79,7 @@ test('an incomplete record blocks instead of passing', async t => {
         ['call without output', codexRecords(codex.call('c1'), codex.run('ls', '/x')), {}],
         ['no task_complete', good.slice(0, -1), {}],
         ['exec_command without execution entry', codexRecords(codex.call('c1'), codex.out('c1')), {}],
+        ['function_call exec_command without execution entry', codexRecords(codex.fn('c1'), codex.out('c1')), {}],
         ['claude tool_use without result', [claude.owner(), claude.use('u1', 'Read', {file_path: 'x'})], {}],
         ['codex cwd not a string', codexRecords(codex.call('c1'), {type: 'event_msg', payload: {type: 'item_completed', item: {type: 'CommandExecution', command: ['ls'], cwd: 7}}}, codex.out('c1')), {}],
         ['codex command not an array', codexRecords(codex.call('c1'), {type: 'event_msg', payload: {type: 'item_completed', item: {type: 'CommandExecution', command: 'ls', cwd: '/x'}}}, codex.out('c1')), {}],
@@ -109,10 +111,13 @@ test('an interrupted instance is checked from the record it left, its calls with
     const long = `const r = await tools.exec_command({cmd: "cat ${'x'.repeat(250)}"});`;
     const onlyCut = await run(t, [codex.meta(), codex.call('c1', long)], {completion: null});
     assert.deepEqual([onlyCut.result.status, onlyCut.result.unfinished], ['succeeded', [{position: 2, text: long.slice(0, 200)}]]);
+    assert.equal((await run(t, [codex.meta(), codex.fn('c1')], {completion: null})).result.status, 'succeeded');
+    assert.equal((await run(t, codexRecords(codex.fn('c1'), codex.run('ls', instance), codex.out('c1')))).result.status, 'succeeded');
     const ready = {status: 'ready', reportPath: '/r'};
     /** @type {Array<[string, any[], any]>} */
     const cases = [
         ['answered exec_command without execution entry', [codex.meta(), codex.call('c1'), codex.out('c1')], {completion: null}],
+        ['answered function_call exec_command without execution entry', [codex.meta(), codex.fn('c1'), codex.out('c1')], {completion: null}],
         ['completed without task_complete', [codex.meta(), codex.call('c1'), codex.run('ls', '/x'), codex.out('c1')], {completion: ready}],
         ['completed with a call without output', codexRecords(codex.call('c1'), codex.run('ls', '/x')), {completion: ready}],
         ['another thread', [codex.meta('other')], {completion: null}],

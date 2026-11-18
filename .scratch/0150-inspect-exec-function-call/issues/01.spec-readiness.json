@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0150:01",
+  "request": {
+    "digest": "0c303d5d15b177ee5db3856a105fd2229eab57182928806986a978179a69354f",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0150_01/spec-readiness/requests/request-e84312a7-c14a-43c7-954b-15b16643175e.json",
+    "id": "e84312a7-c14a-43c7-954b-15b16643175e"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": "docs/specs/agent-repository-workflow-development/spec.md",
+      "role": "governing-spec",
+      "sha256": "c4b7f9cd77002a40621c195312cef86300f6d03b8ea5abb97e5f83e1f550ee30"
+    },
+    {
+      "filePath": "lib/reviewer-capability/inspection.mjs",
+      "role": "architecture-evidence",
+      "sha256": "11116a6afa745ca672236849ea1f3663f9c85f55836bbcf930f333f35f46fe20"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0150-inspect-exec-function-call/issues/01-inspect-exec-function-call.md",
+    "sha256": "322207ab1d89e33a9e36e942d43585f37923342b53c37cc0a841a57e33154815"
+  },
+  "result": "satisfied"
+}
