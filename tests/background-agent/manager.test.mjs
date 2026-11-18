@@ -226,6 +226,10 @@ test('preparation and local validation fail definitely, while an attempted nativ
     assert.equal(observed.taskState, 'ended');
     const waited=result(await fake.execute(accepted.runId,'wait_agent',{cursor:observed.cursor}));
     assert.equal(waited.state,'exited');
+    assert.deepEqual(fake.effects.map(item=>[item.fields.outcome,item.fields.startedAt]),[['failed',null]],'a task that never worked is recorded once as failed');
+    const session=fake.manager.proxy(fake.manager.owned(accepted.runId,'main-1','main-1'));
+    await session.failAcceptedTask({messageId:accepted.messageId});
+    assert.equal(fake.effects.length,1,'the Reviewer runtime failing a delivery already recorded adds nothing');
   }
 });
 
@@ -1043,6 +1047,10 @@ for(const failure of ['preparation','dispatch'])test(`failed followup_task ${fai
   await entry.work.catch(()=>{});
   const observed=result(await fake.execute(started.runId,'wait_agent',{cursor:0,timeout_ms:3600000}));
   assert.equal(observed.taskState,failure==='preparation'?'ended':'unknown');
+  assert.deepEqual(fake.effects.map(item=>[item.fields.outcome,item.fields.startedAt===null]),[['unknown',false],['failed',true]]);
+  assert.equal(typeof fake.effects[1].fields.finishedAt,'number');
+  await fake.execute(started.runId,'unload_agent',{},'main-1');
+  assert.equal(fake.effects.length,2,'unloading afterwards records nothing more');
 });
 
 test('a failed queued followup cannot finish a newer accepted task',async t=>{
@@ -1569,6 +1577,25 @@ test('agent-task records a start failure as failed and a task turned unknown wit
   const run=result(await lost.start());await waitDelivered(lost.stateStore,run.messageId);
   lost.native.vanish(run.runId);await lost.execute(run.runId,'list_agents');
   assert.deepEqual(lost.effects.map(item=>[item.fields.outcome,item.fields.finishedAt]),[['unknown',null]]);
+});
+
+test('agent-task records once a working task turned unknown by a failed steer or a lost environment',async t=>{
+  const fake=await harness(t);
+  const started=result(await fake.start());await waitDelivered(fake.stateStore,started.messageId);
+  const entry=fake.manager.owned(started.runId,'main-1','main-1');
+  assert.ok(entry.native);
+  entry.native.steer=async()=>{throw new Error('Native steer was lost.');};
+  const session=fake.manager.proxy(entry);
+  const task=await session.acceptTask({handoff:'more',turnId:/** @type {string} */(entry.turnId)});
+  await session.dispatchAccepted({messageId:task.messageId});
+  assert.deepEqual(fake.effects.map(item=>[item.fields.outcome,item.fields.finishedAt]),[['unknown',null]]);
+  const lost=await harness(t);
+  const run=result(await lost.start());await waitDelivered(lost.stateStore,run.messageId);
+  const lostSession=lost.manager.proxy(lost.manager.owned(run.runId,'main-1','main-1'));
+  const next=await lostSession.acceptTask({handoff:'more',turnId:/** @type {string} */(result(await lost.execute(run.runId,'list_agents')).turnId)});
+  lost.native.vanish(run.runId);
+  await lostSession.dispatchAccepted({messageId:next.messageId});
+  assert.deepEqual(lost.effects.map(item=>item.fields.outcome),['unknown'],'a snapshot turning a working task unknown mid-dispatch adds no second record');
 });
 
 test('restart recovery records a working task that became unknown, and nothing for an idle one', async t=>{

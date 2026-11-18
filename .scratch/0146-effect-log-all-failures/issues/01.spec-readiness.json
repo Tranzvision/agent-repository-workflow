@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0146:01",
+  "request": {
+    "digest": "eb4c0067e1ff0a3a692c472ec09b0fe3ecd9536616363cda94c6acd49c318759",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0146_01/spec-readiness/requests/request-9e0813a9-e686-469a-8772-ebaf0bfd03f0.json",
+    "id": "9e0813a9-e686-469a-8772-ebaf0bfd03f0"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0146-effect-log-all-failures/spec.md",
+      "role": "governing-spec",
+      "sha256": "849e8d19225249da5d62a437ee5eacdc57fb987383e86cca0c9811881c04bf3a"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "fee1acd59f1f22fb7eee39b147a51bb9a8b18a522f532cb178f7df1182c83cd0"
+    },
+    {
+      "filePath": "lib/background-agent/manager.mjs",
+      "role": "architecture-evidence",
+      "sha256": "eb3c34144c64344e4968ea9dbde74716e28a9b73948f011e054fdc13e0157536"
+    },
+    {
+      "filePath": "lib/reviewer-runtime/reviewer-runtime.mjs",
+      "role": "architecture-evidence",
+      "sha256": "79a6cee7700b09d40c8197e1b9b45c06a767f45f9e249ff4af48a16fc682ad28"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0146-effect-log-all-failures/issues/01-record-all-accepted-task-failures.md",
+    "sha256": "c7868b411c37748fecbea330adbbbdacabc458fcc40af6d8bd0002afb3f5305b"
+  },
+  "result": "satisfied"
+}
