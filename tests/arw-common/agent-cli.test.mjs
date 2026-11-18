@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import {mkdir, rm} from 'node:fs/promises';
+import {mkdir, rm, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
 import {createMockChild, createRepository, run, writeConfig} from '../helpers/arw-cli.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {spawnFailureHint} from '../../lib/arw-common/agent-cli-launch.mjs';
+import {executableOnPath} from '../../lib/arw-common/executable-path.mjs';
 import {parseCommand, UsageError} from '../../lib/arw.mjs';
 
 /** @typedef {NonNullable<NonNullable<Parameters<typeof import('../../arw.mjs').runArw>[1]>['spawnProcess']>} ArwSpawn */
@@ -210,4 +211,12 @@ test('agent start does not launch outside a Git Repository', async t => {
         result: 1,
     });
     assert.equal(started, false);
+});
+
+test('executableOnPath finds a file on PATH and ignores a missing one', async t => {
+    const directory = await createTemporaryDirectory(t, 'arw-path-');
+    await writeFile(join(directory, 'codex'), '');
+    assert.equal(await executableOnPath('codex', {PATH: directory}, 'linux'), true);
+    assert.equal(await executableOnPath('codex', {PATH: directory}, 'win32'), false);
+    assert.equal(await executableOnPath('codex', {}, 'linux'), false);
 });

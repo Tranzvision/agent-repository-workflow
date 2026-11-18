@@ -420,6 +420,12 @@ Each Reviewer judges only its bound inputs: it never chooses work scope, makes i
 
 Under the hood, a Reviewer Role is a temporary Agent spawned by the active workflow, not an external CLI profile started via `arw agent start` from your global `config.json`. The two mechanisms share no name mapping or session state. Because independent reviews cost extra wait time and model tokens, ARW runs them only at the pre-implementation and pre-commit gates, trading that cost for a second opinion that is separate from the implementer.
 
+### Install Codex when you use Claude Code
+
+You can run ARW with Claude Code as your Main Agent, but install Codex too and use it as the harness for background agents and subagents, including Reviewers. By default every Reviewer runs a GPT model through Codex, so with Codex installed Reviewers follow your configuration without any change. ARW has not verified any Claude background agent or subagent, so it cannot guarantee how well one works in ARW. Codex as the harness has been shown to work better: for the models tested, the same model scored equal or higher with Codex than with Claude Code, and clearly higher on Spec Readiness review.
+
+Without Codex on `PATH`, Reviewers fall back to Claude (`haiku` at `high` effort) and each Reviewer launch result carries a `notice` that recommends installing Codex. A Reviewer you explicitly configure with `modelProvider` `"anthropic"` always runs on Claude, and ARW does not block that choice.
+
 ### Use a third-party model for Claude Reviewers
 
 When you use Claude Code, any Reviewer whose `modelProvider` is set to `"anthropic"` runs through headless `claude -p`. Each Claude turn inherits the environment of the client that started the background-agent manager, so `ANTHROPIC_API_KEY`, `CLAUDE_CONFIG_DIR`, and login state follow that client rather than the requesting Main Agent.

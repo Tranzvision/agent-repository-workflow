@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0152:01",
+  "request": {
+    "digest": "2a69b07f24f06dcf48ba429a872a602d2305d3c11ec6d6d5a660e942b98b8e62",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0152_01/spec-readiness/requests/request-a347b1d2-932f-4a49-bd31-9652c8ffcfe6.json",
+    "id": "a347b1d2-932f-4a49-bd31-9652c8ffcfe6"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0152-claude-code-gpt-reviewers/spec.md",
+      "role": "governing-spec",
+      "sha256": "0914631cf0fafe9875f431791035a8bca0aae8c1ba1817a9a956fdf3d7ab99d5"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/adr/0032-run-claude-reviewers-through-headless-claude.md",
+      "role": "adr",
+      "sha256": "34e6e9cee542c11ba5ba13a4841d54c4a6f57b22874de01c6be793c98d9b3584"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-installation/spec.md",
+      "role": "governing-spec",
+      "sha256": "959a7dfdfa4dcd453d07d088af1436e1f3952d6716f85cbd1f24d47eee5aa1cf"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "f5915cc3c73a7b5430f2f1d521daf29bf053ca0221b0a86ae81fbd90b3fe01d2"
+    },
+    {
+      "filePath": "lib/arw-background-agent-host.mjs",
+      "role": "architecture-evidence",
+      "sha256": "92e8ee29117499cc7c16f9e7827aea4c8269cd50d3fc163743eafd4f2e428b93"
+    },
+    {
+      "filePath": "lib/arw-common/executable-path.mjs",
+      "role": "architecture-evidence",
+      "sha256": "e17cbe7ae49c393bc098870cb6146b3fdc8f1f8db3629072c4a0859a5d632679"
+    },
+    {
+      "filePath": "lib/arw-common/reviewer-configuration.mjs",
+      "role": "architecture-evidence",
+      "sha256": "58610aa041beb5b728331e452908b804463bc79003421884ea772e52761fa5d5"
+    },
+    {
+      "filePath": "lib/background-agent/claude-sessions.mjs",
+      "role": "architecture-evidence",
+      "sha256": "862686d3aaf1f215dcd6fdf2d9292dafc08b1f01f62b6981f4692d11aa754cb6"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0152-claude-code-gpt-reviewers/issues/01-claude-code-gpt-reviewers.md",
+    "sha256": "17dd1f6b392ad82dc1747f6ee44ab12b602ab6839b38718e4bb68c43bfff256d"
+  },
+  "result": "satisfied"
+}

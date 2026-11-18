@@ -418,6 +418,12 @@ Main Agent
 
 从运行机制上看, 这些 Reviewer 是当前工作流在需要时拉起的临时 Agent, 而不是全局 `config.json` 里通过 `arw agent start` 启动的外部 CLI 进程; 两者之间没有任何名称映射, 也不共享会话状态. 独立审核确实会增加等待时间和模型 token 消耗, 因此 ARW 只在实施前和提交前两个对应阶段按需启动它们, 用这点额外开销换取独立于实现者之外的客观把关.
 
+### 在 Claude Code 中使用 ARW 时请安装 Codex
+
+你可以用 Claude Code 作为 Main Agent 运行 ARW, 但建议同时安装 Codex, 并把它作为后台 agent 和 subagent (包括 Reviewer) 的 harness. 默认每个 Reviewer 都通过 Codex 运行 GPT 模型, 所以装了 Codex 后, Reviewer 无需任何改动就按你的配置运行. ARW 没有验证过 Claude 的任何后台 agent 或 subagent, 无法保证它们在 ARW 中的效果. 以 Codex 作为 harness 的效果已得到证实: 在测过的模型上, 同一个模型在 Codex 中的得分不低于在 Claude Code 中的得分, 在 Spec Readiness 审核上明显更高.
+
+`PATH` 上没有 Codex 时, Reviewer 回退到 Claude (`haiku`, `high` 强度), 每次启动 Reviewer 的返回结果都带一个 `notice`, 建议安装 Codex. 你显式把 `modelProvider` 配成 `"anthropic"` 的 Reviewer 始终运行在 Claude 上, ARW 不阻拦这一选择.
+
 ### 让 Claude Reviewer 使用第三方模型
 
 在 Claude Code 环境下, 当某个 Reviewer 的 `modelProvider` 设为 `"anthropic"` 时, ARW 会通过无头模式 `claude -p` 运行它. 每个 Claude 回合都会继承启动后台管理进程的客户端环境, 因此 `ANTHROPIC_API_KEY`, `CLAUDE_CONFIG_DIR` 和登录状态来自该客户端, 而非请求审核的 Main Agent.

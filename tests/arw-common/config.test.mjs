@@ -64,13 +64,22 @@ test('Reviewer settings resolve by role and field with explicit Standard and iso
     assert.deepEqual(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig, repositoryConfig}), {
         model: 'gpt-6-luna', modelProvider: 'openai', reasoningEffort: 'xhigh', serviceTier: 'default',
     });
+    // Claude Code with Codex installed follows the configuration; without Codex it falls back to Claude and says so.
     assert.deepEqual(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig, repositoryConfig, platform: 'claude-code'}), {
+        model: 'gpt-6-luna', modelProvider: 'openai', reasoningEffort: 'xhigh', serviceTier: 'default',
+    });
+    let fallbacks = 0;
+    assert.deepEqual(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig, repositoryConfig, platform: 'claude-code', codexAvailable: false, onFallback: () => {fallbacks += 1;}}), {
         model: 'haiku', modelProvider: 'anthropic', reasoningEffort: 'high', serviceTier: 'default',
     });
+    assert.equal(fallbacks, 1);
+    assert.equal(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig, repositoryConfig, platform: 'claude-code', codexAvailable: false, overrides: {serviceTier: 'default'}, onFallback: () => {fallbacks += 1;}}).model, 'gpt-6-luna');
+    assert.equal(fallbacks, 1);
     const claude = {reviewers: {'spec-readiness-reviewer': {model: 'sonnet', modelProvider: 'anthropic', env: {ANTHROPIC_AUTH_TOKEN: 'secret'}}}};
-    assert.deepEqual(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig: claude, repositoryConfig, platform: 'claude-code'}), {
+    assert.deepEqual(resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig: claude, repositoryConfig, platform: 'claude-code', codexAvailable: false, onFallback: () => {fallbacks += 1;}}), {
         model: 'sonnet', modelProvider: 'anthropic', reasoningEffort: 'xhigh', serviceTier: 'default',
     });
+    assert.equal(fallbacks, 1);
     assert.throws(() => resolveReviewerSettings({role: 'spec-readiness-reviewer', globalConfig, repositoryConfig: claude}),
         /reviewers\.spec-readiness-reviewer\.env is allowed only in the user-level ARW config\.json/);
 });

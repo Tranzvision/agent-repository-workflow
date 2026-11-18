@@ -245,8 +245,9 @@ test('a Claude Code Main starts, waits for, follows up and messages a Claude Rev
     await mkdir(stateDirectory, {recursive: true});
     await mkdir(runtimeDirectory, {mode: 0o700});
     await mkdir(programDirectory);
-    await writeFile(join(programDirectory, 'config.json'), JSON.stringify({configVersion: 3, editor: {command: 'code', args: ['{file}']},
-        reviewEditor: {command: 'code', args: ['{file}']}, jira: {listLimit: 50}, reviewers: {'requirements-reviewer': {model: 'haiku', modelProvider: 'anthropic', env: {ANTHROPIC_BASE_URL: 'https://host.example'}}}}));
+    const writeReviewers = (/** @type {Record<string, unknown>} */ reviewers) => writeFile(join(programDirectory, 'config.json'), JSON.stringify({configVersion: 3, editor: {command: 'code', args: ['{file}']},
+        reviewEditor: {command: 'code', args: ['{file}']}, jira: {listLimit: 50}, reviewers}));
+    await writeReviewers({'requirements-reviewer': {model: 'haiku', modelProvider: 'anthropic', env: {ANTHROPIC_BASE_URL: 'https://host.example'}}});
     const log = join(directory, 'calls.jsonl');
     /** @type {NodeJS.ProcessEnv} */ const environment = {...process.env, FAKE_CLAUDE_LOG: log, CLAUDE_CONFIG_DIR: directory, FAKE_CLAUDE_MODE: 'ask'};
     const nativeSessions = createClaudeSessions({executable, environment, runtimeDirectory});
@@ -286,6 +287,27 @@ test('a Claude Code Main starts, waits for, follows up and messages a Claude Rev
     assert.equal(calls.find(call => call.control).control.behavior, 'deny');
     assert.match(calls.find(call => call.control).control.message, /Denied Bash: This command requires approval/);
 
+    // A GPT-configured role on Claude Code without Codex on PATH falls back to Claude and the launch result says so.
+    await writeReviewers({'requirements-reviewer': {model: 'gpt-6-luna', modelProvider: 'openai', env: {ANTHROPIC_BASE_URL: 'https://fallback.example'}}});
+    const originalPath = process.env.PATH;
+    process.env.PATH = '';
+    t.after(() => {process.env.PATH = originalPath;});
+    const fallback = await dispatch('spawn_agent', {...handoff, identity: {kind: 'ordinary', issueIds: ['issue:0152:01']}, ...await report('fallback')});
+    assert.match(fallback.notice, /Codex is not installed/);
+    assert.equal(fallback.notice.includes('benchmark'), false);
+    process.env.PATH = originalPath;
+    await completion(fallback.runId);
+    const fallbackCalls = (await readFile(log, 'utf8')).trim().split('\n').map(line => JSON.parse(line)).filter(call => call.args);
+    assert.equal(fallbackCalls.at(-1).args[fallbackCalls.at(-1).args.indexOf('--model') + 1], 'haiku');
+    assert.equal(fallbackCalls.at(-1).baseUrl, undefined); // the role's own env is not injected into a fallback run
+    // With a `codex` file on PATH the configured GPT settings are kept and no notice is given.
+    await writeFile(join(directory, 'codex'), '');
+    process.env.PATH = directory;
+    const withCodex = await dispatch('spawn_agent', {...handoff, identity: {kind: 'ordinary', issueIds: ['issue:0152:02']}, ...await report('with-codex')});
+    process.env.PATH = originalPath;
+    assert.equal(withCodex.notice, undefined);
+    await writeReviewers({'requirements-reviewer': {model: 'haiku', modelProvider: 'anthropic', env: {ANTHROPIC_BASE_URL: 'https://host.example'}}});
+
     environment.FAKE_CLAUDE_MODE = 'hang';
     const third = await report('third');
     await dispatch('followup_task', {...handoff, ...third, runId});
@@ -296,5 +318,6 @@ test('a Claude Code Main starts, waits for, follows up and messages a Claude Rev
     for (let attempt = 0; attempt < 200 && !(await readFile(log, 'utf8')).includes('Check the tests too.'); attempt++) await new Promise(resolve => setTimeout(resolve, 2));
     assert.match(await readFile(log, 'utf8'), /ARW messageId: [^\\]+\\n\\nCheck the tests too\./);
     const starts = (await readFile(log, 'utf8')).trim().split('\n').map(line => JSON.parse(line)).filter(call => call.args);
-    assert.equal(starts[1].args[starts[1].args.indexOf('--resume') + 1], starts[0].args[starts[0].args.indexOf('--session-id') + 1]);
+    const resumed = starts.find(call => call.args.includes('--resume'));
+    assert.equal(resumed.args[resumed.args.indexOf('--resume') + 1], starts[0].args[starts[0].args.indexOf('--session-id') + 1]);
 });
