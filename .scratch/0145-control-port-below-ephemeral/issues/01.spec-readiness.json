@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0145:01",
+  "request": {
+    "digest": "87bdc91f92db1e1faa36e10b7ed5c9745544ebffef4df88196dfafe93e09cb5b",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0145_01/spec-readiness/requests/request-3cd9670d-f5e5-40e1-bf4c-9e09e04aeb7d.json",
+    "id": "3cd9670d-f5e5-40e1-bf4c-9e09e04aeb7d"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0145-control-port-below-ephemeral/spec.md",
+      "role": "governing-spec",
+      "sha256": "d7703f4bb34d1ddd319e550487154ebf18e0f3f446c48e3127066023623c930e"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/adr/0030-use-user-wide-background-agent-management.md",
+      "role": "adr",
+      "sha256": "afffe17adcf95c931864009d198408c2d8afb97d867c1ba20cef04fc7385abd1"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-installation/spec.md",
+      "role": "governing-spec",
+      "sha256": "78ce52b1556ef4ab8cd23e69079b9c7adcc8187ce87d615e4e486e15e66adfd9"
+    },
+    {
+      "filePath": "lib/background-agent/client.mjs",
+      "role": "architecture-evidence",
+      "sha256": "d635d7cb85556eb78575a17f4f251f5a89f07a88ab4992762a089d8344c05a7d"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0145-control-port-below-ephemeral/issues/01-control-port.md",
+    "sha256": "6ead05c2b62076b704e24dd6b20e04de4527048b8224085515cd990db1d9a893"
+  },
+  "result": "satisfied"
+}

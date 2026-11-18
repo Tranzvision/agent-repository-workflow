@@ -3,7 +3,7 @@ import {chmod,readdir,readFile,writeFile} from 'node:fs/promises';
 import {createServer} from 'node:net';
 import {join} from 'node:path';
 import test from 'node:test';
-import {acquireBackgroundAgentMaintenance,controlProof,createBackgroundAgentClient,sendBackgroundAgentRequest} from '../../lib/background-agent/client.mjs';
+import {acquireBackgroundAgentMaintenance,backgroundAgentLegacyPort,backgroundAgentPort,controlProof,createBackgroundAgentClient,sendBackgroundAgentRequest} from '../../lib/background-agent/client.mjs';
 import {createBackgroundAgentStateStore} from '../../lib/background-agent/state-store.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {appServerProcessIdentityPath,recordProcessIdentity} from '../../lib/background-agent/process-identity.mjs';
@@ -252,4 +252,63 @@ test('offline maintenance records each working task it turns unknown, and nothin
     recordEffect:async(kind,fields,cwd)=>{recorded.push([kind,fields,cwd]);}});
   assert.deepEqual([acquired.status,'reason' in acquired?acquired.reason:''],['acquired','']);
   assert.deepEqual(recorded,[['agent-task',{runId:'working',role:'worker',provider:'p',model:'m',effort:'high',startedAt:5,finishedAt:null,outcome:'unknown'},'/work']]);
+});
+
+test('the control port lies below the Linux and Windows dynamic port ranges',()=>{
+  const port=backgroundAgentPort();
+  assert.ok(port>=30000&&port<=32767);
+  const legacy=backgroundAgentLegacyPort();
+  assert.ok(legacy>=30000&&legacy<=49999);
+});
+
+/** Maintenance with the control port closed; the legacy port is whatever the case puts there. @param {import('node:test').TestContext} t @param {Record<string,unknown>} options */
+async function maintenanceViaLegacy(t,options) {
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-legacy-port-');
+  await writeFile(join(runtimeDirectory,'credential'),secret,{mode:0o600});
+  return acquireBackgroundAgentMaintenance({runtimeDirectory,port:await closedPort(),maintenancePort:0,observeManagerProcess:async()=>'absent',observeProcessExit:async()=>true,...options});
+}
+/** @param {object} result */
+const legacyManager=async result=>{
+  /** @type {unknown[]} */
+  const requests=[];
+  const server=await controlServer((socket,request)=>{requests.push(request.operation);socket.write(`${JSON.stringify({id:request.id,ok:true,result})}\n`);});
+  return {server,requests};
+};
+
+test('maintenance stops a manager of an earlier version through the legacy control port',async t=>{
+  const {server,requests}=await legacyManager({status:'ready',stoppedAgents:[],managerPid:4194303});
+  t.after(()=>server.close());
+  assert.equal((await maintenanceViaLegacy(t,{legacyPort:server.port})).status,'acquired');
+  assert.deepEqual(requests,['__maintenance']);
+});
+
+test('maintenance returns busy and unknown from the legacy manager as they are',async t=>{
+  for(const status of ['busy','unknown']){
+    const {server}=await legacyManager({status,reason:'legacy'});
+    t.after(()=>server.close());
+    const result=await maintenanceViaLegacy(t,{legacyPort:server.port});
+    assert.deepEqual([result.status,'reason' in result?result.reason:''],[status,'legacy']);
+  }
+});
+
+test('maintenance proceeds offline when neither control port has a manager',async t=>{
+  assert.equal((await maintenanceViaLegacy(t,{legacyPort:await closedPort()})).status,'acquired');
+});
+
+test('maintenance does not take a silent service on the legacy port for absence',async t=>{
+  const foreign=await leaseHeldPort();
+  t.after(()=>foreign.close());
+  const result=await maintenanceViaLegacy(t,{legacyPort:foreign.port,observeManagerProcess:async()=>'unknown'});
+  assert.equal(result.status,'unknown');
+});
+
+test('maintenance on a control port held by another service is unknown and never tries the legacy port',async t=>{
+  const foreign=await leaseHeldPort();
+  const {server,requests}=await legacyManager({status:'ready',stoppedAgents:[],managerPid:4194303});
+  t.after(async()=>{await foreign.close();await server.close();});
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-foreign-port-');
+  await writeFile(join(runtimeDirectory,'credential'),secret,{mode:0o600});
+  const result=await acquireBackgroundAgentMaintenance({runtimeDirectory,port:foreign.port,legacyPort:server.port,maintenancePort:0});
+  assert.equal(result.status,'unknown');
+  assert.deepEqual(requests,[]);
 });
