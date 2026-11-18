@@ -37,7 +37,7 @@ const setup = async (/** @type {import('node:test').TestContext} */ t, /** @type
     const sessionPath = join(root, 'record.jsonl');
     if (options.record !== false) await writeFile(sessionPath, options.text ?? lines(records));
     const member = {threadId: THREAD, sessionPath};
-    if (options.agent !== false) await writeFile(join(instance, 'agent.json'), options.agentText ?? JSON.stringify(options.agent ?? {result: {threadId: THREAD, snapshot: {members: [member]}}}));
+    if (options.agent !== false) await writeFile(join(instance, 'agent.json'), options.agentText ?? JSON.stringify(options.agent ?? {result: {threadId: THREAD, completion: options.completion, snapshot: {members: [member]}}}));
     const fixtures = join(root, 'fixtures');
     await mkdir(join(fixtures, 'role', 'scenario'), {recursive: true});
     await writeFile(join(fixtures, 'role', 'scenario', 'expected.json'), JSON.stringify({expectation: KEY, short: 'tiny', path: 'a/very/long/path/without/any/blank/in/it/at/all.md'}));
@@ -54,7 +54,7 @@ test('a Reviewer that reads inside the instance with allowed tools has no flags,
     const codexClean = codexRecords(codex.call('c1'), codex.run('git diff --cached HEAD && sed -n "/a/,/b/p" src/a.mjs 2>/dev/null', first.instance), codex.out('c1', 'file text'));
     await writeFile(first.sessionPath, lines(codexClean));
     const codexResult = /** @type {any} */ (await inspect(first));
-    assert.deepEqual([codexResult.status, codexResult.threadId, codexResult.calls, codexResult.flags], ['succeeded', THREAD, 2, []]);
+    assert.deepEqual([codexResult.status, codexResult.threadId, codexResult.calls, codexResult.flags, codexResult.interrupted, codexResult.unfinished], ['succeeded', THREAD, 2, [], false, []]);
     const {result} = await run(t, [claude.owner(), claude.use('u1', 'Read', {file_path: 'src/a.mjs'}), claude.result('u1', 'text'), claude.use('u2', 'Bash', {command: 'git show :src/a.mjs | head -3'}), claude.result('u2', 'x')]);
     assert.deepEqual([result.status, result.calls, result.flags], ['succeeded', 2, []]);
 });
@@ -91,6 +91,37 @@ test('an incomplete record blocks instead of passing', async t => {
         assert.equal(result.status, 'blocked', name);
         assert.equal(result.flags, undefined, name);
     }
+});
+
+test('an interrupted instance is checked from the record it left, its calls without output listed as unfinished', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, [], {completion: null});
+    const other = join(root, 'run', 'two');
+    const cut = 'const r = await tools.exec_command({cmd: "cat src/a.mjs"});';
+    await writeFile(sessionPath, lines([
+        codex.meta(), codex.call('c1'), codex.run(`ls ${other}`, instance), codex.out('c1', KEY),
+        codex.call('c2', 'await tools.view_image({path: "x"});'), codex.out('c2'), codex.call('c3', cut),
+    ]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual([result.status, result.interrupted, result.calls, result.unfinished], ['succeeded', true, 4, [{position: 7, text: cut}]]);
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.kind, flag.position, flag.match]), [['path', 3, other], ['answer-key', 4, KEY.toLowerCase()], ['tool', 5, 'view_image']]);
+    const claudeCut = await run(t, [claude.owner(), claude.use('u1', 'Grep', {pattern: 'retry', path: other}), claude.use('u2', 'Write', {content: 'notes'})], {completion: null});
+    assert.deepEqual([claudeCut.result.status, claudeCut.result.unfinished, claudeCut.result.flags.map((/** @type {any} */ flag) => flag.kind)], ['succeeded', [{position: 2, text: `retry ${other}`}, {position: 3, text: ''}], ['path']]);
+    const long = `const r = await tools.exec_command({cmd: "cat ${'x'.repeat(250)}"});`;
+    const onlyCut = await run(t, [codex.meta(), codex.call('c1', long)], {completion: null});
+    assert.deepEqual([onlyCut.result.status, onlyCut.result.unfinished], ['succeeded', [{position: 2, text: long.slice(0, 200)}]]);
+    const ready = {status: 'ready', reportPath: '/r'};
+    /** @type {Array<[string, any[], any]>} */
+    const cases = [
+        ['answered exec_command without execution entry', [codex.meta(), codex.call('c1'), codex.out('c1')], {completion: null}],
+        ['completed without task_complete', [codex.meta(), codex.call('c1'), codex.run('ls', '/x'), codex.out('c1')], {completion: ready}],
+        ['completed with a call without output', codexRecords(codex.call('c1'), codex.run('ls', '/x')), {completion: ready}],
+        ['another thread', [codex.meta('other')], {completion: null}],
+        ['bad JSON line', [], {completion: null, text: `${JSON.stringify(codex.meta())}\n{broken\n`}],
+        ['record line not an object', [codex.meta(), null], {completion: null}],
+        ['record file missing', [], {completion: null, record: false}],
+        ['claude sidechain', [claude.owner(), {...claude.use('u1', 'Read', {}), isSidechain: true}], {completion: null}],
+    ];
+    for (const [name, records, options] of cases) assert.equal((await run(t, records, options)).result.status, 'blocked', name);
 });
 
 test('calls that leave the instance, and tools outside the allow list, are flagged', async t => {
