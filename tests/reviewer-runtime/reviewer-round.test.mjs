@@ -32,3 +32,12 @@ test('a round follows a usable thread, opens a new thread after a failed run, an
     await writeFile(recordPath, '{');
     await assert.rejects(round('4'), SyntaxError);
 });
+
+test('a round inlines role text with repository-relative paths instead of paths relative to the role file', async t => {
+    const roundDirectory = await createTemporaryDirectory(t, 'arw-round-');
+    const ruleFiles = new Map([['docs/agents/roles/r.md', Buffer.from('read `../reviewer.md` and `./r/findings.md`')], ['docs/agents/reviewer.md', Buffer.from('common')]]);
+    await prepareReviewerRound({repositoryRoot: '/repo', roundDirectory: join(roundDirectory, '1'), ruleFiles, reviewers: [{role: 'r', issueIds: ['issue:0001:01'],
+        reportPath: join(roundDirectory, '1', 'r', 'review.txt'), handoff: () => ''}]});
+    const {input} = JSON.parse(await readFile(join(roundDirectory, '1', 'r.jsonl'), 'utf8'));
+    assert.equal(input.instructions, 'read `docs/agents/reviewer.md` and `docs/agents/roles/r/findings.md`\n\ncommon');
+});

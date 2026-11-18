@@ -132,6 +132,23 @@ test('a path is flagged once per call, positions are file line numbers, and the 
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
 });
 
+test('a lone slash in a quoted pattern, a division or a prose separator is not the root directory', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, []);
+    await writeFile(join(root, 'run', 'x'), 'outside\n');
+    const commands = [
+        "git grep -E 'cost / 1e4' src",
+        "git grep -F 'text.replace(/\"/' src",
+        "rg '(^\\|/)src' src",
+        'python3 -c "open(\'draft.txt\', \'a\').write(\'`failureCode`/`operation` and a / b\')"',
+        'grep -c "x / y" src/a.mjs',
+    ];
+    await writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+    const real = ['ls /', 'ls -la /', 'cd / && ls', 'du -sh / | head'];
+    await writeFile(sessionPath, lines([codex.meta(), ...real.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), ['/', '/', '/', '/']);
+});
+
 test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {
     const {fixtures, instance, root, sessionPath} = await setup(t, []);
     await writeFile(join(root, 'run', 'x'), 'outside\n');

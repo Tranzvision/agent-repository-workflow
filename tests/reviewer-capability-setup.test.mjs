@@ -38,6 +38,17 @@ test('setup prepares the Spec Readiness Request', async t => {
     assert.match(/** @type {any} */ (result).input.reportPath, /draft\.txt$/u);
 });
 
+test('the inlined role instructions hold no relative path that would leave the instance', async t => {
+    const target = join(await createTemporaryDirectory(t, 'arw-capability-setup-'), 'instance');
+    for (const [role, scenario] of [['spec-readiness-reviewer', 'spec-readiness'], ['requirements-reviewer', 'code-spec'], ['code-standards-reviewer', 'code-standards']]) {
+        const result = await setupScenario({scenario: join(FIXTURES, role, scenario), target: join(target, role)});
+        assert.equal(result.status, 'succeeded', role);
+        const {instructions} = /** @type {any} */ (result).input;
+        assert.doesNotMatch(instructions, /`\.{1,2}\//u, role);
+        assert.match(instructions, /`docs\/agents\/reviewer\.md`/u, role);
+    }
+});
+
 test('setup blocks an existing target or a missing fixture', async t => {
     const root = await createTemporaryDirectory(t, 'arw-capability-setup-');
     const scenario = join(FIXTURES, 'spec-readiness-reviewer', 'spec-readiness');
