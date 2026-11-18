@@ -657,7 +657,8 @@
       }
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":7}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -678,7 +679,8 @@
      ],
      "merge": "01:19+spec:75",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":19}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -707,7 +709,8 @@
      ],
      "merge": "01:20+spec:55",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":20}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -731,7 +734,8 @@
       "stopsForDriver"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":21}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -759,7 +763,8 @@
       "chooseDeparture"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":23}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -800,7 +805,8 @@
      ],
      "merge": "01:28+spec:41",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":28}",
-     "result": "uncertain"
+     "result": "uncertain",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -824,7 +830,8 @@
       "hasDuplicateRouteKeys"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":29}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -849,7 +856,8 @@
      ],
      "merge": "01:30+spec:59",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":30}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -873,7 +881,8 @@
       "pendingStops"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":32}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -901,7 +910,8 @@
       "orderedDestinationGroups"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":38}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -925,7 +935,8 @@
       "locateStops"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":43}",
-     "result": "uncertain"
+     "result": "uncertain",
+     "severity": "medium"
     },
     {
      "expectation": "`withinVehicleCapacity` converts the limit to grams and requires the clamped remainder to be above zero, so a total equal to the limit (remainder 0) is rejected.",
@@ -982,7 +993,8 @@
       }
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":49}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1002,7 +1014,8 @@
       "routes:admin"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":50}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1027,7 +1040,8 @@
      ],
      "merge": "01:51+spec:73",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/01-assemble-dispatch-plan.md\",\"line\":51}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1072,7 +1086,8 @@
      ],
      "merge": "02:22+spec:17",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":22}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1101,7 +1116,8 @@
      ],
      "merge": "02:23+spec:12",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":23}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1125,7 +1141,8 @@
       "buildManifest"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":37}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1153,7 +1170,8 @@
       "publishManifest"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":39}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1186,7 +1204,8 @@
      ],
      "merge": "02:46+spec:71",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":46}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1215,7 +1234,8 @@
      ],
      "merge": "02:48+spec:22",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/issues/02-publish-dispatch-manifest.md\",\"line\":48}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     }
    ],
    "scope": "COMMIT-AUDIT-GATE-1"
@@ -1872,7 +1892,8 @@
       "route duration adds"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":11}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1901,7 +1922,8 @@
      ],
      "merge": "02:23+spec:12",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":12}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1946,7 +1968,8 @@
      ],
      "merge": "02:22+spec:17",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":17}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1975,7 +1998,8 @@
      ],
      "merge": "02:48+spec:22",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":22}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2003,7 +2027,8 @@
       "atomic plan writes remove"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":23}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "`canAssignAllPackages` delegates to `withinVehicleCapacity`, whose remaining-capacity test is false at zero remainder, so a total equal to the limit is rejected.",
@@ -2060,7 +2085,8 @@
       }
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":26}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "The public entry does not export `executor.mjs`.",
@@ -2189,7 +2215,8 @@
       }
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":27}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2221,7 +2248,8 @@
       "same plan hash"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":35}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2249,7 +2277,8 @@
       "urgent-stop partitioning places"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":38}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2273,7 +2302,8 @@
       "the next dispatch time"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":40}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2314,7 +2344,8 @@
      ],
      "merge": "01:28+spec:41",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":41}",
-     "result": "uncertain"
+     "result": "uncertain",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -2334,7 +2365,8 @@
       "stop-ordering operation follows"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":50}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2358,7 +2390,8 @@
       "Batch authorization rejects"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":52}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2386,7 +2419,8 @@
       "package weighing records"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":53}",
-     "result": "uncertain"
+     "result": "uncertain",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -2415,7 +2449,8 @@
      ],
      "merge": "01:20+spec:55",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":55}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2440,7 +2475,8 @@
      ],
      "merge": "01:30+spec:59",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":59}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2473,7 +2509,8 @@
      ],
      "merge": "02:46+spec:71",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":71}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2498,7 +2535,8 @@
      ],
      "merge": "01:51+spec:73",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":73}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2522,7 +2560,8 @@
       "delivery notices go"
      ],
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":74}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2543,7 +2582,8 @@
      ],
      "merge": "01:19+spec:75",
      "requirementSource": "{\"filePath\":\".scratch/0001-dispatch-control/spec.md\",\"line\":75}",
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     }
    ],
    "scope": "COMMIT-AUDIT-GATE-2"

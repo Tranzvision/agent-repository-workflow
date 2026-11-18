@@ -22,7 +22,7 @@ const demo = async (/** @type {import('node:test').TestContext} */ t, {notificat
     await mkdir(join(directory, 'candidate', 'src'), {recursive: true});
     await writeFile(join(directory, 'candidate', 'src', 'a.mjs'), 'one\ntwo\nexport default function a() {}\nfour\nfive\nsix\n');
     const expected = JSON.stringify({scopes: [{scope: 'CODE-STANDARDS-FINDINGS',
-        problemCases: [{associationEvidence: [{filePath: 'src/a.mjs', line: 3}], evidence: [{filePath: 'src/a.mjs', line: 3}], expectation: 'default export.', findingTerms: [['default']], result: 'gap', ...key}],
+        problemCases: [{associationEvidence: [{filePath: 'src/a.mjs', line: 3}], evidence: [{filePath: 'src/a.mjs', line: 3}], expectation: 'default export.', findingTerms: [['default']], result: 'gap', severity: 'high', ...key}],
         cleanCases: [{evidence: [{filePath: 'src/a.mjs', line: 5}], expectation: 'five is fine.', findingTerms: [['five']]}, {noOtherSupportedFinding: true}]}]});
     await writeFile(join(directory, 'expected.json'), expected);
     const sha = await loadScenario(directory).then(fixture => fixture.scenarioSha256, () => 'invalid key');
@@ -125,7 +125,7 @@ test('a Spec Readiness report that continues past a requirement-scope problem is
 
 test('the registered baselines match their archives, bootstrap intervals and answer keys', async () => {
     const result = await baseline({unit: 'code-standards'});
-    assert.deepEqual([result.status, result.filesChecked, Number(result.pBase.toFixed(7))], ['succeeded', 10, 0.0803571]);
+    assert.deepEqual([result.status, result.filesChecked, Number(result.pBase.toFixed(7))], ['succeeded', 10, 0.0392157]);
     assert.equal((await baseline({unit: 'nothing'})).status, 'blocked');
     // The spill files of the code-spec repair records are archive files too (3 spills, 5 runs of report and repair record).
     assert.equal((await baseline({unit: 'code-spec'})).filesChecked, 5 * 2 + 3);
@@ -135,7 +135,7 @@ test('repairing the archived baseline reports gives the archived repair records'
     const root = await createTemporaryDirectory(t, 'arw-format-');
     const archive = join(FIXTURES, 'format-baseline', 'archive');
     for (const run of ['haiku-1', 'haiku-4']) {
-        const report = join(archive, 'code-standards-v5.1', run, 'review-result.md');
+        const report = join(archive, 'code-standards-v5.2', run, 'review-result.md');
         const result = await repair({out: join(root, `${run}.md`), report, scenario: join(FIXTURES, 'code-standards-reviewer', 'code-standards')});
         const archived = JSON.parse(await readFile(`${report}.changes.json`, 'utf8'));
         assert.deepEqual([result.status, result.changes], ['succeeded', archived.changes]);
@@ -159,6 +159,8 @@ for (const [unit, entry] of Object.entries(REGISTRY)) {
                 const repaired = await repair({out: join(root, `r${index}${extname(archived)}`), report: archived, scenario, spills});
                 const scored = await score({agent, instance: item.instanceId, noRepair: false, repair: repaired.record, report: repaired.normalized ?? archived, scenario});
                 assert.equal(scored.status, 'succeeded');
+                // Merged cases count once in the severity units as in the k counts.
+                assert.equal(Object.values(scored.scores.severityUnits).reduce((total, level) => total + level.weight, 0), scored.scores.kProblemWeight);
                 for (const key of /** @type {Array<keyof typeof totals>} */ (Object.keys(totals))) totals[key] += scored.scores[key];
             }
             assert.deepEqual(totals, {rOverrun: registered.rOverrun, rRepairable: registered.rRepairable, rUnrepairable: registered.rUnrepairable, T: registered.T});

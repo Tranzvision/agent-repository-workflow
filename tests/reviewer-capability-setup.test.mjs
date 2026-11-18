@@ -57,9 +57,13 @@ test('the entry maps results to exit codes', async () => {
 
 test('the entry parses the repeatable options and the cell lists', async () => {
     const run = async (/** @type {string[]} */ ...args) => /** @type {any} */ (await runProcess(process.execPath, [ENTRY, ...args]));
-    const [noCells, missingCell] = await Promise.all([run('summary', '--markdown'), run('summary', '--cell')]);
+    const [noCells, missingCell, noLevels] = await Promise.all([run('summary', '--markdown'), run('summary', '--cell'), run('summary', '--report-range', 'a')]);
     assert.deepEqual([noCells.exitCode, JSON.parse(noCells.stdout).status], [1, 'blocked']);
-    assert.equal(missingCell.exitCode, 2);
+    assert.deepEqual([missingCell.exitCode, noLevels.exitCode], [2, 2]);
+    // An empty level or penalty is the caller's mistake: it reaches the checks and is blocked before any file is read.
+    const [emptyLevel, emptyPenalty] = await Promise.all([run('summary', '--cell', 'a', 'missing.json', '--report-range', 'a=high,'), run('summary', '--cell', 'a', 'missing.json', '--range-penalty', '')]);
+    assert.match(emptyLevel.stderr, /report range of a needs/u);
+    assert.match(emptyPenalty.stderr, /range penalty must be/u);
 });
 
 

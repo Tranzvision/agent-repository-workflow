@@ -938,7 +938,8 @@
        "advanceOrder"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -965,7 +966,8 @@
        "injected"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -997,7 +999,8 @@
        "platform"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -1029,7 +1032,8 @@
        "propagate"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "cancelOrder passes its whole argument object, including the injected now function, to cancellationFee in catering-pricing.mjs, a rule module, which calls context.now() (rule 6.1 and 6.2: rule modules take instants); cancelOrder thereby reads the clock twice in one call (rule 6.3).",
@@ -1082,7 +1086,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "expectation": "upcomingOrders hands now to the private helper isUpcoming, whose returned predicate calls now() once per order; rule 6.3 allows one read per call and passing now on only to another exported service function.",
@@ -1139,7 +1144,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -1173,7 +1179,8 @@
        "record"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1204,7 +1211,8 @@
        "service"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "expectation": "CateringStore.save chains each write onto this.#writes with .catch(() => undefined) and returns that same swallowed promise, so a failed save (request key already used) resolves with undefined instead of rejecting; rule 4.3 allows the catch only to keep the queue usable, and the caller must still see the original error.",
@@ -1334,7 +1342,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1359,7 +1368,8 @@
        "freeze"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -1389,7 +1399,8 @@
        "options"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "expectation": "kitchenManifests passes the caller's orders array to inDeliveryOrder, which sorts it in place with Array.prototype.sort, so the exported function reorders caller data (rule 5).",
@@ -1447,7 +1458,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "medium"
     },
     {
      "associationEvidence": [
@@ -1478,7 +1490,8 @@
        "push"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1507,7 +1520,8 @@
        "store"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -1543,7 +1557,8 @@
        "requireMenuItem"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -1574,7 +1589,8 @@
        "middle man"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "kitchenFor in kitchen-manifest.mjs re-derives the vendor with a predicate table (halal first, then headcount >= 31) that is the same rule as vendorFor in vendors.mjs (halal, then headcount > LARGE_ORDER = 30); the two can be merged by grouping on the vendorId already stored on each order (single authoritative source).",
@@ -1646,7 +1662,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "confirmedNotice states a 14-day payment term that restates the repository payment terms (PAYMENT_TERMS.dueMinutes = 20160 minutes, used by invoice-terms dueAt) for the invoice that bills the catering charge; it should be derived from that setting.",
@@ -1718,7 +1735,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "orderCharge rounds tax through the private helper share (Math.round of amount * basisPoints / 1e4), which equals billing/totals.mjs roundedTax (floor of taxable * basisPoints + BASIS / 2) for the non-negative amounts here; orderCharge can call roundedTax.",
@@ -1781,7 +1799,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "listOrders sorts by byDelivery, finds the first order after the cursor and slices page.limit orders; this is the same result as platform/listing.mjs pageOf with the predicate byDelivery(order, page.after) > 0, so it can be replaced by pageOf.",
@@ -1851,7 +1870,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -1882,7 +1902,8 @@
       ]
      ],
      "k": 1,
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "fitsReservation recomputes the reservation building-access window, duplicating reservations/policy.mjs accessWindow and its SETTINGS (partySize > 8 is largeParty, 30 and 15 minutes early are largeAccessMinutes and accessMinutes, 15 minutes after is accessMinutes); it can be contains(accessWindow(reservation), deliveryWindow(order)).",
@@ -1980,7 +2001,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "deskDeliveries selects confirmed orders whose delivery window (deliverAt - deliveryLead to deliverAt) lies inside the day, the same selection rule that kitchenManifests applies with contains(period, deliveryWindow(order)), written out with a loop and inline arithmetic; the rule can live in one policy helper used by both, with the building filter as the only difference.",
@@ -2043,7 +2065,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "Course facts are kept in three places: the prepMinutes switch in catering-policy.mjs, the SERVING_ORDER map in catering-notices.mjs (which repeats the order of the COURSES list) and COURSES in menu.mjs; a course added only to COURSES passes menu validation and then makes placeOrder throw and the notice sort compare undefined. One course table can hold them.",
@@ -2108,7 +2131,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -2140,7 +2164,8 @@
       ]
      ],
      "k": 1,
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "expectation": "vendorStatement takes a withCanceled option that its only caller, vendorStatements, never passes; catering-statements.mjs is a rule module, not an entry point, so the option is machinery for an assumed future need (writing.md minimal sufficient contracts) and can be removed.",
@@ -2200,7 +2225,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
     },
     {
      "associationEvidence": [
@@ -2238,7 +2264,8 @@
        "no longer"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2270,7 +2297,38 @@
        "threshold"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "low"
+    },
+    {
+     "associationEvidence": [
+      {
+       "filePath": "src/catering/catering-service.mjs",
+       "line": 83
+      }
+     ],
+     "evidence": [
+      {
+       "filePath": "src/catering/catering-service.mjs",
+       "line": 83
+      }
+     ],
+     "expectation": "changeHeadcount writes the new headcount into the caller's order before the vendor check, so a rejected change still leaves the caller's order, and a stored record passed in, with the new headcount.",
+     "findingTerms": [
+      [
+       "headcount",
+       "changeHeadcount"
+      ],
+      [
+       "mutate",
+       "mutates",
+       "mutation",
+       "in place",
+       "caller"
+      ]
+     ],
+     "result": "gap",
+     "severity": "high"
     }
    ],
    "scope": "CODE-STANDARDS-FINDINGS"

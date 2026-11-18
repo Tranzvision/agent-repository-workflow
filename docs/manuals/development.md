@@ -145,12 +145,18 @@ Some Skills in `.agents/skills/` originate from an external Skill Package rather
 
 When you change canonical Reviewer Roles, Reviewer execution rules, or the capability scenarios that test Reviewer quality, you need to verify that Reviewers still catch what they should. Canonical Roles live in `docs/agents/roles/`, and shared execution and communication rules live in [Reviewer responsibilities (Chinese)](../agents/reviewer.md). Cross-repository background Agent capacity, connection handling, and recovery belong to the [product background Agent rules (Chinese)](../specs/agent-repository-workflow/spec.md#background-agent-control) and [installation management rules (Chinese)](../specs/agent-repository-workflow-installation/spec.md#background-agent-management), while user model and tier settings (stored in the ARW program directory's `config.json` and the repository's `arw.config.json`) follow the [Reviewer configuration specification (Chinese)](../specs/agent-repository-workflow-installation/spec.md#reviewer-configuration).
 
-To run Reviewer capability validation, explicitly invoke the source-only `$reviewer-capability` Skill. Its test scenarios (materialized fixtures, answer keys, blind-judge briefs, and anchors) live in `tests/fixtures/reviewer-capability/`. The Skill drives three command groups, each of which prints JSON and exits with `0` on success, `1` when blocked or failed, or `2` on a usage error:
+To run Reviewer capability validation, explicitly invoke the source-only `$reviewer-capability` Skill. Its test scenarios (materialized fixtures, answer keys, blind-judge briefs, and anchors) live in `tests/fixtures/reviewer-capability/`. The Skill drives the commands below, each of which prints JSON and exits with `0` on success, `1` when blocked or failed, or `2` on a usage error:
 
 ~~~text
+node scripts/reviewer-capability.mjs run <scenario-directory> <new-instance-directory> --settings JSON
+node scripts/reviewer-capability.mjs export <instance-directory> ...
+node scripts/reviewer-capability.mjs inspect <instance-directory>
 node scripts/reviewer-capability.mjs setup <scenario-directory> <new-target-directory>
-node scripts/reviewer-capability.mjs score <scenario-directory> <report> --agent <agent> (--repair <path.changes.json>|--no-repair) [--instance ID] [--decisions FILE]
-node scripts/reviewer-capability.mjs pool build|prompt|split|override ...
+node scripts/reviewer-capability.mjs repair <scenario-directory> <report> <new-output> [--spill FILE ...]
+node scripts/reviewer-capability.mjs score <scenario-directory> <report> (--repair CHANGES.json | --no-repair) [--agent LIST_AGENTS.json] [--instance ID] [--decisions FILE ...] [--provisional lower|upper | --enumerate]
+node scripts/reviewer-capability.mjs baseline <unit>
+node scripts/reviewer-capability.mjs summary [--markdown] --cell LABEL FILE... [--cell LABEL FILE...] [--compare CONTROL-LABEL CANDIDATE-LABEL] [--report-range LABEL=LEVEL,... ...] [--range-penalty P]
+node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|anchor-add ...
 ~~~
 
 ### Cross-operating-system validation environment
@@ -188,7 +194,7 @@ Unlike the root entry points, direct children of `scripts/` are maintenance tool
 | `scripts/project-claude-skills.mjs` | Generate `.claude/skills/` from `.agents/skills/`, or check with `--check` that they match |
 | `scripts/release-guest-check.mjs` | In a disposable test system, check install, PATH registration, `arw workflow init`, and uninstall |
 | `scripts/release-vm.mjs` | Run the guest check in a VMware VM and restore its snapshot |
-| `scripts/reviewer-capability.mjs` | Reviewer capability suite entry: build a scenario repository, score a report, build and use blind pools |
+| `scripts/reviewer-capability.mjs` | Reviewer capability suite entry: run and export instances, build a scenario repository, repair and score reports, check format baselines, summarize cells, build and use blind pools |
 | `scripts/sync-workflow-distribution.mjs` | Synchronize the pre-release Workflow Distribution in one command |
 | `scripts/upstream-sync.mjs` | Build the upstream three-way view for the `$upstream-sync` Skill |
 

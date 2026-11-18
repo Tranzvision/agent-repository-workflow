@@ -80,10 +80,10 @@ export const addLine = async ({feeds, line, order, store, taxBasisPoints}) => {
 
 export const changeHeadcount = async ({headcount, order, store}) => {
     if (!canAmend(order)) throw new Error('order can no longer be changed');
-    const changed = {...order, headcount: prepareHeadcount(headcount)};
-    if (vendorFor(changed) !== order.vendorId) throw new Error('the new headcount needs another vendor');
-    await store.save(changed);
-    return changed;
+    order.headcount = prepareHeadcount(headcount);
+    if (vendorFor(order) !== order.vendorId) throw new Error('the new headcount needs another vendor');
+    await store.save(order);
+    return order;
 };
 
 export const postponeOrder = async ({desk, deliverAt, now, orderId, reservation, store}) => {

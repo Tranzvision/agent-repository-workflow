@@ -1,0 +1,9 @@
+{
+ "original": "code-standards-v5.2/haiku-6/review-result.md",
+ "original_sha256": "bcd0141851c44852f0187dcee5d10d0a5f378ab84882aa30326249ee507bacaa",
+ "changes": {},
+ "details": [],
+ "diagnostics": {
+  "inRangeSpillReadable": 0
+ }
+}

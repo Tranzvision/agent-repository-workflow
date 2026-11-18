@@ -18,13 +18,13 @@ const LISTING = {status: 'succeeded', result: {notifications: []}};
 const association = (/** @type {string} */ expectation) => ({...item(expectation), candidateId: `c-${expectation}`});
 
 /** A one-file Code Standards scenario: one problem on line 3, one clean case on line 5, anchors and a brief for pools. */
-const scenario = async (/** @type {import('node:test').TestContext} */ t, role = 'code-standards-reviewer') => {
+const scenario = async (/** @type {import('node:test').TestContext} */ t, role = 'code-standards-reviewer', severity = 'high') => {
     const directory = join(await createTemporaryDirectory(t, 'arw-capability-'), role, 'demo');
     await mkdir(join(directory, 'candidate', 'src'), {recursive: true});
     await writeFile(join(directory, 'candidate', 'src', 'a.mjs'), 'one\ntwo\nexport default function a() {}\nfour\nfive\nsix\n');
     await writeFile(join(directory, 'expected.json'), JSON.stringify({scopes: [{scope: 'CODE-STANDARDS-FINDINGS',
         problemCases: [{associationEvidence: [{filePath: 'src/a.mjs', line: 3}], evidence: [{filePath: 'src/a.mjs', line: 3}], expectation: 'a.mjs exports a function as default.',
-            findingTerms: [['default']], result: 'gap'}],
+            findingTerms: [['default']], result: 'gap', severity}],
         cleanCases: [{evidence: [{filePath: 'src/a.mjs', line: 5}], expectation: 'line five is fine.', findingTerms: [['five']]}, {noOtherSupportedFinding: true}]}]}));
     const control = (/** @type {string} */ id, /** @type {string} */ expected) => ({id, family: 'openai', model: 'm', expected, item: item(`control ${id}`)});
     await writeFile(join(directory, 'anchors.json'), JSON.stringify({anchors: [control('a1', 'matched'), control('a2', 'not-matched')], synthetic: [{...control('s1', 'matched'), type: 'real'}]}));
@@ -217,16 +217,25 @@ test('pools: prompt checks adj, split gives the review lists, override and ancho
     assert.deepEqual([anchorMeta.source, anchorMeta.origin], ['anchor', {candidateId: 'c-new anchor'}]);
 });
 
+/** severityUnits from {level: [weight, earned, reportedK]}; levels not given hold no problem case. */
+const units = (/** @type {Record<string, number[]>} */ levels) => Object.fromEntries(['high', 'medium', 'low'].map(level => {
+    const [weight, earned, reportedK] = levels[level] ?? [0, 0, 0];
+    return [level, {earned, reportedK, weight}];
+}));
+
 test('summary: the first five files count, compare uses all files, unfinished and repeated inputs are blocked', async t => {
     const directory = await scenario(t);
     const write = async (/** @type {string} */ name, /** @type {any} */ scores, /** @type {any} */ extra = {}) => {
-        await writeFile(join(directory, name), JSON.stringify({candidates: [], provisional: null, scores: {f: 0.1, final: 0.5, missingChecks: 0, overallDeduction: 0.1, rawScore: 0.6, rRepairable: 1, scoreBeforePenalty: 0.6, ...scores}, status: 'succeeded', ...extra}));
+        // One high problem unit earns `final`, so the full report range scores it back to `final` (no overall deduction).
+        const final = scores.final ?? 0.5;
+        await writeFile(join(directory, name), JSON.stringify({candidates: [], provisional: null, scores: {f: 0.1, final, kCleanWeight: 1, kFailedCleanWeight: 0, missingChecks: 0, overallDeduction: 0, rawScore: 0.6,
+            rRepairable: 1, scenarioSha256: 'v1', scoreBeforePenalty: 0.6, severityUnits: units({high: [1, final, final / 4]}), ...scores}, status: 'succeeded', ...extra}));
         return join(directory, name);
     };
     const files = await Promise.all([0.2, 0.4, 0.6, 0.8, 1, 0.9].map((final, index) => write(`s${index}.json`, {final})));
     const result = await summary({cells: [{files, label: 'cell'}], markdown: true});
     assert.deepEqual([result.status, result.cells[0].n, result.cells[0].nGiven, result.cells[0].extraIds, result.instances.map((/** @type {any} */ row) => row.main)], ['succeeded', 5, 6, [files[5]], [true, true, true, true, true, false]]);
-    assert.ok(Math.abs(result.cells[0].mean - 0.6) < 1e-12 && Math.abs(result.cells[0].meanR83 - 0.54) < 1e-12);
+    assert.ok(Math.abs(result.cells[0].mean - 0.6) < 1e-12 && Math.abs(result.cells[0].meanR83 - 0.6) < 1e-12);
     assert.equal(result.diagnostics.length, 1);
     assert.ok(result.markdown.split('\n').every((/** @type {string} */ line) => line === '' || line.startsWith('|')));
     const finals = (/** @type {number[]} */ values, /** @type {string} */ prefix) => Promise.all(values.map((final, index) => write(`${prefix}${index}.json`, {final})));
@@ -245,4 +254,77 @@ test('summary: the first five files count, compare uses all files, unfinished an
     assert.deepEqual(await Promise.all([blocked([]), blocked([{files: [], label: 'a'}]), blocked([{files: [files[0]], label: 'a'}, {files: [files[1]], label: 'a'}]), blocked([{files: [files[0]], label: 'a'}, {files: [files[0]], label: 'b'}]),
         blocked([{files: [await write('open.json', {}, {candidates: [{}]})], label: 'a'}]), blocked([{files: [await write('prov.json', {}, {provisional: 'lower'})], label: 'a'}]),
         blocked([{files: [await write('single.json', {final: undefined})], label: 'a'}]), blocked([{files: [join(directory, 'missing.json')], label: 'a'}])]), Array(8).fill('blocked'));
+});
+
+test('scenario: each problem case takes one severity, clean cases none, merged cases the same; the handoff note is part of the identity', async t => {
+    const directory = await scenario(t);
+    const [scope] = JSON.parse(await readFile(join(directory, 'expected.json'), 'utf8')).scopes;
+    const [problem] = scope.problemCases;
+    const loads = async (/** @type {any[]} */ scopes) => {
+        await writeFile(join(directory, 'expected.json'), JSON.stringify({scopes}));
+        return loadScenario(directory).then(() => 'loaded', error => error.message);
+    };
+    const merged = (/** @type {string} */ severity) => [{...scope, problemCases: [{...problem, merge: 'm'}]}, {scope: 'OTHER', problemCases: [{...problem, merge: 'm', severity}], cleanCases: []}];
+    const results = [];
+    for (const scopes of [[{...scope, problemCases: [{...problem, severity: undefined}]}], [{...scope, problemCases: [{...problem, severity: 'critical'}]}],
+        [{...scope, cleanCases: [{...scope.cleanCases[0], severity: 'low'}, scope.cleanCases[1]]}], merged('low'), merged('high')]) results.push(await loads(scopes));
+    assert.deepEqual(results.map(message => message.replace(/^.*(needs a severity|takes no severity|one severity).*$/u, '$1')), ['needs a severity', 'needs a severity', 'takes no severity', 'one severity', 'loaded']);
+    const before = (await loadScenario(directory)).scenarioSha256;
+    await writeFile(join(directory, 'handoff.md'), 'note\n');
+    assert.notEqual((await loadScenario(directory)).scenarioSha256, before);
+});
+
+test('report range: severity units add up to the k counts, the full range gives the score final, severity stays out of candidates', async t => {
+    const directory = await scenario(t);
+    const hit = await report(directory, '- `src/a.mjs:3` default export.\n');
+    const [candidate] = (await run(directory, {report: hit})).candidates;
+    const store = join(directory, 'decisions.json');
+    await writeFile(store, JSON.stringify({decisions: {[candidate.candidateId]: {brief_sha256: sha256('Pool <ADJ>/pool-<名>.json\n'), decision: 'matched', fingerprint: candidateFingerprint(candidate)}}}));
+    const outputs = [await run(directory, {decisions: [store], report: hit}), await run(directory, {report: await report(directory, 'No findings.\n', 'none.md')}),
+        await run(directory, {report: await report(directory, 'text without bullets\n', 'failed.md')})];
+    const sum = (/** @type {any} */ scores, /** @type {string} */ field) => Object.values(scores.severityUnits).reduce((total, level) => total + level[field], 0);
+    for (const {scores} of outputs) assert.deepEqual([sum(scores, 'weight'), sum(scores, 'earned')], [scores.kProblemWeight, scores.kEarnedProblemPoints]);
+    assert.deepEqual([outputs[0].scores.final > 0, outputs[2].scores.modelFailure !== undefined, outputs[2].scores.severityUnits.high], [true, true, {earned: 0, reportedK: 0, weight: 1}]);
+    const files = await Promise.all(outputs.map(async (output, index) => { await writeFile(join(directory, `o${index}.json`), JSON.stringify(output)); return join(directory, `o${index}.json`); }));
+    assert.deepEqual((await summary({cells: [{files, label: 'a'}]})).instances.map((/** @type {any} */ row) => row.final), outputs.map(output => output.scores.final));
+    // The same answer key graded low gives the same candidates and fingerprints.
+    const low = await scenario(t, 'code-standards-reviewer', 'low');
+    const [lowCandidate] = (await run(low, {report: await report(low, '- `src/a.mjs:3` default export.\n')})).candidates;
+    assert.deepEqual([lowCandidate, candidateFingerprint(lowCandidate)], [candidate, candidateFingerprint(candidate)]);
+});
+
+test('report range: unreported problems outside it cost nothing, reported ones p x k x value, compare picks its mode, bad ranges are blocked', async t => {
+    const directory = await scenario(t);
+    const write = async (/** @type {string} */ name, /** @type {any} */ severityUnits, scenarioSha256 = 'v1') => {
+        await writeFile(join(directory, name), JSON.stringify({candidates: [], provisional: null, scores: {f: 0, final: 0, kCleanWeight: 1, kFailedCleanWeight: 0, overallDeduction: 0.1, rawScore: 0,
+            rRepairable: 0, scenarioSha256, scoreBeforePenalty: 0, severityUnits}, status: 'succeeded'}));
+        return join(directory, name);
+    };
+    // The high problem is found in both; the low one (k 1) is half found in the first and not reported in the second.
+    const files = [await write('p1.json', units({high: [1, 1, 0.25], low: [1, 0.5, 0.5]})), await write('p2.json', units({high: [1, 1, 0.25], low: [1, 0, 0]}))];
+    const high = [{label: 'a', levels: ['high']}];
+    const cell = (/** @type {any} */ input) => summary({cells: [{files, label: 'a'}], ...input});
+    const finals = async (/** @type {any} */ input) => (await cell(input)).instances.map((/** @type {any} */ row) => Number(row.final.toFixed(6)));
+    assert.deepEqual(await Promise.all([finals({}), finals({ranges: high}), finals({rangePenalty: 0, ranges: high})]), [[0.675, 0.45], [0.7875, 0.9], [0.9, 0.9]]);
+    const ranged = (await cell({ranges: high, markdown: true}));
+    assert.deepEqual([ranged.cells[0].range, ranged.cells[0].outOfRangeK, ranged.instances.map((/** @type {any} */ row) => row.outOfRangeK)], [['high'], 0.25, [0.5, 0]]);
+    assert.match(ranged.markdown, /\| a \| high \| 2 \|/u);
+    const otherVersion = await write('v2.json', units({high: [1, 1, 0.25]}), 'v2');
+    const old = await write('old.json', undefined);
+    assert.deepEqual(await Promise.all([{ranges: [{label: 'b', levels: ['high']}]}, {ranges: [{label: 'a', levels: []}]}, {ranges: [{label: 'a', levels: ['critical']}]},
+        {ranges: [...high, {label: 'a', levels: ['low']}]}, {rangePenalty: -1}, {rangePenalty: Number.NaN}, {ranges: [{label: 'a', levels: ['medium']}]}].map(input => cell(input).then(output => output.status))), Array(7).fill('blocked'));
+    assert.deepEqual(await Promise.all([[files[0], otherVersion], [old]].map(paths => summary({cells: [{files: paths, label: 'a'}]}).then(output => output.status))), ['blocked', 'blocked']);
+    // The candidate cell reports no low problem; compared over the same range the range penalty counts, over a changed range it does not.
+    const candidate = [await write('q1.json', units({high: [1, 1, 0.25], low: [1, 0, 0]})), await write('q2.json', units({high: [1, 1, 0.25], low: [1, 0, 0]}))];
+    const compare = (/** @type {any} */ ranges, other = candidate) => summary({cells: [{files, label: 'a'}, {files: other, label: 'b'}], compare: ['a', 'b'], ranges});
+    const same = (await compare([])).comparison;
+    assert.deepEqual([same.mode, same.scoringRange, Number(same.diff.toFixed(6))], ['same-range', ['high', 'medium', 'low'], -0.1125]);
+    // Both cells on high only: the control's reported low problem costs p, so the same-range diff is not the unpenalized 0.
+    const bothHigh = [{label: 'a', levels: ['high']}, {label: 'b', levels: ['high']}];
+    const sameHigh = (await compare(bothHigh)).comparison;
+    assert.deepEqual([sameHigh.mode, Number(sameHigh.diff.toFixed(6))], ['same-range', 0.05625]);
+    const changed = (await compare([{label: 'b', levels: ['high']}])).comparison;
+    assert.deepEqual([changed.mode, changed.scoringRange, Number(changed.diff.toFixed(6))], ['range-change', ['high'], 0]);
+    assert.deepEqual(await Promise.all([compare([{label: 'a', levels: ['low']}, {label: 'b', levels: ['high']}]), compare([{label: 'a', levels: ['high', 'medium']}, {label: 'b', levels: ['medium', 'low']}]),
+        compare([], [otherVersion, await write('v3.json', units({high: [1, 1, 0.25]}), 'v2')])].map(output => output.then(result => result.status))), Array(3).fill('blocked'));
 });

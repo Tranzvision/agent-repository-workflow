@@ -29,10 +29,10 @@ test('cell statistics match the golden values, one instance has no spread', () =
 });
 
 test('the markdown tables are flush left with 未知 for missing values', () => {
-    const cell = {cell: 'a', n: 1, ...cellStatistics([{f: 0.1, final: 0.5, rawScore: 0.6, rRepairable: 2, scoreR83: 0.5}])};
+    const cell = {cell: 'a', n: 1, outOfRangeK: 0, range: ['high', 'medium', 'low'], ...cellStatistics([{f: 0.1, final: 0.5, rawScore: 0.6, rRepairable: 2, scoreR83: 0.5}])};
     const markdown = summaryMarkdown([cell], [{cell: 'a', f: 0.1, final: 0.5, id: 'x.json', main: true, modelFailure: null, paused: false, rawScore: 0.6, rRepairable: 2, scoreR83: 0.5}]);
     assert.ok(markdown.split('\n').every(line => line === '' || line.startsWith('|')));
-    assert.match(markdown, /\| a \| 1 \| 0\.500 ± 未知 \| 未知 \| 未知 \|/u);
+    assert.match(markdown, /\| a \| high, medium, low \| 1 \| 0\.500 ± 未知 \| 未知 \| 未知 \|/u);
 });
 
 test('SequenceMatcher ratios and normalized findings match the golden values', () => {

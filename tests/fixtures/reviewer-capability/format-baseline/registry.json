@@ -1,106 +1,105 @@
 {
   "code-standards": {
-    "version": "Code Standards v5.1 修订 25",
-    "source": "Haiku-high ×5（claude-haiku-5-5，2026-10-15，T=1454 秒）；r 为全部格式错误（计分器口径）：修复记录的可修复处数 rRepairable，加计分升级对所计分报告（修复副本）仍判为格式错误的 rUnrepairable 与越界截断的 rOverrun；T 为计分器读到的定位数 locatorCount",
+    "version": "Code Standards v5.2（补 changeHeadcount 原地修改题）",
+    "source": "Haiku-high ×5（haiku 别名，2026-11-18，T=1606 秒）；r 为全部格式错误（计分器口径）：修复记录的可修复处数 rRepairable，加计分升级对所计分报告（修复副本）仍判为格式错误的 rUnrepairable 与越界截断的 rOverrun；T 为计分器读到的定位数 locatorCount",
     "runs": [
       {
         "run": "haiku-1",
-        "r": 7,
-        "rRepairable": 7,
+        "r": 6,
+        "rRepairable": 4,
         "rUnrepairable": 0,
-        "rOverrun": 0,
-        "T": 41,
+        "rOverrun": 2,
+        "T": 52,
         "reports": [
           {
-            "instanceId": "default-b08812a7-9d98-4f52-a75f-0e50102ba395-instance-1",
-            "report": "code-standards-v5.1/haiku-1/review-result.md",
-            "reportSha256": "4d21f32aa5ae144fc49740859fe1bffa0f1eb25a108f71723040caf3a0c96a4e",
-            "changes": "code-standards-v5.1/haiku-1/review-result.md.changes.json",
-            "changesSha256": "154c9f5a4c43213ef082beceaea8785a6f30b5c92740aefb1ac60f3e14c78d5e"
-          }
-        ]
-      },
-      {
-        "run": "haiku-2",
-        "r": 0,
-        "rRepairable": 0,
-        "rUnrepairable": 0,
-        "rOverrun": 0,
-        "T": 44,
-        "reports": [
-          {
-            "instanceId": "default-f066d366-18b3-4d31-9560-ce04a8d395fe-instance-1",
-            "report": "code-standards-v5.1/haiku-2/review-result.md",
-            "reportSha256": "09ab731b83a1427830bd7b328db8a799c26f6479b6f792c19d12a3325b9fc155",
-            "changes": "code-standards-v5.1/haiku-2/review-result.md.changes.json",
-            "changesSha256": "1706abbfc3ff6c701e89472d05f9355723fad8074a427aae6ea71f32b397e8b5"
+            "instanceId": "haiku-1",
+            "report": "code-standards-v5.2/haiku-1/review-result.md",
+            "reportSha256": "4f06a6017d3a7928ef1c0da7e0863f6cb9830acf2201bbf37f10ebaecae4f7f6",
+            "changes": "code-standards-v5.2/haiku-1/review-result.md.changes.json",
+            "changesSha256": "bd74a14ca35aa716e2860faabcffc3470de3e915f1535b316e60c1972f266b29"
           }
         ]
       },
       {
         "run": "haiku-3",
-        "r": 1,
-        "rRepairable": 1,
+        "r": 0,
+        "rRepairable": 0,
         "rUnrepairable": 0,
         "rOverrun": 0,
-        "T": 54,
+        "T": 75,
         "reports": [
           {
-            "instanceId": "default-3710bd67-4f59-48f0-a687-f9609222ef3a-instance-1",
-            "report": "code-standards-v5.1/haiku-3/review-result.md",
-            "reportSha256": "fc902fa0902d23141b11a2d385ab4bb305b5d81657e08e85957c4aa30c6bcfb8",
-            "changes": "code-standards-v5.1/haiku-3/review-result.md.changes.json",
-            "changesSha256": "d9846ff624e39b5a4cdbed8e9782c0a7ace989e0a2ad16269567a72ff2f77864"
+            "instanceId": "haiku-3",
+            "report": "code-standards-v5.2/haiku-3/review-result.md",
+            "reportSha256": "fe1220393de89babf34c1f7b149c6220b5bcd63caaab02a74b626680baec2add",
+            "changes": "code-standards-v5.2/haiku-3/review-result.md.changes.json",
+            "changesSha256": "8b94a19eaf789de2fddbc0848c633b47c7d096341c80d1430e535530d3969cb0"
           }
         ]
       },
       {
         "run": "haiku-4",
-        "r": 0,
-        "rRepairable": 0,
+        "r": 4,
+        "rRepairable": 4,
         "rUnrepairable": 0,
         "rOverrun": 0,
-        "T": 37,
+        "T": 81,
         "reports": [
           {
-            "instanceId": "default-e47f6869-3d57-4581-9fa5-5fca47f2117f-instance-1",
-            "report": "code-standards-v5.1/haiku-4/review-result.md",
-            "reportSha256": "78ca92d85826f7874b8a38f5f9af7b0979e742f30b489e7e6a47a3946310547c",
-            "changes": "code-standards-v5.1/haiku-4/review-result.md.changes.json",
-            "changesSha256": "2502d54a372a83c79c98b99f135ffcf8fffa1eea59c1382fa3e1c85a9640aab5"
+            "instanceId": "haiku-4",
+            "report": "code-standards-v5.2/haiku-4/review-result.md",
+            "reportSha256": "115e78abbc9673ec2e79ba09c7bf49db5c5567f1c9e5f71049ae2ec94301ad6f",
+            "changes": "code-standards-v5.2/haiku-4/review-result.md.changes.json",
+            "changesSha256": "73ec249a64a2e5fad52bad47aecebbfdb2dde86f000d56fc689d1f1836297e2b"
           }
         ]
       },
       {
         "run": "haiku-5",
-        "r": 10,
-        "rRepairable": 10,
+        "r": 0,
+        "rRepairable": 0,
         "rUnrepairable": 0,
         "rOverrun": 0,
-        "T": 48,
+        "T": 21,
         "reports": [
           {
-            "instanceId": "default-ca5670df-eae1-4cd2-8012-454381d0ab42-instance-1",
-            "report": "code-standards-v5.1/haiku-5/review-result.md",
-            "reportSha256": "50020a99d66c918dde480d88f95ad7d7f325051b9b9443975e967441d0948f24",
-            "changes": "code-standards-v5.1/haiku-5/review-result.md.changes.json",
-            "changesSha256": "5724119ad40c30e3812a0b5768e3e34c063c5f9196f7e2389b83498877b44c7d"
+            "instanceId": "haiku-5",
+            "report": "code-standards-v5.2/haiku-5/review-result.md",
+            "reportSha256": "d897151b0e9136d86578c1e8ce52e7e784c551b0280cb46e50b7ef465873d3f6",
+            "changes": "code-standards-v5.2/haiku-5/review-result.md.changes.json",
+            "changesSha256": "90853f3526f365dfa3d22e7045f691648c657cc3e1a373c0365539641590aad8"
+          }
+        ]
+      },
+      {
+        "run": "haiku-6",
+        "r": 0,
+        "rRepairable": 0,
+        "rUnrepairable": 0,
+        "rOverrun": 0,
+        "T": 26,
+        "reports": [
+          {
+            "instanceId": "haiku-6",
+            "report": "code-standards-v5.2/haiku-6/review-result.md",
+            "reportSha256": "bcd0141851c44852f0187dcee5d10d0a5f378ab84882aa30326249ee507bacaa",
+            "changes": "code-standards-v5.2/haiku-6/review-result.md.changes.json",
+            "changesSha256": "c923182e58f8a4a509e22608482fc5621de64428b340bda77532a54277b03f64"
           }
         ]
       }
     ],
-    "sumR": 18,
-    "sumT": 224,
-    "pBase": 0.0803571,
+    "sumR": 10,
+    "sumT": 255,
+    "pBase": 0.0392157,
     "pBaseBootstrap90": [
-      0.0429185,
-      0.1531532
+      0.030581,
+      0.0718563
     ],
     "scenarioSha256": {
-      "code-standards-reviewer/code-standards": "be34e5e93cc8573617661ccbd80707f9a09a00ece0ad1dba47a55d32bd15d2c6"
+      "code-standards-reviewer/code-standards": "35e7de4c808f24d009d3f7f854c66377bf55ed0802a09866e4b451802a048a1a"
     },
-    "scoringPatchSha256": "ebc4ad013b225cca8fc5a2d7b8542dba5bc6a459c6dec44e5e42716266b05666",
-    "archive": "format-baseline/code-standards-v5.1"
+    "archive": "format-baseline/code-standards-v5.2"
   },
   "code-spec": {
     "version": "Code Spec v5.1（multi-model v2）",
@@ -200,7 +199,7 @@
       }
     ],
     "scenarioSha256": {
-      "requirements-reviewer/code-spec": "e2d600b207fd33bdd8a639013124c1a72f52594bd8fb43fbc54e44855ae10478"
+      "requirements-reviewer/code-spec": "28776764714baa7f6d98c4eca7d7d05b92e5af0b9191a5290aa40eea57c16bc4"
     },
     "scoringPatchSha256": "c40856cc5ce276e664701e09e988f5aa10635e6d76cdacade7c947ca2e2049f0",
     "archive": "format-baseline/code-spec-v5.1"
@@ -303,7 +302,7 @@
       }
     ],
     "scenarioSha256": {
-      "requirements-reviewer/commit-audit": "9fd901804091a686a913541b01eb8edcb5f53ba795eff512f54ccf78bcd48d5f"
+      "requirements-reviewer/commit-audit": "a66f311f860cf8eb8a4fb8f3e700f6dfff0b7d9607c663b1f0aa756a9c624644"
     },
     "scoringPatchSha256": "c40856cc5ce276e664701e09e988f5aa10635e6d76cdacade7c947ca2e2049f0",
     "archive": "format-baseline/commit-audit-v3.1"
@@ -406,7 +405,7 @@
       }
     ],
     "scenarioSha256": {
-      "spec-readiness-reviewer/spec-readiness": "3eb422c76df7c34f512d584e9b999914c502840634835f95ae4c4c0bf27a62c5"
+      "spec-readiness-reviewer/spec-readiness": "ef396dac89a923ba0066a7c9c7f92c06a1aa3907d1626660e18ba07790c3d5e9"
     },
     "scoringPatchSha256": "c40856cc5ce276e664701e09e988f5aa10635e6d76cdacade7c947ca2e2049f0",
     "archive": "format-baseline/spec-readiness-merged"

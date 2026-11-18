@@ -882,7 +882,8 @@
        "Set"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -919,7 +920,8 @@
        "push"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "rescheduleReservation never applies the 240-minute duration limit to the snapped new window.",
@@ -983,7 +985,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1034,7 +1037,8 @@
        "across"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "countedReservations tests overlaps(instant(startAt), period), but instant is a zero-length interval and overlaps uses strict comparisons, so a confirmed reservation starting exactly at the first instant of the month is not counted in used minutes, although the month is half-open and its start is inside it.",
@@ -1128,7 +1132,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1175,7 +1180,8 @@
        "first"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1214,7 +1220,8 @@
        "only the first"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1251,7 +1258,8 @@
        "order"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1308,7 +1316,8 @@
        "stale"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "intentRequest rebuilds the request from a fixed list of invoice fields that leaves out issuedAt, so newIntent, which computes the fee with lateFee(prepared.total, prepared.issuedAt, at), gets a due instant of NaN and an intent created while its invoice is late has a fee of 0 and an amount equal to the total.",
@@ -1446,7 +1455,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1496,7 +1506,8 @@
        "less than one"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "The single withdraw rule for waiting and offered entries carries the 60-minute cutoff, so a waiting entry whose startAt is less than 60 minutes from now cannot be withdrawn, although the limit applies only to offered entries.",
@@ -1559,7 +1570,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "ENTRY_DEFAULTS gives active: true and prepareRoom spreads it under the room entry, so a room entry without an active value becomes active and is selected for the report, although only rooms whose active value is true may be.",
@@ -1670,7 +1682,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1701,7 +1714,8 @@
        "as supplied"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "newIntent passes PAYMENT_TERMS.authorizationHold, which is already minutes(10080) in milliseconds, to addMinutes, which multiplies by a minute again, so a new authorization expires 604,800,000 minutes later instead of 10080 minutes: an old authorization keeps blocking new intents for its invoice and can still be captured long after it should have expired.",
@@ -1829,7 +1843,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -1875,7 +1890,8 @@
        "string"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "AUDIT_LIMITS.maxQueryWindow is minutes(10080), a number of milliseconds, but prepareQuery compares it with windowSpan(query), which counts minutes ((until - from) / MINUTE), so the 10080-minute limit never triggers and longer query windows are accepted.",
@@ -1959,7 +1975,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2007,7 +2024,8 @@
        "boundary"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "associationEvidence": [
@@ -2056,7 +2074,8 @@
        "as stored"
       ]
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     },
     {
      "expectation": "acceptOffer checks expiry with isLapsing(next, at), where next is the record returned by the accept transition, whose state is already accepted, while isLapsing is true only for an offered entry; so the check never fires and an expired offer can be accepted.",
@@ -2138,7 +2157,8 @@
        ]
       }
      ],
-     "result": "gap"
+     "result": "gap",
+     "severity": "high"
     }
    ],
    "scope": "CODE-SPEC-FINDINGS"

@@ -1,0 +1,42 @@
+{
+ "original": "code-standards-v5.2/haiku-4/review-result.md",
+ "original_sha256": "115e78abbc9673ec2e79ba09c7bf49db5c5567f1c9e5f71049ae2ec94301ad6f",
+ "changes": {
+  "short-evidence-path": 4
+ },
+ "details": [
+  {
+   "after": "`src/catering/catering-service.mjs:10`",
+   "before": "`catering-service.mjs:10`",
+   "column": 48,
+   "kind": "short-evidence-path",
+   "line": 5
+  },
+  {
+   "after": "`src/catering/catering-policy.mjs:12`",
+   "before": "`catering-policy.mjs:12`",
+   "column": 236,
+   "kind": "short-evidence-path",
+   "line": 70
+  },
+  {
+   "after": "`src/catering/menu.mjs:22`",
+   "before": "`menu.mjs:22`",
+   "column": 313,
+   "kind": "short-evidence-path",
+   "line": 70
+  },
+  {
+   "after": "`src/catering/vendors.mjs:1`",
+   "before": "`vendors.mjs:1`",
+   "column": 215,
+   "kind": "short-evidence-path",
+   "line": 86
+  }
+ ],
+ "diagnostics": {
+  "inRangeSpillReadable": 0
+ },
+ "normalized": "code-standards-v5.2/haiku-4/repair/review-result.md",
+ "normalized_sha256": "c9928b402669ef88392e8117019eb70c3f81a6759f0e5542a8e123316405b01e"
+}

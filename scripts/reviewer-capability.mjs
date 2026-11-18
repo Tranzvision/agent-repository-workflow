@@ -9,6 +9,7 @@
 //         [--provisional lower|upper | --enumerate]
 //   baseline <unit>
 //   summary [--markdown] --cell LABEL FILE... [--cell LABEL FILE...] [--compare CONTROL-LABEL CANDIDATE-LABEL]
+//           [--report-range LABEL=LEVEL,... ...] [--range-penalty P]   (LEVEL: high, medium, low; P defaults to 0.25)
 //   pool build <scenario-directory> <root> <name> <candidates-file ...> [--decisions FILE ...] [--limit N]
 //   pool view <root> <name> <scenario-directory>
 //   pool prompt <root> <name>
@@ -31,8 +32,8 @@ const usage = (/** @type {string} */ message) => {
 };
 
 const [command, ...rest] = process.argv.slice(2);
-const VALUE_OPTIONS = ['agent', 'by', 'confirmed-by', 'family', 'id', 'instance', 'limit', 'model', 'provisional', 'repair', 'settings'];
-const LIST_OPTIONS = ['decisions', 'hard', 'spill'];
+const VALUE_OPTIONS = ['agent', 'by', 'confirmed-by', 'family', 'id', 'instance', 'limit', 'model', 'provisional', 'range-penalty', 'repair', 'settings'];
+const LIST_OPTIONS = ['decisions', 'hard', 'report-range', 'spill'];
 const FLAGS = ['enumerate', 'markdown', 'no-repair'];
 /** @type {string[]} */
 const positional = [];
@@ -81,7 +82,17 @@ else if (command === 'score' && args.length === 2) {
         provisional: values.provisional, repair: values.repair, report: args[1], scenario: args[0]});
 } else if (command === 'inspect' && args.length === 1) result = await inspect({instance: args[0]});
 else if (command === 'baseline' && args.length === 1) result = await baseline({unit: args[0]});
-else if (command === 'summary' && args.length === 0) result = await summary({cells, compare, markdown: flags.markdown});
+else if (command === 'summary' && args.length === 0) {
+    const ranges = lists['report-range'].map(raw => {
+        const at = raw.lastIndexOf('=');
+        if (at === -1) usage('--report-range needs LABEL=LEVEL,...');
+        return {label: raw.slice(0, at), levels: raw.slice(at + 1).split(',')};
+    });
+    // Number('') is 0; an empty penalty goes on as NaN so that summary blocks it.
+    const penalty = values['range-penalty'];
+    const rangePenalty = penalty === undefined ? undefined : penalty.trim() === '' ? Number.NaN : Number(penalty);
+    result = await summary({cells, compare, markdown: flags.markdown, rangePenalty, ranges});
+}
 else if (command === 'pool' && action === 'build' && args.length >= 4) {
     if (values.limit !== undefined && (!Number.isSafeInteger(Number(values.limit)) || Number(values.limit) <= 0)) usage('--limit must be a positive integer.');
     result = await pool({action, candidates: args.slice(3), decisions: lists.decisions, limit: values.limit === undefined ? undefined : Number(values.limit), name: args[2], root: args[1], scenario: args[0]});

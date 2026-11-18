@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0147:01",
+  "request": {
+    "digest": "a72b0b49e10b9d19e9c14a9c6fb8c79fd7bac0563e08f5517d0fd0a2d4587bd4",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0147_01/spec-readiness/requests/request-91c0b5d8-b99b-4f59-b868-dcb1e62b8660.json",
+    "id": "91c0b5d8-b99b-4f59-b868-dcb1e62b8660"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0147-reviewer-capability-report-range/severity-grades.md",
+      "role": "governing-spec",
+      "sha256": "bacb118e38eefb68ec274742e8fe03a842c4ffce63250c2926fdb465b62b70ac"
+    },
+    {
+      "filePath": ".scratch/0147-reviewer-capability-report-range/spec.md",
+      "role": "governing-spec",
+      "sha256": "e0e88ecac9190097a7bfef4749945643eebb01d0133fe6fb909a06fa2bba065c"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-development/spec.md",
+      "role": "governing-spec",
+      "sha256": "fab3416d914e0fa51c32ba36a201871b6bf8bbd70602cf70768d8a286e2b39d8"
+    },
+    {
+      "filePath": "lib/reviewer-capability-setup.mjs",
+      "role": "architecture-evidence",
+      "sha256": "8ccac6da8df08d646ab559a0d2e8bff774d5785ba87172dc69ae624352f8cbdd"
+    },
+    {
+      "filePath": "lib/reviewer-capability/format-penalty.mjs",
+      "role": "architecture-evidence",
+      "sha256": "27ee40f70eb333a3c7e7e59df71b3d2045bb12e5e8bd64090e54adfdcc70288d"
+    },
+    {
+      "filePath": "lib/reviewer-capability/operations.mjs",
+      "role": "architecture-evidence",
+      "sha256": "eb7d69980ad976a328184cb1b43f337161897b2216f260f01a71a66a911d7376"
+    },
+    {
+      "filePath": "lib/reviewer-capability/pool.mjs",
+      "role": "architecture-evidence",
+      "sha256": "e3969ec6a3aabc8796a4d11971d23e48dd84f0b15bef991274136e2326733443"
+    },
+    {
+      "filePath": "lib/reviewer-capability/scenario.mjs",
+      "role": "architecture-evidence",
+      "sha256": "e445bfbb9357480d011c410edba5d0e4abc75c69965c904e9e99de49685a8b29"
+    },
+    {
+      "filePath": "lib/reviewer-capability/scoring.mjs",
+      "role": "architecture-evidence",
+      "sha256": "aa3334309520784bec247f01187709af8976d8d739f47069ab5d9730f5f44d8e"
+    },
+    {
+      "filePath": "lib/reviewer-capability/statistics.mjs",
+      "role": "architecture-evidence",
+      "sha256": "2ff157e242c7d4256d77490b2e6674c1f6ecc6f9a5ba416f68a4f87ccb56e957"
+    },
+    {
+      "filePath": "scripts/reviewer-capability.mjs",
+      "role": "architecture-evidence",
+      "sha256": "4dced73942f80d2cf12dcd203681794b50da7ff09a74d55d2b7d930d3358de5b"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/code-standards-reviewer/code-standards/candidate/src/catering/catering-service.mjs",
+      "role": "architecture-evidence",
+      "sha256": "5f88a17df839e4b08ea546d62fdabb2d2fdfa474c007536b5d4e804d27be8380"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/code-standards-reviewer/code-standards/expected.json",
+      "role": "architecture-evidence",
+      "sha256": "4b0884d1e9731147ca698142d609c15596bdf6f517e11300380359267fee7240"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/format-baseline/registry.json",
+      "role": "architecture-evidence",
+      "sha256": "5491c777d0ac42a8aa2c1a91d6daef723e224a7a753b11bd7c30c386de68b6ae"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/requirements-reviewer/code-spec/expected.json",
+      "role": "architecture-evidence",
+      "sha256": "fabe990c5e114a8f5f945b4a88d273b2dca84934522959020e93a4332a9b005e"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/requirements-reviewer/commit-audit/expected.json",
+      "role": "architecture-evidence",
+      "sha256": "7f2db0d4dbcf43279361f68e67bd173590e40e9562e85457e17fff7711772e5d"
+    },
+    {
+      "filePath": "tests/fixtures/reviewer-capability/spec-readiness-reviewer/spec-readiness/expected.json",
+      "role": "architecture-evidence",
+      "sha256": "331b948527f88de7c45a62a637d1d7e106efe091bb626dc530a78b43ba4ffecd"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0147-reviewer-capability-report-range/issues/01-severity-and-report-range.md",
+    "sha256": "60851109fff2f0f59b713029fe3c079af0c6854ea9a07f55dfb566e85faf1c89"
+  },
+  "result": "satisfied"
+}

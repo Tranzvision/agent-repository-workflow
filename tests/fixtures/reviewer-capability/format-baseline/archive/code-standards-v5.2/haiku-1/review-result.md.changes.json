@@ -1,0 +1,42 @@
+{
+ "original": "code-standards-v5.2/haiku-1/review-result.md",
+ "original_sha256": "4f06a6017d3a7928ef1c0da7e0863f6cb9830acf2201bbf37f10ebaecae4f7f6",
+ "changes": {
+  "short-evidence-path": 4
+ },
+ "details": [
+  {
+   "after": "`src/catering/catering-states.mjs:29`",
+   "before": "`catering-states.mjs:29`",
+   "column": 24,
+   "kind": "short-evidence-path",
+   "line": 2
+  },
+  {
+   "after": "`src/catering/menu.mjs:46-50`",
+   "before": "`menu.mjs:46-50`",
+   "column": 67,
+   "kind": "short-evidence-path",
+   "line": 51
+  },
+  {
+   "after": "`src/catering/catering-policy.mjs:4`",
+   "before": "`catering-policy.mjs:4`",
+   "column": 30,
+   "kind": "short-evidence-path",
+   "line": 54
+  },
+  {
+   "after": "`src/catering/catering-service.mjs:11`",
+   "before": "`catering-service.mjs:11`",
+   "column": 69,
+   "kind": "short-evidence-path",
+   "line": 54
+  }
+ ],
+ "diagnostics": {
+  "inRangeSpillReadable": 0
+ },
+ "normalized": "code-standards-v5.2/haiku-1/repair/review-result.md",
+ "normalized_sha256": "64948d16484f0cd7c8d16ee04b7a3a2509c97b5907ef5dbac2d4d0175d19bdb8"
+}
