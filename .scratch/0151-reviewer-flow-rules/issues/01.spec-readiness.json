@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0151:01",
+  "request": {
+    "digest": "56f0472c0a7e8834ff4d40d01d6e13100cdc8903df5696c41cf820c7f4a008d1",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0151_01/spec-readiness/requests/request-148ba039-4504-4dc0-a50f-47c72531432d.json",
+    "id": "148ba039-4504-4dc0-a50f-47c72531432d"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0151-reviewer-flow-rules/spec.md",
+      "role": "governing-spec",
+      "sha256": "9eb11dc174efd064a6dda14892076da627258a8f55fce91aabccd46cbbd80fe2"
+    },
+    {
+      "filePath": "lib/commit-audit/commit-audit.mjs",
+      "role": "architecture-evidence",
+      "sha256": "1d76bab753e71e598da11b050bff7360d211879c29c2a1d6de32405194b2d9c9"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0151-reviewer-flow-rules/issues/01-reviewer-flow-rules.md",
+    "sha256": "73e7c7be3722c199a2982ea9e89d8add5c14415297773b3c6810cfb17513d338"
+  },
+  "result": "satisfied"
+}

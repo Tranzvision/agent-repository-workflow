@@ -337,12 +337,13 @@ test('prepare summarizes staged net growth by category, skips .scratch records a
     ].join('\n'));
 });
 
-test('prepare warns about a recorded net growth that differs from the measurement and about checked acceptance commands missing from Validation', async t => {
+test('prepare warns about a recorded net growth that differs from the measurement about checked acceptance commands missing from Validation and about What to build budget items that do not add up', async t => {
     const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
     await mkdir(join(repository.root, 'tests'));
     await writeFile(join(repository.root, 'tests/x.test.mjs'), 'a\nb\nc\n', 'utf8');
     await runGit(repository.root, ['add', 'tests']);
-    await stageIssue(repository.root, issueText('ready-for-agent').replace('- [ ] Complete.', [
+    const budget = '预计净增: 代码约 8 行 (约 3, 约 4), 文档约 5 到 7 字符 (约 2 到 3, 约 3 到 5), 测试约 3 行 (约 1, 约 2), 约 9 行 (约 8), 不超过 14 行 (约 7, 约 8).\n\n';
+    await stageIssue(repository.root, issueText('ready-for-agent').replace('Implement.\n\n', `Implement.\n\n${budget}`).replace('- [ ] Complete.', [
         '- [x] Run `pnpm test` and `node ok.mjs`.', '* [x] Run `node missing.mjs`.', '  + [X] Run `git diff --check`.', '- [ ] Run `arw unchecked`.', '-[x] Run `arw no-space`.',
         '```', '- [x] Run `arw fenced`.', '```',
     ].join('\n')) + [
@@ -351,11 +352,13 @@ test('prepare warns about a recorded net growth that differs from the measuremen
     const {summary} = await prepareCommitAudit({inputPath: await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']}), platformAdapter: adapter, repositoryRoot: repository.root});
     const lines = summary.split('\n');
     const path = '.scratch/0001-workflow/issues/01-issue.md';
-    assert.equal(lines.at(-4), 'next ADR number: 0001');
-    assert.deepEqual(lines.slice(-3), [
+    assert.equal(lines.at(-6), 'next ADR number: 0001');
+    assert.deepEqual(lines.slice(-5), [
         `warning: ${path}: Validation records code: 8 but this candidate measures 9.`,
         `warning: ${path}: checked acceptance item "* [x] Run \`node missing.mjs\`." names \`node missing.mjs\`, which Validation does not mention.`,
         `warning: ${path}: checked acceptance item "+ [X] Run \`git diff --check\`." names \`git diff --check\`, which Validation does not mention.`,
+        `warning: ${path}: What to build budget items sum to 7 but the stated total is 8.`,
+        `warning: ${path}: What to build budget items sum to 5 to 8 but the stated total is 5 to 7.`,
     ]);
 });
 
