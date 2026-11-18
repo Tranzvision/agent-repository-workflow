@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0144:01",
+  "request": {
+    "digest": "217f9902c564461a1198f34f48ce191e7ea34c4c740cab10edbd9b5451dc16ba",
+    "filePath": ".tmp/claude-code/d3f9a7eb-fa1f-4857-984f-4cefbead458d/0144_01/spec-readiness/requests/request-bc6abba2-b647-4602-abde-30160da6ef5a.json",
+    "id": "bc6abba2-b647-4602-abde-30160da6ef5a"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "35d036e20f7b1f620c8254ffe234bbfbfc48430a40d341567b142638fe17f44f"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0144-reviewer-capability-run-export/spec.md",
+      "role": "governing-spec",
+      "sha256": "0b3694ba01aa5495517cefe7415183131e8deecb727e459828941e9374b34c03"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/adr/0026-use-source-checkout-workflow-files-as-distribution-authority.md",
+      "role": "adr",
+      "sha256": "bd5b3ff28a66f8f7da36b698170286bf6beacd10a9a6c4bf27741d87de59213e"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-development/spec.md",
+      "role": "governing-spec",
+      "sha256": "21009c95108915f0e61313feebeae0218d42a431efc487c26f0e674873cfc9e1"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "fee1acd59f1f22fb7eee39b147a51bb9a8b18a522f532cb178f7df1182c83cd0"
+    },
+    {
+      "filePath": "lib/arw-background-agent-host.mjs",
+      "role": "architecture-evidence",
+      "sha256": "b1ca8f28522270fadfaf3b33d2bdab6b79ea11f64f63b289585c61cbfc3959a1"
+    },
+    {
+      "filePath": "lib/arw-common/product-identity.mjs",
+      "role": "architecture-evidence",
+      "sha256": "f4c450a91a9956ab9a9c7b067e8cfffe307a9df927c98ed665d857376230b69c"
+    },
+    {
+      "filePath": "lib/background-agent/manager.mjs",
+      "role": "architecture-evidence",
+      "sha256": "eb3c34144c64344e4968ea9dbde74716e28a9b73948f011e054fdc13e0157536"
+    },
+    {
+      "filePath": "lib/reviewer-capability-setup.mjs",
+      "role": "architecture-evidence",
+      "sha256": "8ccac6da8df08d646ab559a0d2e8bff774d5785ba87172dc69ae624352f8cbdd"
+    },
+    {
+      "filePath": "lib/reviewer-capability/evidence.mjs",
+      "role": "architecture-evidence",
+      "sha256": "02b7840633423dc6d6c24c2f931bad54af687e678f2398b3ba692dc8f80c7c51"
+    },
+    {
+      "filePath": "lib/reviewer-capability/inspection.mjs",
+      "role": "architecture-evidence",
+      "sha256": "c75a44fdebea42e26eb6f4a47bfc01b47cbec037cfb3f7fd7d4580cf87cf6bf1"
+    },
+    {
+      "filePath": "lib/reviewer-capability/operations.mjs",
+      "role": "architecture-evidence",
+      "sha256": "5eb4c2a21bc4c7d79dcbd6dd787ddf44a23a79baedccb0236b813a5b3c053f1d"
+    },
+    {
+      "filePath": "lib/reviewer-capability/repair.mjs",
+      "role": "architecture-evidence",
+      "sha256": "e0316870ba3ec79e93f00d303e12ed181f827e4e4ee66135138de3407809c1fa"
+    },
+    {
+      "filePath": "lib/reviewer-capability/reports.mjs",
+      "role": "architecture-evidence",
+      "sha256": "f28bbdf38d5d6e7ed4163d3ea744f647a8af7948e0d354047abaf11b23e12c2c"
+    },
+    {
+      "filePath": "lib/reviewer-runtime/reviewer-measurement.mjs",
+      "role": "architecture-evidence",
+      "sha256": "e9d918e5de46b45d575a3515765a96128137218ae501d38be02d5bea0ab7ec82"
+    },
+    {
+      "filePath": "lib/reviewer-runtime/reviewer-runtime.mjs",
+      "role": "architecture-evidence",
+      "sha256": "79a6cee7700b09d40c8197e1b9b45c06a767f45f9e249ff4af48a16fc682ad28"
+    },
+    {
+      "filePath": "scripts/reviewer-capability.mjs",
+      "role": "architecture-evidence",
+      "sha256": "4fbdd49224dceb95197c7fa93e49fff1c80a0f9bb320ba4dadc608cb9e8d4ef5"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0144-reviewer-capability-run-export/issues/01-run-and-export.md",
+    "sha256": "5a092c40e5baceee1b63fc74dff0c35a5e9e61f768950fd277adb71f5b158d31"
+  },
+  "result": "satisfied"
+}
