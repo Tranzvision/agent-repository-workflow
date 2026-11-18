@@ -10,7 +10,7 @@ Effect Log 合同 (`docs/specs/agent-repository-workflow/spec.md` 的 `## Effect
 - `lib/installation/installation.mjs` 与 `uninstallation.mjs` 调用它时传入以安装目录为 `programDirectory` 的 `record`.
 - 长期规格 Effect Log 的 `agent-task` 行和读取方事实一段补上离线维护恢复.
 
-不属于缺口, 不改 (见 `.tasks/ARW/0136gap-report-1118.md`): 管理进程 `not-started` 到 `unknown` 的路径 (任务从未进入 `working`, 合同只覆盖离开 `working` 和无原生线程的启动失败); `failStart` 的同 runId 重复记录 (实际调用路径下无法复现).
+不属于缺口, 不改: 管理进程 `not-started` 到 `unknown` 的路径 (任务从未进入 `working`, 合同只覆盖离开 `working` 和无原生线程的启动失败); `failStart` 的同 runId 重复记录 (实际调用路径下无法复现).
 
 不含设计决定 (Spec Readiness 记 `not-applicable`): 补上合同已规定的 "离开 `working` 的每条路径都写一条".
 
