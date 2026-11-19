@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0156:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 让能力测试的 Codex Reviewer 看不到本检出的答案夹具, 沿用 0155 的 none 条目机制, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0156-capability-answer-hidden/issues/01-capability-answer-hidden.md",
+    "sha256": "ec105bfa85ef5942e79f9da0c18b19a4a72366a005ddd51d442d7ff761b40412"
+  },
+  "result": "not-applicable"
+}

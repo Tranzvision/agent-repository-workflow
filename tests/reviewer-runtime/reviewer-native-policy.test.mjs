@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {mkdir, realpath, writeFile} from 'node:fs/promises';
+import {delimiter, join} from 'node:path';
+import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {stubCodexOnPath} from '../helpers/codex-stub.mjs';
 import {declineReviewerInteractions, reviewerNativeSettings} from '../../lib/reviewer-runtime/reviewer-native-policy.mjs';
 
 test('Reviewer declines each native interaction without interrupting its active turn', async () => {
@@ -85,4 +89,19 @@ test('Reviewer filesystem hides a state directory outside the working directory 
         .find(value => typeof value === 'object' && value !== null && '/work/instance' in value);
     assert.deepEqual(filesystem('/work/state'), {'/work/instance': 'read', '/work/state': 'none', '/work/instance/.tmp/report': 'write'});
     assert.deepEqual(filesystem('/work/instance/.tmp/state'), {'/work/instance': 'read', '/work/instance/.tmp/report': 'write'});
+});
+
+test('confineReads allows only the minimal system paths, the working directory and the write paths', async t => {
+    const codexDirectory = await realpath(await stubCodexOnPath(t));
+    const shadow = await createTemporaryDirectory(t, 'arw-codex-shadow-');
+    await writeFile(join(shadow, 'codex'), '');
+    const directoryShadow = await createTemporaryDirectory(t, 'arw-codex-shadow-');
+    await mkdir(join(directoryShadow, 'codex'));
+    process.env.PATH = `${directoryShadow}${delimiter}${process.env.PATH}`;
+    process.env.PATH = `${shadow}${delimiter}${process.env.PATH}`;
+    const base = {model: 'm', modelProvider: 'openai', reasoningEffort: 'high', serviceTier: /** @type {'default'} */ ('default'), config: {}};
+    const config = reviewerNativeSettings(base, {cwd: '/work/instance', writePaths: ['/work/instance/out'], stateDirectory: '/work/state', confineReads: true}).config;
+    const filesystem = /** @type {Record<string, string>} */ (Object.values(config).find(value => typeof value === 'object' && value !== null && '/work/instance' in value));
+    assert.deepEqual(filesystem, {'/work/instance': 'read', ':minimal': 'read', [codexDirectory]: 'read', '/work/instance/out': 'write'});
+    assert.deepEqual(Object.keys(config).filter(key => key.endsWith('.extends')), []);
 });
