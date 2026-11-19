@@ -26,7 +26,7 @@ test('setup stages the candidate over the base commit and returns the reviewer i
     const input = /** @type {any} */ (result).input;
     assert.deepEqual([input.role, input.cwd, await readFile(input.reportPath, 'utf8')], ['code-standards-reviewer', target, '']);
     assert.match(input.handoff, /Only the staged comparison\.$/u);
-    assert.deepEqual(input.hiddenPaths, [FIXTURES]);
+    assert.equal(input.confineReads, process.platform === 'linux');
     assert.equal((await runGit(target, ['diff', '--cached', '--name-only'])).stdout.trim(), 'a.txt');
     assert.equal((await runGit(target, ['log', '--format=%s'])).stdout.trim(), 'scenario base');
     assert.match(await readFile(join(target, 'AGENTS.md'), 'utf8'), /^# Agent Repository Workflow$/mu);

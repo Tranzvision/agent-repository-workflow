@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0157:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 把能力运行的 Codex Reviewer 文件读取收紧为只放行实例和运行必需路径, 沿用 ADR 0016 已记录的收紧办法, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0157-capability-confine-reads/issues/01-capability-confine-reads.md",
+    "sha256": "61f9ced8617d8e0e27e12560a590003520afef79f1e7b9e47aa4020587854e3a"
+  },
+  "result": "not-applicable"
+}
