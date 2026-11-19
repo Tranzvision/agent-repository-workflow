@@ -86,3 +86,9 @@ test('Reviewer filesystem hides a state directory outside the working directory 
     assert.deepEqual(filesystem('/work/state'), {'/work/instance': 'read', '/work/state': 'none', '/work/instance/.tmp/report': 'write'});
     assert.deepEqual(filesystem('/work/instance/.tmp/state'), {'/work/instance': 'read', '/work/instance/.tmp/report': 'write'});
 });
+
+test('Reviewer filesystem hides each caller-supplied hidden path', () => {
+    const base = {model: 'm', modelProvider: 'openai', reasoningEffort: 'high', serviceTier: /** @type {'default'} */ ('default'), config: {}};
+    const config = reviewerNativeSettings(base, {cwd: '/work/instance', writePaths: ['/work/instance/out'], stateDirectory: '/work/instance/.tmp/state', hiddenPaths: ['/checkout/answers', '/work/instance/out']}).config;
+    assert.deepEqual(Object.values(config).find(value => typeof value === 'object' && value !== null && '/work/instance' in value), {'/work/instance': 'read', '/checkout/answers': 'none', '/work/instance/out': 'none'});
+});

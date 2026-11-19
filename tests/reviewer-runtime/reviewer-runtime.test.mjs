@@ -421,7 +421,7 @@ test('followup_task reuses the original run and native Thread.id with current se
     const newReport = join(dirname(reviewerHandoff.writePaths[0]), 'next', 'reports', 'report.md');
     await fixture.writeReport('', newReport);
     const nextHandoff = {...reviewerHandoff, reportPath: newReport, writePaths: [dirname(newReport)],
-        settings: {...reviewerHandoff.settings, model: 'next-model'}};
+        hiddenPaths: ['/checkout/answers'], settings: {...reviewerHandoff.settings, model: 'next-model'}};
     const accepted = succeeded(await runtime.execute({operation: 'followup_task', input: {...nextHandoff, runId: observed.runId}}));
     assert.equal(accepted.runId, observed.runId);
     assert.equal(accepted.threadId, threadId);
@@ -439,6 +439,10 @@ test('followup_task reuses the original run and native Thread.id with current se
     assert.equal(result.completion?.status, 'ready');
     assert.equal(result.measurement?.usage.totalTokens, 5);
     assert.deepEqual(result.measurement?.members.map(member => member.threadId), [threadId]);
+    const opened = await fixture.filesystem.open({root: reviewerHandoff.cwd});
+    if (opened.status !== 'succeeded') throw new Error('Scripted repository unavailable.');
+    const saved = await readReviewerSessionRecord(opened.scopedFilesystem, accepted.recoveryPath, relative(reviewerHandoff.cwd, accepted.recoveryPath).split('\\').join('/'));
+    assert.deepEqual(saved?.hiddenPaths, ['/checkout/answers']);
     await runtime.close();
 });
 
@@ -907,6 +911,22 @@ test('interrupt_agent validates its turn before observing and never continues a 
     const before = continuations;
     failed(await runtime.execute({operation: 'interrupt_agent', input: {runId: receipt.runId, turnId: active.turnId}}), 'turn-mismatch');
     assert.equal(continuations, before);
+    await runtime.close();
+});
+
+test('hiddenPaths reach the native filesystem policy and the recovery record, and must be absolute', async () => {
+    const fixture = createReviewerRuntimeFixture();
+    const runtime = createReviewerRuntime(options(fixture));
+    failed(await runtime.execute({operation: 'spawn_agent', input: {...reviewerHandoff, hiddenPaths: ['answers']}}), 'invalid-input');
+    const accepted = succeeded(await runtime.execute({operation: 'spawn_agent', input: {...reviewerHandoff, hiddenPaths: ['/checkout/answers']}}));
+    const policy = Object.values(fixture.native.sessions[0].input.settings.config).find(value => typeof value === 'object' && value !== null && reviewerHandoff.cwd in value);
+    assert.equal(/** @type {Record<string, string>} */ (policy)['/checkout/answers'], 'none');
+    succeeded(await runtime.inspect({runId: accepted.runId}));
+    const opened = await fixture.filesystem.open({root: reviewerHandoff.cwd});
+    assert.equal(opened.status, 'succeeded');
+    if (opened.status !== 'succeeded') throw new Error('Scripted repository unavailable.');
+    const saved = await readReviewerSessionRecord(opened.scopedFilesystem, accepted.recoveryPath, relative(reviewerHandoff.cwd, accepted.recoveryPath).split('\\').join('/'));
+    assert.deepEqual(saved?.hiddenPaths, ['/checkout/answers']);
     await runtime.close();
 });
 
