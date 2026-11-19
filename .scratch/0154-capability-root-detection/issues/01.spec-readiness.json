@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0154:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 修复根目录检测并补实例文件, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0154-capability-root-detection/issues/01-capability-root-detection.md",
+    "sha256": "9a1959d86a51d48f57b81ef80e249e1f1b8c17e78a9dc29457d5e8a5f6828f55"
+  },
+  "result": "not-applicable"
+}

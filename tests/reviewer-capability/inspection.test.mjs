@@ -177,12 +177,18 @@ test('a lone slash in a quoted pattern, a division or a prose separator is not t
         "rg '(^\\|/)src' src",
         'python3 -c "open(\'draft.txt\', \'a\').write(\'`failureCode`/`operation` and a / b\')"',
         'grep -c "x / y" src/a.mjs',
+        "git grep -F 'read & write / execute' -- src",
+        "git grep -F 'x; y / z' src",
     ];
     await writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
-    const real = ['ls /', 'ls -la /', 'cd / && ls', 'du -sh / | head'];
+    const real = ['ls /', 'ls -la /', 'cd / && ls', 'du -sh / | head', 'ls . /', 'ls "/"'];
     await writeFile(sessionPath, lines([codex.meta(), ...real.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
-    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), ['/', '/', '/', '/']);
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), Array(6).fill('/'));
+    await writeFile(sessionPath, lines([codex.meta(), codex.call('c0'), codex.run('git status', '/'), codex.out('c0'), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), ['/']);
+    await writeFile(sessionPath, lines([claude.owner(), claude.use('u0', 'Bash', {command: "bash -lc 'ls /'"}), claude.result('u0', 'x'), claude.use('u1', 'Grep', {path: '/', pattern: 'x'}), claude.result('u1', 'x'), claude.use('u2', 'Grep', {path: 'src', pattern: '/'}), claude.result('u2', 'x'), claude.use('u3', 'Glob', {pattern: '/'}), claude.result('u3', 'x')]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => [flag.position, flag.match]), [[2, '/'], [4, '/'], [8, '/']]);
 });
 
 test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {

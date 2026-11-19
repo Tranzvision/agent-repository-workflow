@@ -46,6 +46,7 @@ test('the inlined role instructions hold no relative path that would leave the i
         const {instructions} = /** @type {any} */ (result).input;
         assert.doesNotMatch(instructions, /`\.{1,2}\//u, role);
         assert.match(instructions, /`docs\/agents\/reviewer\.md`/u, role);
+        for (const [, path] of instructions.matchAll(/`(docs\/agents\/[\w./-]+\.md)`/gu)) await access(join(target, role, path));
     }
 });
 
