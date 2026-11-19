@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0155:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 让 Codex Reviewer 沙箱挡住工作目录外的状态目录, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0155-reviewer-sandbox-state/issues/01-reviewer-sandbox-state.md",
+    "sha256": "17cff42505ff5cd3baaa92e0e6947b323c6057329bce82ff283658f8df40d46d"
+  },
+  "result": "not-applicable"
+}

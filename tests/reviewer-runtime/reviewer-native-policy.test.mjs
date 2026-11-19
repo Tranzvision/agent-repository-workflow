@@ -67,7 +67,7 @@ test('an MCP request without turnId uses only the observed active root turn for 
 });
 
 test('Reviewer root thread config forces Codex memories off whatever the caller sets', () => {
-    const paths = {cwd: '/repo', writePaths: []};
+    const paths = {cwd: '/repo', writePaths: [], stateDirectory: '/repo/.tmp/state'};
     const base = {model: 'm', modelProvider: 'openai', reasoningEffort: 'high', serviceTier: /** @type {'default'} */ ('default')};
     assert.equal(reviewerNativeSettings({...base, config: {}}, paths).config['features.memories'], false);
     assert.equal(reviewerNativeSettings({...base, config: {'features.memories': true}}, paths).config['features.memories'], false);
@@ -77,4 +77,12 @@ test('Reviewer root thread config forces Codex memories off whatever the caller 
     const both = reviewerNativeSettings({...base, config: {'features.memories': true, features: {memories: true, other_feature: true}}}, paths).config;
     assert.equal(both['features.memories'], false);
     assert.deepEqual(both.features, {memories: false, other_feature: true, multi_agent: false, multi_agent_v2: false});
+});
+
+test('Reviewer filesystem hides a state directory outside the working directory and keeps one inside it readable', () => {
+    const base = {model: 'm', modelProvider: 'openai', reasoningEffort: 'high', serviceTier: /** @type {'default'} */ ('default'), config: {}};
+    const filesystem = (/** @type {string} */ stateDirectory) => Object.values(reviewerNativeSettings(base, {cwd: '/work/instance', writePaths: ['/work/instance/.tmp/report'], stateDirectory}).config)
+        .find(value => typeof value === 'object' && value !== null && '/work/instance' in value);
+    assert.deepEqual(filesystem('/work/state'), {'/work/instance': 'read', '/work/state': 'none', '/work/instance/.tmp/report': 'write'});
+    assert.deepEqual(filesystem('/work/instance/.tmp/state'), {'/work/instance': 'read', '/work/instance/.tmp/report': 'write'});
 });
