@@ -966,3 +966,18 @@ test('daemon entry point is the installed host file when it exists and the calle
     await writeFile(join(installation, 'lib', 'arw-background-agent-host.mjs'), '');
     assert.equal(await daemonEntryPoint(installation, '/caller/host.mjs'), join(installation, 'lib', 'arw-background-agent-host.mjs'));
 });
+
+test('empty mount-point directories a killed sandbox left in the report directory do not fail the run, a filled one does', async t => {
+    const f = await fixture(t);
+    const runId = String(succeeded(await f.dispatch('spawn_agent', f.handoff)).runId);
+    await f.host.manager.owned(runId, 'main-session', 'main-session').work;
+    const threadId = String(succeeded(await f.dispatch('list_agents', {runId})).threadId);
+    await writeFile(f.reportPath, 'Complete bound report.');
+    const directory = dirname(f.reportPath);
+    for (const name of ['.agents', '.aws', '.codex', '.git']) await mkdir(join(directory, name));
+    f.scripted.finish(threadId);
+    assert.deepEqual(succeeded(await f.dispatch('list_agents', {runId})).completion, {status: 'ready', reportPath: f.reportPath});
+    assert.deepEqual(succeeded(await f.dispatch('unload_agent', {runId})), {runId, unloaded: true});
+    await writeFile(join(directory, '.git', 'HEAD'), 'ref\n');
+    assert.equal(failed(await f.dispatch('list_agents', {runId})).code, 'report-binding-invalid');
+});

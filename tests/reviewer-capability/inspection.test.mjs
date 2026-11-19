@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fsPromises, {mkdir, writeFile} from 'node:fs/promises';
 import {syncBuiltinESMExports} from 'node:module';
+import {homedir} from 'node:os';
 import {join, relative} from 'node:path';
 import test from 'node:test';
 
@@ -189,6 +190,27 @@ test('a lone slash in a quoted pattern, a division or a prose separator is not t
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), ['/']);
     await writeFile(sessionPath, lines([claude.owner(), claude.use('u0', 'Bash', {command: "bash -lc 'ls /'"}), claude.result('u0', 'x'), claude.use('u1', 'Grep', {path: '/', pattern: 'x'}), claude.result('u1', 'x'), claude.use('u2', 'Grep', {path: 'src', pattern: '/'}), claude.result('u2', 'x'), claude.use('u3', 'Glob', {pattern: '/'}), claude.result('u3', 'x')]));
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => [flag.position, flag.match]), [[2, '/'], [4, '/'], [8, '/']]);
+});
+
+test('an awk match operator and regex literals are not a home or root directory read', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, []);
+    await writeFile(join(root, 'run', 'x'), 'outside\n');
+    const commands = [
+        "awk '{if ($0 ~ /Operations never modify/ || $1 !~ /A room/) print}' src/a.mjs",
+        "awk '/[0-9]+/ {print}' src/a.mjs",
+        "awk '$0 ~ /.*x/ {n++} END {print n}' src/a.mjs",
+        "grep -E '/[a-z]+/' src/a.mjs",
+        "awk -v name=a 'name ~ /^a/' src/a.mjs",
+        "awk -v name=a 'name ~ /A b/' src/a.mjs",
+        "awk '0 || name ~ \"x\"' src/a.mjs",
+        "grep -E '/./' src/a.mjs",
+        "awk '($0)~/.?/' src/a.mjs",
+    ];
+    await writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+    const real = ['ls ~', 'ls /*', 'ls /[a-z]*', 'cat src/a.mjs ~', 'ls ~ /etc', "awk '{print}' src/a.mjs; ls ~ /etc", "awk '{print}' \"$(ls ~ /etc)\""];
+    await writeFile(sessionPath, lines([codex.meta(), ...real.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), [homedir(), '/', '/', homedir(), homedir(), homedir(), homedir()]);
 });
 
 test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {

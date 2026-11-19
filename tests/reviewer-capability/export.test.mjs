@@ -4,6 +4,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {runExitedProcess} from '../helpers/process.mjs';
 import {exportInstances} from '../../lib/reviewer-capability/export.mjs';
 
 const scores = {final: 0.4, rawScore: 0.8, scoreBeforePenalty: 0.6, f: 0.2, overallDeduction: 0.2, rRepairable: 2, pauseCount: 1};
@@ -61,4 +62,13 @@ test('export blocks the entire batch for missing, malformed or unfinished input 
     await check([valid, invalid]);
     await rm(join(invalid, 'run.json'));
     await check([valid, invalid]);
+});
+
+test('the machine entry delivers a JSON result larger than a pipe buffer before it exits', async t => {
+    const directory = await fixture(t);
+    await writeFile(join(directory, 'run.json'), JSON.stringify({...record, validity: {valid: false, status: 'void', notes: 'x'.repeat(300000)}}));
+    const entry = join(import.meta.dirname, '..', '..', 'scripts', 'reviewer-capability.mjs');
+    const result = await runExitedProcess(process.execPath, [entry, 'export', directory]);
+    assert.equal(result.exitCode, 0);
+    assert.equal(JSON.parse(result.stdout).instances[0].validity.notes.length, 300000);
 });

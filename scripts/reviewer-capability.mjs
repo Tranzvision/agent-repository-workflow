@@ -107,5 +107,5 @@ else if (command === 'pool' && action === 'override' && args.length === 5) {
 
 const {diagnostics = [], ...payload} = /** @type {{diagnostics?: string[], status: string}} */ (result);
 for (const diagnostic of diagnostics) process.stderr.write(`${diagnostic}\n`);
-process.stdout.write(`${JSON.stringify(payload)}\n`);
-process.exit(payload.status === 'succeeded' ? 0 : 1);
+// A pipe is written asynchronously: exit only after the whole output was handed to it, or a result over the pipe buffer is cut off.
+process.stdout.write(`${JSON.stringify(payload)}\n`, () => process.exit(payload.status === 'succeeded' ? 0 : 1));

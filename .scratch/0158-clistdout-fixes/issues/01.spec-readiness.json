@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0158:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 修四处局部缺陷 (管道大输出截断, inspect 误报, 完成的 Reviewer 不卸载, 报告目录空挂载点), 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0158-clistdout-fixes/issues/01-clistdout-fixes.md",
+    "sha256": "20b7ecd23550c3e1da3df63b24773ee7ff54bcbbdbb9fe0d4b05f96190a6987f"
+  },
+  "result": "not-applicable"
+}
