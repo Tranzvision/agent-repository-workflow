@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0153:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 只改措辞, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0153-readme-codex-harness-wording/issues/01-readme-codex-harness-wording.md",
+    "sha256": "4cc82c5d10c76531b5dc66416497b8aea38afee5fcfe6cb38c923e28bcaf7a4c"
+  },
+  "result": "not-applicable"
+}
