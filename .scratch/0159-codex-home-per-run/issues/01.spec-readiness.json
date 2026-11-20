@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0159:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 只把后台管理进程与运行的 CODEX_HOME 不一致时的静默错账号改为明确失败, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0159-codex-home-per-run/issues/01-codex-home-mismatch-fails.md",
+    "sha256": "1c11df54eff591604242f3f9666f66079e4cbb42ef1046cd4a0d73c37d69c955"
+  },
+  "result": "not-applicable"
+}

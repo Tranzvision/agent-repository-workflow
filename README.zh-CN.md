@@ -424,6 +424,10 @@ Main Agent
 
 `PATH` 上没有 Codex 时, Reviewer 回退到 Claude (`haiku`, `high` 强度), 每次启动 Reviewer 的返回结果都带一个 `notice`, 建议安装 Codex. 你显式把 `modelProvider` 配成 `"anthropic"` 的 Reviewer 始终运行在 Claude 上, ARW 不阻拦这一选择.
 
+### 用另一个账号运行 Codex 后台 Agent
+
+每个用户和 `HOME` 只有一个后台 Agent 管理进程, 它启动的 Codex App Server 沿用启动管理进程的客户端环境, 其中 `CODEX_HOME` 决定 Codex 登录账号. 单条命令设置 `CODEX_HOME` 不能切换账号. 某次运行的 `CODEX_HOME` 与管理进程的不同时, `spawn_agent` 和 `followup_task` 会失败并写出两个目录, 不会静默记到管理进程的账号上. 需要另一个账号时, 在另一个 `HOME` 下运行, 让它用你要的 `CODEX_HOME` 启动自己的管理进程, 或先停掉空闲的管理进程, 再由下一次运行启动.
+
 ### 让 Claude Reviewer 使用第三方模型
 
 在 Claude Code 环境下, 当某个 Reviewer 的 `modelProvider` 设为 `"anthropic"` 时, ARW 会通过无头模式 `claude -p` 运行它. 每个 Claude 回合都会继承启动后台管理进程的客户端环境, 因此 `ANTHROPIC_API_KEY`, `CLAUDE_CONFIG_DIR` 和登录状态来自该客户端, 而非请求审核的 Main Agent.

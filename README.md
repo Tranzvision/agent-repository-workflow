@@ -426,6 +426,10 @@ You can run ARW with Claude Code as your Main Agent, but install Codex too and u
 
 Without Codex on `PATH`, Reviewers fall back to Claude (`haiku` at `high` effort) and each Reviewer launch result carries a `notice` that recommends installing Codex. A Reviewer you explicitly configure with `modelProvider` `"anthropic"` always runs on Claude, and ARW does not block that choice.
 
+### Run Codex background agents under a different account
+
+One background-agent manager serves each user and `HOME`, and the Codex App Server it starts keeps the environment of the client that started the manager, including `CODEX_HOME`, which selects the Codex login. A run cannot switch accounts by setting `CODEX_HOME` for one command. When the `CODEX_HOME` of a run differs from the manager's, `spawn_agent` and `followup_task` fail with a message naming both directories instead of running on the manager's account. To use another account, run under another `HOME` so that it starts its own manager with the `CODEX_HOME` you want, or stop the idle manager and let the next run start it.
+
 ### Use a third-party model for Claude Reviewers
 
 When you use Claude Code, any Reviewer whose `modelProvider` is set to `"anthropic"` runs through headless `claude -p`. Each Claude turn inherits the environment of the client that started the background-agent manager, so `ANTHROPIC_API_KEY`, `CLAUDE_CONFIG_DIR`, and login state follow that client rather than the requesting Main Agent.

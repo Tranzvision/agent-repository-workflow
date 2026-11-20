@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, rm, symlink, writeFile} from 'node:fs/promises';
 import {dirname, join} from 'node:path';
 import {Readable, Writable} from 'node:stream';
 import test from 'node:test';
@@ -980,4 +980,22 @@ test('empty mount-point directories a killed sandbox left in the report director
     assert.deepEqual(succeeded(await f.dispatch('unload_agent', {runId})), {runId, unloaded: true});
     await writeFile(join(directory, '.git', 'HEAD'), 'ref\n');
     assert.equal(failed(await f.dispatch('list_agents', {runId})).code, 'report-binding-invalid');
+});
+
+test('a run asking for another CODEX_HOME than the manager fails instead of running on the manager account', async t => {
+    const f = await fixture(t);
+    const managerHome = join(f.directory, 'account-a');
+    const otherHome = join(f.directory, 'account-b');
+    const linkedHome = join(f.directory, 'account-a-link');
+    await mkdir(managerHome);
+    await symlink(managerHome, linkedHome, process.platform === 'win32' ? 'junction' : 'dir');
+    const saved = process.env.CODEX_HOME;
+    t.after(() => {if (saved === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = saved;});
+    process.env.CODEX_HOME = managerHome;
+    const spawn = (/** @type {string} */ codexHome) => f.host.dispatch({ownerId: 'main-session',
+        caller: {repositoryRoot: f.repositoryRoot, programDirectory: f.programDirectory, codexHome}, operation: 'spawn_agent', input: f.handoff});
+    const refused = await spawn(otherHome);
+    assert.equal(refused.status, 'failed');
+    assert.match(String(failed(refused).message), new RegExp(`CODEX_HOME ${managerHome}.*asks for ${otherHome}`, 'u'));
+    assert.equal((await spawn(linkedHome)).status, 'succeeded');
 });
