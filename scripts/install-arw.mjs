@@ -8,7 +8,7 @@ import {promisify} from 'node:util';
 
 const loadReleaseValidationConfiguration = async () => ({
     status: 'succeeded',
-    value: {repositories: {sourceCheckout: {url: "https://github.com/pellorao/agent-repository-workflow.git"}}},
+    value: {repositories: {sourceCheckout: {url: "https://github.com/Tranzvision/agent-repository-workflow.git"}}},
 });
 
 /**

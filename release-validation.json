@@ -1,7 +1,7 @@
 {
   "repositories": {
     "sourceCheckout": {
-      "url": "https://github.com/pellorao/agent-repository-workflow.git"
+      "url": "https://github.com/Tranzvision/agent-repository-workflow.git"
     }
   }
 }

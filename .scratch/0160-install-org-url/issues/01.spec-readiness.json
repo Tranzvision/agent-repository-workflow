@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0160:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 只把安装脚本与发布校验配置里的仓库地址机械替换为 Tranzvision 组织地址, 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0160-install-org-url/issues/01-install-org-url.md",
+    "sha256": "3eb898adee4bc9d6e50161a4f7e3c1c765140ca7c12ddba058d1327e721f7ee4"
+  },
+  "result": "not-applicable"
+}
