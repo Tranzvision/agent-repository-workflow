@@ -313,7 +313,7 @@ Because `completed` stops short of a commit, the Main Agent enters the commit wo
 Review and commit the implementation for issue:<NNNN>:<NN>. Include only changes authorized by this issue and preserve other worktree content.
 ```
 
-When you send this request, the Main Agent verifies the completion evidence and isolates the exact staged candidate, then runs `arw commit-audit prepare`. ARW derives the review scope from the issue and its applicable specs and creates an empty txt report. Two independent Reviewers then inspect the staged candidate in parallel: `requirements-reviewer` records any unmet requirement it finds, while `code-standards-reviewer` checks repository standards and flags removable code (each writes `No problems.` when clean). Only after both Reviewers finish normally and every reported problem is resolved does the Main Agent run `arw commit-audit verify` and the remaining mechanical checks to create the commit. If fixes require a re-review, the Reviewers inspect only the new changes and their impact while keeping unaffected conclusions.
+When you send this request, the Main Agent verifies the completion evidence and isolates the exact staged candidate, then runs `arw commit-audit prepare`. ARW derives the review scope from the issue and its applicable specs and creates an empty txt report. Two independent Reviewers then inspect the staged candidate in parallel. The `requirements-reviewer` checks whether it satisfies the requirements, and the `code-standards-reviewer` checks repository standards and flags removable code. Only after both Reviewers finish normally and every reported problem is resolved does the Main Agent run `arw commit-audit verify` and the remaining mechanical checks to create the commit. If fixes require a re-review, the Reviewers inspect only the new changes and their impact while keeping unaffected conclusions.
 
 If your staged candidate contains only investigation notes, design records, or other closed non-implementation files, the Agent can use a lighter commit path. As soon as the candidate includes implementation deliverables for the repository, it must go through the full implementation commit workflow above. The target repository's `code-review` and `commit` Skills define the exact diff preparation, result reuse, and recovery rules, so this README does not repeat their full protocols.
 
@@ -404,6 +404,8 @@ The commands and workflow gates above rely on independent Reviewers rather than 
 - `spec-readiness-reviewer`: runs once when an issue's design is finalized to verify that the selected governance design is current, complete, and sufficient to implement, and thereafter re-reviews only changes.
 - `requirements-reviewer`: runs after you request an implementation commit to check every issue requirement and applicable long-term requirement against the staged candidate.
 - `code-standards-reviewer`: runs in parallel with `requirements-reviewer` at commit time to check the staged candidate against repository standards and applicable writing or code rules.
+
+All three roles report only high- and medium-severity findings. Correctness, data loss, security, and concurrency defects are always at least medium severity. Reviewers omit low-severity findings and write exactly `No problems.` when there are no high- or medium-severity findings.
 
 Together, the Main Agent and Reviewers divide work along this timeline:
 

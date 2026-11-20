@@ -94,7 +94,7 @@ Because every exception carries risk, you must actively send one of these author
 
 After the commit workflow finishes, you may want to see how much review effort it took and what the Reviewers actually caught. Ask the Agent to tally the run counts, time spent, and fixes strictly from the workflow records available right now:
 
-> Summarize the number of runs and available total time for each Reviewer type in this commit workflow, and the problems found and fixed. Use a table for Reviewer name, run count, and total time. After the table, give the available total time for the commit workflow. List each fixed problem with its description and the fix, then give the total number of problems.
+> Summarize the number of runs and available total time for each Reviewer type in this commit workflow, and the problems reported and fixed. Use a table for Reviewer name, run count, and total time. After the table, give the available total time for the commit workflow. List each fixed problem with its description and the fix, then give the total number of reported problems.
 
 Looking beyond a single commit, if the same collaboration friction keeps coming up across sessions, you can use the session records to improve your rules or Skills. Because a one-off mistake does not justify a permanent new mechanism, ask the Agent to separate recurring patterns from isolated slips and propose changes before touching any durable tool:
 

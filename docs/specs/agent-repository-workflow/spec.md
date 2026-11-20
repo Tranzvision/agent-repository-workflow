@@ -48,7 +48,7 @@ Spec Readiness 的结果生成与验证不判断开放语义, 原生会话控制
 
 紧急修复例外: 阻断进行中的发布验证的缺陷, 或用户明确要求立即修复的缺陷, 在用户已确认不需要治理设计且该修复单独成为单 issue effort 时, 可以在建立 issue 前修改实现; 实施提交前补建该 issue 和 `not-applicable` 例外记录, 在 issue 的 `## Comments` 用一行写明属于哪种情形, Commit Audit 照常运行. 只限这两种情形, 因为先建 issue 的等待只在其中有实际代价; 其他工作仍先建 issue, 使验收条件先于实现写出.
 
-Commit Audit 的准确调用条件只由通用提交工作流拥有. Commit Audit 适用时, Gate 1 和 Gate 2 由独立 `requirements-reviewer` (要求符合审核) 逐项审核冻结的完整已暂存候选内容, `code-standards-reviewer` 同时并行审核实施质量; 一次提交最多这两个并行 Reviewer. 每个提交只包含一个 effort, Main Agent 只暂存该 effort 的内容. `authorizingIssueIds` 可以包含该 effort 的多个 issue, 表示完整实施授权范围; Request 中的 Gate 1 范围只包含实际适用的终态转换子集. 每次实施提交另做差异回归检查; Gate 2 只审核 `git diff <since> <tree>` 中治理文档的改动. Reviewer 把发现的问题逐条写入 `prepare` 创建的 txt 报告, 没有问题时写 `No problems.`, 并返回状态; ARW 不生成或提升审核记录, 详见 Commit Audit 节.
+Commit Audit 的准确调用条件只由通用提交工作流拥有. Commit Audit 适用时, Gate 1 和 Gate 2 由独立 `requirements-reviewer` (要求符合审核) 逐项审核冻结的完整已暂存候选内容, `code-standards-reviewer` 同时并行审核实施质量; 一次提交最多这两个并行 Reviewer. 每个提交只包含一个 effort, Main Agent 只暂存该 effort 的内容. `authorizingIssueIds` 可以包含该 effort 的多个 issue, 表示完整实施授权范围; Request 中的 Gate 1 范围只包含实际适用的终态转换子集. 每次实施提交另做差异回归检查; Gate 2 只审核 `git diff <since> <tree>` 中治理文档的改动. Reviewer 把发现的高级和中级问题逐条写入 `prepare` 创建的 txt 报告, 没有问题时写 `No problems.`, 并返回状态; ARW 不生成或提升审核记录, 详见 Commit Audit 节.
 
 Gate 3 由 `code-review` Skill Package 拥有 Standards 与 Requirements 两个独立审核轴; 提交时 Requirements 轴由 Commit Audit 承担. Main Agent 优先使用各轴完整有效的已有结果; 需要新审查时, 只解析一次比较基线与完整变更路径集合, 执行一次过滤, 再把相同的不可变比较对象, 完整代码上下文, 纳入范围的路径和适用验证事实交给 Code Standards 与适用的 `requirements-reviewer`. Requirements 轴还取得明确的完整治理要求 (非提交审查由调用方提供; 提交审查中是授权 issue 与 Gate 2 治理文档差异, 见 Commit Audit 节). 各轴按自己的实际完整输入判断有效性, 不因为另一轴的输入变化就自动失效, 具体版本与复审边界见 Review versions and result validity 节.
 
@@ -437,7 +437,7 @@ Code Standards 与要求符合审核各自按比较基线, 纳入范围, 文件�
 
 ### Reports and result authority
 
-3 个 Canonical Reviewer Role 保持各自的审查对象和最终输出协议. Code Standards 审核和非提交比较中的要求符合审核的 Reviewer 在与用户沟通的 Main Agent 提供的本轮 `reportPath` 中维护当前 txt 问题列表, 无问题时在完成审查后写入准确的 `No problems.`; 3 个 Reviewer 都返回 `ready | incomplete` 状态, 与用户沟通的 Main Agent 从准确绑定路径读取报告. 普通真实审核按现有工作流启动所需 Reviewer, 不使用能力验证专属的 3 实例集合.
+3 个 Canonical Reviewer Role 保持各自的审查对象和最终输出协议. Code Standards 审核和非提交比较中的要求符合审核的 Reviewer 在与用户沟通的 Main Agent 提供的本轮 `reportPath` 中维护当前 txt 问题列表, 无问题时在完成审查后写入准确的 `No problems.`; 3 个 Reviewer 都返回 `ready | incomplete` 状态, 每条问题评高, 中, 低三级, 报告只列高级和中级问题, 低级问题既不写入报告, 也不写入其他文件, 不发给 Main Agent, 只有低级问题时报告精确为 `No problems.` (涉及正确性, 数据丢失, 安全, 并发的问题至少评中; 理由: 低级问题数量多而被采纳少, 由 Reviewer 一方不报告才省下 Main Agent 读取和处置的时间, 报告不附低级条数以保持 `No problems.` 的精确匹配), 与用户沟通的 Main Agent 从准确绑定路径读取报告. 普通真实审核按现有工作流启动所需 Reviewer, 不使用能力验证专属的 3 实例集合.
 
 Reviewer 独自完成全部检查并亲自把完整报告写入本轮绑定的文件. 最终平台消息仅包含现行状态及适用理由, 与用户沟通的 Main Agent 和运行入口不得代写, 修改原始绑定报告或从摘要合成报告. Engine 的正式结果生成, 提升与验证责任保持单一, 不因运行入口成功或 ready 状态推断通过.
 
@@ -506,7 +506,7 @@ Reviewer 先读取本轮固定的适用 Agent 指令完整副本, 再按顺序�
 
 前一步存在问题时继续后续步骤; 后续步骤在已报告缺陷下仍可判断的部分照常完成. 具体阶段与检查名由 Spec Readiness Reviewer Role 拥有.
 
-Agent 指令规范 Reviewer 的工作方式, 但不作为治理证据, 也不扩大审核对象. 审核对象只能证明 issue 的交付范围, 不能证明设计质量. Reviewer 的 txt 草稿逐条写入发现的问题, 每条以 `- ` 开头并写明检查名, 位置, 缺陷和对就绪的影响, 不要求修正方向; 完整审核没有问题时, 草稿精确为 `No problems.`.
+Agent 指令规范 Reviewer 的工作方式, 但不作为治理证据, 也不扩大审核对象. 审核对象只能证明 issue 的交付范围, 不能证明设计质量. Reviewer 的 txt 草稿逐条写入发现的高级和中级问题, 每条以 `- ` 开头并写明检查名, 位置, 缺陷和对就绪的影响, 不要求修正方向; 完整审核没有问题时, 草稿精确为 `No problems.`.
 
 Reviewer 在完成全部适用检查和绑定文件写入后单独返回完成状态. 一轮必须完成全部适用的已注册检查后再返回, 不因前一项检查已有问题而提前返回, 使一轮报出全部问题; 只有确实无法在某个已报告缺陷下判断的部分才留到下一轮, 并在报告中写明所依赖的缺陷. Main Agent 从准确绑定文件读取结论, 不从 `ready` 推断没有问题, 也不补写空草稿. 准备阶段创建的空文件只表示尚未交付结果; 如果 Reviewer 写错路径后返回 `ready`, 该空文件不能成为无问题证据.
 
@@ -528,7 +528,7 @@ Main Agent 在仓库 `.tmp/` 下写一个 `input.json`, 只包含同一 effort �
 
 `prepare` 的标准错误摘要供 Main Agent 写 issue 的 `## Validation` 或 `## Comments` 时直接复制, 使 Reviewer 能用同一口径复算. 摘要只由已暂存树和 HEAD 决定, 只描述本次候选 (一个 issue 分多次提交时, 各次数字相加才是该 issue 的实测净增), 不写入 `request.json` 和 Reviewer 交接, 不改变任何关卡, `verify` 也不检查 issue 中的数字. 计入路径是候选中发生变化的路径, 去掉 `.scratch` 下的全部工作记录和子模块 gitlink, 并按顺序归入第一个匹配的类别: 测试 (路径含目录段 `test`, `tests` 或 `__tests__`, 或文件名在扩展名之前带 `.test` 或 `.spec`), 文档 (扩展名 `.md`), 代码 (其余). 每个路径的净增是已暂存版本减 HEAD 版本 (新增文件的 HEAD 版本和删除文件的已暂存版本为空, 重命名按删除旧路径加新增新路径计); 代码和测试按行数计 (按换行符分行, 结尾换行不多算一行), 文档按字符数计 (Unicode 码点数, 含换行), 删除多于新增时为负. 摘要依次给出每类的 `<类别>: <净增> <单位> (files: <n>)`, 每行之后逐文件列出 `  <路径> <净增>`, 最后一行是 `next ADR number: <NNNN>`: 已暂存树中 `docs/adr/NNNN-<slug>.md` 的最大 `NNNN` 加 1, 四位补零, 没有时为 `0001`, 已暂存的新 ADR 计入. 摘要不应用 `.arwignore`, 因为它取自工作树, 会使数字依赖未暂存的状态, 使 Reviewer 无法只用受审树复算; 也不识别锁文件, 生成文件或镜像副本, 它们按路径类别计入, 逐文件列表让作者在 issue 中说明. 效率规则只要求其中一类入预算, 摘要不选择类别, 也不比较预算. 摘要之后, 对每个授权 issue (按路径排序) 的已暂存文本追加以 `warning: ` 开头的提示行, 一行一条, 都只是提示: 不使 `prepare` 失败, 不改变退出码, 标准输出, `request.json`, Reviewer 交接和 `verify`, 没有不符时摘要逐字不变. (a) `## Validation` 章节中以摘要标题行格式 `code: <数字> lines`, `documents: <数字> characters` 或 `tests: <数字> lines` 写下的数字 (标签前不是字母, 数字, 下划线或连字符, 数字可带 `+` 或 `-`, 不带符号为正) 与本次候选同类实测净增不同时, 每个不同的数字一行, 按类别 `code`, `documents`, `tests` 的顺序, 同一类别按出现顺序; 没有单位词的数字和自由文字写的数字不识别, 因为猜测其含义会产生误报. 候选只覆盖一个 issue 分多次提交中的一次时该警告可以忽略. (b) `## Acceptance criteria` 章节围栏外已勾选的任务列表行 (与 Issue Documents Module 规范化验收标记共用的已勾选标记: 至多 3 个空格缩进, 列表符 `-`, `+` 或 `*`, 其后 1 到 4 个空格或一个制表符, `[x]` 或 `[X]`, 其后是空白或行尾) 中, 以 `pnpm `, `node `, `arw ` 或 `git ` 开头的行内代码片段, 其完整文字不是 `## Validation` 章节文本的子串时, 每个片段一行, 按验收项在文件中的顺序; 未勾选的项不检查. (d) `## What to build` 章节中以 `预计净增:` 开头的行里, 每个 "约 <总量> 行" 或 "约 <总量> 字符" 后紧跟括号 `(<分项>)` 的片段, 括号内全部 "约 <数字>" 或 "约 <低> 到 <高>" 为分项 (数字可带 `+` 或 `-`, 单个数字时低等于高), 至少两个分项时核对: 分项低值之和与高值之和分别不等于总量的低值与高值时, 每个片段一行 `What to build budget items sum to <和> but the stated total is <总量>.` (范围写成 `<低> to <高>`); 没有 "约" 的数字, 括号外的数字, 只有一个分项和总量没有 "约" 的写法不识别, 因为猜测其含义会产生误报. (c) `## Validation` 章节非空白而其中没有 (a) 所列任何一种摘要标题行时, 一行 `Validation has no candidate summary block (code, documents, tests lines).`, 先于 (a) 的各行. 章节缺失或为空白按空文本处理, 同一 issue 内依次 (c) (a) (b) (d).
 
-要求符合审核的 Reviewer 接收 Request 路径, 只用 `git diff <base> <tree>`, `git show <tree>:<path>` 和 `git ls-tree` 读取受审版本, 把发现的要求问题逐条写入 `review.txt` (每条写明位置, 影响和修正方向), 没有问题时写 `No problems.`, 然后只返回 `ready | incomplete`. `incomplete` 结束本轮并交回 Main Agent.
+要求符合审核的 Reviewer 接收 Request 路径, 只用 `git diff <base> <tree>`, `git show <tree>:<path>` 和 `git ls-tree` 读取受审版本, 把发现的高级和中级要求问题逐条写入 `review.txt` (每条写明位置, 影响和修正方向), 没有问题时写 `No problems.`, 然后只返回 `ready | incomplete`. `incomplete` 结束本轮并交回 Main Agent.
 
 提交门槛是两个 Reviewer 正常结束且报告中的问题都已处理 (修正, 证明无效, 转入后续 issue, 或按提交工作流的台账规则记 "记录不修" 或 "冲突裁决"; 第 3 轮起只为行为缺陷开修复轮, 措辞, 重复和文档去重类问题记 "记录不修"; 实施开始后只涉及 issue subject 措辞, 重复或一致性的问题任何轮次都可记 "记录不修"). Main Agent 独立核对每个问题, 每轮自选一两处 Reviewer 应当检查的要求或代码位置抽查; 发现漏检时该轮结果作废并重审. ARW 不生成或提升审核记录.
 
@@ -920,7 +920,7 @@ Agent CLI Launch Module 隐藏子进程复杂性, 但不成为 Agent 编排器. 
 
 Temporary Workspace Module 独立验证主机身份并构造 `.tmp/` 路径, 优先让所有临时审核和事务材料使用同一仓库与会话范围. 允许调用方任意选择系统临时目录会失去 issue 和会话隔离, 增加锁和自动清理又会建立当前没有的生命周期. 当前选择接受临时内容不自动清理, 调用方必须显式提供已经验证的 Platform Adapter 身份的成本.
 
-Commit Audit Module 独立于实施 Module 和 Reviewer, 优先从实时 Git 暂存区读取准确候选并机械物化完整 Request, 再由 Reviewer 把发现的问题用自然语言逐条写进 txt 报告, 没有问题时只写 `No problems.`; ARW 不生成或提升审核记录, 提交门禁是 Reviewer 正常结束且问题都已处理. 在已知缺陷场景的对比中, 默认 Reviewer 模型在这种最轻格式下的检出率不低于程序生成的逐项清单, 而输出和核对成本更低; 代价是报告不再证明每项要求都被检查, 漏检只能由 Main Agent 每轮抽查一两处发现; 当前接受这一覆盖证据的损失, 场景较易, 后续实际审核中继续观察. Main Agent 手工拼接每个 Gate 会复制派生规则, Reviewer 生成正式文件会混合语义审核与机械写入, 提交后再审核又失去提交前阻断能力. 固定本轮完整输入而允许源工作树继续已授权写入, 可以利用审核等待而不增加候选来源. 当前选择接受 Main Agent 准确交接, 新版本影响核对及必要替代审核的成本.
+Commit Audit Module 独立于实施 Module 和 Reviewer, 优先从实时 Git 暂存区读取准确候选并机械物化完整 Request, 再由 Reviewer 按 Reports and result authority 节的范围和格式写入 txt 报告. ARW 不生成或提升审核记录, 提交门禁是 Reviewer 正常结束且报告中的问题都已处理. 在已知缺陷场景的对比中, 默认 Reviewer 模型在这种最轻格式下的检出率不低于程序生成的逐项清单, 而输出和核对成本更低; 代价是报告不再证明每项要求都被检查, 漏检只能由 Main Agent 每轮抽查一两处发现; 当前接受这一覆盖证据的损失, 场景较易, 后续实际审核中继续观察. Main Agent 手工拼接每个 Gate 会复制派生规则, Reviewer 生成正式文件会混合语义审核与机械写入, 提交后再审核又失去提交前阻断能力. 固定本轮完整输入而允许源工作树继续已授权写入, 可以利用审核等待而不增加候选来源. 当前选择接受 Main Agent 准确交接, 新版本影响核对及必要替代审核的成本.
 
 差异复审保留原 Reviewer 自己已经完成且未受影响的覆盖, 可以减少重复判断, 同时每轮完整输入和完整报告保持当前结果的可核对性. 把历史覆盖判断留给 Reviewer, 把候选及记录差异比较留给 Main Agent, 可以避免 Engine 伪装成任意代码语义检查器. 明确记录章节的非要求身份使正常收尾不反复触发审核, 但新的真实失败仍削弱相应结论, 不成为降低证据责任的例外. 这些边界复用已有请求, 临时材料及 Git 对象, 不需要调度器, 覆盖登记或新增持久格式.
 

@@ -80,7 +80,7 @@ Reviewer Request 为响应绑定精确的绝对 `draftPath`.
 
 ## Output
 
-ARW Engine 已经把精确的 `draftPath` 创建为空 txt 草稿, Reviewer 必须亲自将完整审核报告写入该文件, 并在审核过程中更新其中的当前结论. 报告按 `../reviewer.md` 的 Report 节编写: 有问题时按 `./spec-readiness-reviewer/findings.md` 逐条写出, 没有问题时内容精确为 `No problems.`. Engine 把 `No problems.` 记为 `satisfied`, 其他非空报告记为 `gap`.
+ARW Engine 已经把精确的 `draftPath` 创建为空 txt 草稿, Reviewer 必须亲自将完整审核报告写入该文件, 并在审核过程中更新其中的当前结论. 报告按 `../reviewer.md` 的 Report 节编写: 有问题时按 `./spec-readiness-reviewer/findings.md` 逐条写出, 没有高级或中级问题时内容精确为 `No problems.`. Engine 把 `No problems.` 记为 `satisfied`, 其他非空报告记为 `gap`.
 
 如果请求无法读取或格式错误, 或完整草稿无法写入其绑定路径, 按 `../reviewer.md` 的 Report 节返回 `incomplete`. 不得搜索替代内容, 编造其他路径或创建替代记录.
 

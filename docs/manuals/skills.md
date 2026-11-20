@@ -97,7 +97,7 @@ Once an issue is tracked in `.scratch`, these Skills govern how its design is re
 
 - When: the Agent you talk to starts, follows, waits for, interrupts, or resumes an independent Reviewer (Code Standards, requirement conformance, Spec Readiness). Reviewers themselves do not use it.
 - What it does: runs the prepared review round with `cat <round>/*.jsonl | arw background-agent --wait`, reads the report from `completion`, and handles platform differences between Codex and Claude Code. If a review runs past 30 minutes, it asks whether you want to keep waiting; it also asks when a Reviewer reports repeated early exits.
-- Leaves behind: Reviewer reports at the paths prepared by the round.
+- Leaves behind: Reviewer reports at the paths prepared by the round. Reports list high- and medium-severity findings, or use the exact text `No problems.` when neither is present.
 - Related: `arw background-agent`, `arw list background-agents`; `spec-readiness`, `commit`.
 
 #### `commit` (automatic, only after you ask for a commit)
