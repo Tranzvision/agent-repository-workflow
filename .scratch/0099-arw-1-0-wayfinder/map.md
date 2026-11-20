@@ -44,14 +44,11 @@
 - [设计给人看的 graph 查看界面](issues/24-design-graph-viewer.md): 以试转换数据的可丢弃 HTML 原型检验 (11-18): 查看界面是 [确定 Engine 对话入口的形态](issues/19-decide-conversation-entry-form.md) 的网页中的 "流程" 页, 桌面与手机共用, 不另做静态页面; 一屏一个子流程, 默认逐层列表 (图只作宽屏可选视图, 路径摘要是第二视图), 面包屑进入与返回; 一个搜索框按节点全名, 参数, 原语和关键词定位; 实例叠加当前节点, 走过的节点与边; 节点与边标出所在层, 过期记录列在上层记录页并进入待答事项; 待答选项用对比表 (`ask-user` 加可选的 `aspects[]` 与 `cells[]`); 建议首版只读, 只处理已有的待答事项 (待用户确认). 可读性补测 (互换藏在大改写里, 上层补丁绕过节点, 各配对照) graph 组与文本组都是 12/12, 题目在上限, 不能区分两种材料.
 - [整理 ARW 1.0 规范的结构与验收场景](issues/14-prototype-spec-outline.md): 以大纲原型检验 (11-18, [outline.md](prototype/spec-outline/outline.md)): 规范分 17 章, 每章写行为, 理由, 状态变化, 可观察结果, 验收场景与来源 issue, 放在 1.0 新仓库每章一份 `docs/specs/<章名>/spec.md` 加根 `CONTEXT.md`; 墙钟验收用同期新跑的配对对照, Codex 与 Claude Code 各自达到 (墙钟比 <1.0, 用户 11-19 #720; 原 0.85 作废); 问用户的写法按 askmeasure 定为补背景, 字数预算只记录, Engine 机械展开发现编号, 用同 25 题复测; 正文按 8 批编写, 每批 2-3 章约 90 分钟; "做完一项接下一项" 由谁发起与名额满时用户消息的次序待用户决定.
 - [确定 Engine 的实现语言](issues/07-define-engine-runtime-contract.md) (无单独 issue, 结论与复核条件在 07): 1.0 不继承旧代码, ADR 0020 的零第三方运行时依赖也不再约束; 已定 Rust (Main Agent 11-18, 依据用户 11-14 准则与 `v1-lang`, `v1-langdec`: 写代码耗时只差约 1.2 到 1.35 倍, 资源 Rust 最省); 复核: 前 3 个 Engine issue 后 "编译修错时间 / 实施时间" 中位数超过 30% 就提 `decide` 换 Go, 须在 axum 与 tokio 上统计; 要 C 构建的 HTTPS 部分放在 Engine 核心之外; 语音转写 1.0 不做. 对 07 资源预算数值, 20 与 04 的安装和发布产物的影响已由 `v1-sync` 同步 (11-18).
+- 三项已答的 decide (11-18): `v1-chain` 选 A, 做完一项由 Engine 工作队列接着启动下一项, 用户一次批准一组, 对话会话可加项 (`docs/specs/workflows/spec.md` 的 Work queue 节, `docs/specs/flow-instances/spec.md`); `v1-chatfirst` 用户定对话会话单开常驻, 不走队列, 维护者补定不占并发名额 (`docs/specs/engine-runtime/spec.md` 的 Conversation session 节, `docs/specs/conversation-entry/spec.md`); `v1-viewro` 选 A, 流程页首版只读, 可回答待答事项, 重新确认或删除过期记录 (`docs/specs/flow-page/spec.md`, `docs/specs/ruling-ledger/spec.md`). 路径均在 `ARW-v1` 仓库; 总览见 `docs/specs/acceptance/feasibility.md`.
 
 ## Not yet specified
 
-等用户答复的 decide (答复后写进 07 与规范大纲 [outline.md](prototype/spec-outline/outline.md) 的对应章; 候选原文见该文件 Open questions 与 C12):
-
-- `v1-chain`: 做完一项后由谁发起下一项. 候选 (A) Engine 维护工作队列, 用户一次批准一组项, 一项到终态后 Engine 启动下一项, 对话会话可往队列加项, 代价是多一个队列组件; (B) 每项结束后由对话会话发起下一项, 代价是每次接续消耗一次高智能请求, 对话会话断开或被回收就停住. 建议 A: 符合 07 "只在用户发起或批准的流程中启动", 不耗高智能请求. 答复后写进 07 与大纲 C03.
-- `v1-chatfirst`: 名额满时用户在对话里发来的消息是否排在全部等待项之前. 候选 (A) 按 07 现有排序一视同仁, 代价是用户实时等回复时可能排在后台任务后面; (B) 对话会话的这一步排在全部等待项之前, 代价是在 "一视同仁" 之外加一条例外. 建议 B: 有人在实时等, 用户消息很少, 不会饿死其他实例. 答复后写进 07 与大纲 C03.
-- `v1-viewro`: 流程查看页首版是否只读 (24, 大纲 C12). 候选 (A) 只读: 看流程, 实例与上层记录, 可在页面上回答待答事项, 重新确认或删除过期记录, 要改流程在对话里让会话改; (B) 也能改上层记录: 要做表单, 合并校验和冲突处理, 改规则可能绕过路径摘要的复核; (C) 完整编辑器: 还能改管理层, 工作量很大且要接分支测试. 建议 A. 答复后补写或删去 C12 的待定行.
+暂无. 原列的三项 decide 用户已于 11-18 答复, 已写进 1.0 新仓库 `ARW-v1` 的规范 (见 Decisions so far 末条).
 
 ## Pending measurement or implementation
 
