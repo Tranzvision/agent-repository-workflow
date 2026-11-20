@@ -759,6 +759,25 @@ test('a linked valid manifest cannot authorize any uninstallation mutation', asy
     assert.equal(JSON.parse(await readFile(externalManifest, 'utf8')).product, 'agent-repository-workflow');
 });
 
+test('uninstallation identifies its operation on an unsupported platform', async () => {
+    /** @type {string[]} */
+    const errors = [];
+    const result = await runUninstaller([], {
+        platform: 'freebsd',
+        prompt: async () => true,
+        listBackgroundAgents: async () => assert.fail('Must resolve the platform before listing Agents.'),
+        stderr: message => errors.push(message),
+    });
+    assert.equal(result, 1);
+    assert.deepEqual(errors, ['Unsupported uninstallation platform: freebsd.']);
+    errors.length = 0;
+    assert.equal(await runUninstaller(['--non-interactive'], {
+        platform: 'freebsd',
+        stderr: message => errors.push(message),
+    }), 1);
+    assert.deepEqual(errors, ['Unsupported uninstallation platform: freebsd.']);
+});
+
 test('interactive confirmation and uninstaller usage follow the explicit command contract', async t => {
     assert.deepEqual(parseUninstallArguments(['--non-interactive', '--stop-background-agents', 'true']), {
         nonInteractive: true,

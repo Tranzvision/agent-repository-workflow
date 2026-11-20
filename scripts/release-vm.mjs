@@ -54,6 +54,8 @@ const fail = message => {
     process.stderr.write(`${message}\n`);
     process.exit(2);
 };
+/** @param {unknown} error */
+const errorMessage = error => error instanceof Error ? error.message : String(error);
 // 错误只含路径, 不含解析器消息 (它可能引用文件片段, 而共用文件含密码). fatal 解码拒绝非法 UTF-8, 不悄悄改写值. 顶层必须是对象.
 /** @param {string} file @param {string} label @returns {any} */
 const readJson = (file, label) => {
@@ -76,6 +78,16 @@ const machine = shared.machines?.[machineKey] === undefined && config.machines?.
     ? undefined : {...shared.machines?.[machineKey], ...config.machines?.[machineKey]};
 if (machine === undefined) fail(`Machine not found in config: ${machineKey}`);
 if (operation === 'check' && typeof config.fixturesDirectory !== 'string') fail('fixturesDirectory is missing from the config.');
+
+let version;
+if (operation === 'check') {
+    if (!existsSync(archive)) fail(`Archive does not exist: ${archive}`);
+    try {
+        version = parsePackageIdentity(readFileSync(join(dirname(localConfig), 'package.json'))).version;
+    } catch (error) {
+        fail(errorMessage(error));
+    }
+}
 
 /** @param {string} file @param {string[]} args @param {{cwd?: string, quiet?: boolean}} [options] */
 const run = (file, args, {cwd, quiet = false} = {}) => {
@@ -146,13 +158,13 @@ try {
         try {
             exitCode = await check(argument) ? 0 : 1;
         } catch (error) {
-            process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+            process.stderr.write(`${errorMessage(error)}\n`);
         }
         if (!rest.includes('--keep')) down();
     }
 } catch (error) {
     exitCode = 1;
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(`${errorMessage(error)}\n`);
 } finally {
     rmSync(workspace, {force: true, recursive: true});
 }
@@ -162,7 +174,7 @@ if (operation === 'check') {
     try {
         await record('release-validation', {
             machine: machineKey, result: exitCode === 0 ? 'pass' : 'fail', seconds: Math.round((Date.now() - startedAt) / 1000),
-            version: parsePackageIdentity(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'))).version,
+            version,
         }, {programDirectory: resolveInstallation(process.env, process.platform).directory});
     } catch { /* the host has no resolvable installation */ }
 }

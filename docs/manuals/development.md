@@ -160,6 +160,8 @@ node scripts/reviewer-capability.mjs summary [--markdown] --cell LABEL FILE... [
 node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|anchor-add ...
 ~~~
 
+Scenario setup accepts an optional `handoff.md`. If the file exists but cannot be read, or if the fixture names an unknown Reviewer role, setup reports an error before creating the scenario or its recovery directory.
+
 Scoring reads bare evidence locators in free-form findings, including paths and line ranges inside parentheses or square brackets. When a scoring fix changes the format counts, recalculate the baseline from the same archived reports. To compare historical runs, rescore every group from the same ARW commit.
 
 Commit Audit blind pools use `problem-gate-1-N` and `problem-gate-2-N` to distinguish the two Gates. To rescore earlier Commit Audit reports, regenerate candidates with `score`, rebuild the pools, and adjudicate them with the current brief. Decisions from the earlier brief expire when you rescore.
@@ -217,7 +219,7 @@ arw reviewer-capability pack --out ./rbout --bundle ./hydrogen.tar.gz
 
 ### Cross-operating-system validation environment
 
-Local unit tests cannot prove that installers, PATH registration, and `arw workflow init` behave properly across clean operating systems. To verify those end-to-end on real Windows and Linux systems, follow the VM validation procedure in the source-only `$release` Skill (`.agents/skills/release/`, Chinese), which defines the VM configuration, guest requirements, and snapshot discipline. During a run, `scripts/release-vm.mjs` restores a clean VMware snapshot, copies the candidate Git bundle, configured `agent-assisted.tgz` fixture, and installation archive selected by `--archive` (produced by `scripts/pack-release.mjs`) into the guest over SSH, executes `scripts/release-guest-check.mjs` inside the guest, and restores the snapshot again when finished.
+Local unit tests cannot prove that installers, PATH registration, and `arw workflow init` behave properly across clean operating systems. To verify those end-to-end on real Windows and Linux systems, follow the VM validation procedure in the source-only `$release` Skill (`.agents/skills/release/`, Chinese), which defines the VM configuration, guest requirements, and snapshot discipline. Before touching the VM, `scripts/release-vm.mjs check` verifies that the installation archive selected by `--archive` exists and that the checkout's `package.json` has a valid package identity. It then restores a clean VMware snapshot, copies the candidate Git bundle, configured `agent-assisted.tgz` fixture, and installation archive (produced by `scripts/pack-release.mjs`) into the guest over SSH, executes `scripts/release-guest-check.mjs` inside the guest, and restores the snapshot again when finished.
 
 ### Stable release
 

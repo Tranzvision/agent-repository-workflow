@@ -207,8 +207,8 @@ esac
         const result = await run(['check', 'M', bundle, '--archive', archive, '--config', join(directory, 'errors.json'), ...(keep ? ['--keep'] : [])]);
         assert.ok(result.status === 'exited' && result.exitCode === 1);
         assert.equal(result.stdout.trim(), 'M: FAIL');
-        assert.equal(result.stderr.includes('primary start failure'), primary);
-        assert.equal(result.stderr.includes('cleanup revert failure'), !keep);
+        assert.equal(result.stderr.includes('primary start failure'), primary, result.stderr);
+        assert.equal(result.stderr.includes('cleanup revert failure'), !keep, result.stderr);
     });
 }
 
@@ -233,4 +233,23 @@ test('release-vm check records one release-validation effect per machine unless 
         {v: 1, kind: 'release-validation', machine: 'Down', result: 'fail', version},
     ]);
     assert.ok(lines.every(line => Number.isInteger(line.seconds) && !('repository' in line)));
+});
+
+test('release-vm check reports an invalid checkout package identity', async t => {
+    const {directory, write, run, machine, bundle, archive} = await setup(t);
+    await write('vm.json', {fixturesDirectory: directory, machines: {M: machine}});
+    await writeFile(join(directory, 'repo', 'package.json'), '{');
+    const result = await run(['check', 'M', bundle, '--archive', archive, '--config', join(directory, 'vm.json')]);
+    assert.ok(result.status === 'exited' && result.exitCode === 2);
+    assert.match(result.stderr, /package\.json/u);
+});
+
+test('release-vm check rejects a nonexistent archive before contacting the VM', async t => {
+    const {directory, write, run, calls, machine, bundle} = await setup(t);
+    await writeFile(machine.vmrun, `#!/bin/sh\necho "vmrun $*" >> '${join(directory, 'ssh.log')}'\nexit 1\n`);
+    await write('vm.json', {fixturesDirectory: directory, machines: {M: machine}});
+    const result = await run(['check', 'M', bundle, '--archive', 'missing.tar.gz', '--config', join(directory, 'vm.json')]);
+    assert.ok(result.status === 'exited' && result.exitCode === 2);
+    assert.match(result.stderr, /Archive does not exist: missing\.tar\.gz/u);
+    assert.deepEqual(await calls(), ['']);
 });

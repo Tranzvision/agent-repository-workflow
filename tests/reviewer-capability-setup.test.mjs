@@ -58,6 +58,34 @@ test('setup blocks an existing target or a missing fixture', async t => {
     assert.equal((await setupScenario({scenario: join(FIXTURES, 'nowhere', 'none'), target: join(root, 'other')})).status, 'blocked');
 });
 
+test('setup leaves no instance or recovery directory when the Reviewer role is unknown', async t => {
+    const root = await createTemporaryDirectory(t, 'arw-capability-setup-');
+    const scenario = join(root, 'unknown-role', 'demo');
+    await mkdir(scenario, {recursive: true});
+    await writeFile(join(scenario, 'expected.json'), '{}');
+    const target = join(root, 'instance');
+    const result = await setupScenario({scenario, target});
+    assert.equal(result.status, 'failed');
+    await assert.rejects(access(target), {code: 'ENOENT'});
+    await assert.rejects(access(join(root, 'state')), {code: 'ENOENT'});
+});
+
+test('setup accepts an absent handoff and rejects a handoff that cannot be read', async t => {
+    const root = await createTemporaryDirectory(t, 'arw-capability-setup-');
+    const scenario = join(root, 'code-standards-reviewer', 'demo');
+    await mkdir(scenario, {recursive: true});
+    await writeFile(join(scenario, 'expected.json'), '{}');
+    const target = join(root, 'instance');
+    await mkdir(join(scenario, 'handoff.md'));
+    const result = await setupScenario({scenario, target});
+    assert.equal(result.status, 'failed');
+    await assert.rejects(access(target), {code: 'ENOENT'});
+    const absentScenario = join(root, 'code-standards-reviewer', 'no-handoff');
+    await mkdir(absentScenario);
+    await writeFile(join(absentScenario, 'expected.json'), '{}');
+    assert.equal((await setupScenario({scenario: absentScenario, target})).status, 'succeeded');
+});
+
 test('the entry maps results to exit codes', async () => {
     const run = async (/** @type {string[]} */ ...args) => /** @type {any} */ (await runProcess(process.execPath, [ENTRY, ...args]));
     const [unknown, blocked] = await Promise.all([
