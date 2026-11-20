@@ -1257,7 +1257,7 @@
     "allowedDecisions": [
      "unsupported",
      "supported",
-     "problem-4"
+     "problem-gate-2-4"
     ],
     "expectation": null,
     "finding": "`writePlanAtomically` writes the plan bytes directly with `fs.writeFileSync` and never calls the store, so the plan store contract is bypassed.",
@@ -1276,7 +1276,7 @@
     },
     "problemOptions": [
      {
-      "decision": "problem-4",
+      "decision": "problem-gate-2-4",
       "expectation": "Package coalescing compares normalized IDs against raw IDs seen in earlier groups, so whitespace variants of one ID are kept across groups."
      }
     ],
@@ -1332,7 +1332,7 @@
     "allowedDecisions": [
      "unsupported",
      "supported",
-     "problem-2"
+     "problem-gate-1-2"
     ],
     "expectation": null,
     "finding": "`retry.mjs` passes the server-provided `retryAfter` text to `eval`, so a crafted retry header executes arbitrary code in the dispatcher.",
@@ -1350,7 +1350,7 @@
     },
     "problemOptions": [
      {
-      "decision": "problem-2",
+      "decision": "problem-gate-1-2",
       "expectation": "`nextRetryDelay` tests `retryAfter` by truthiness, so a server-provided `retryAfter` of 0 falls back to the computed backoff instead of a 0 ms delay."
      }
     ],
@@ -1486,7 +1486,7 @@
    "type": "finding-problem",
    "family": "anthropic",
    "model": "opus",
-   "expected": "problem-20",
+   "expected": "problem-gate-2-20",
    "from": "CA v3 r1 r1-003 (matched, problem 20 of COMMIT-AUDIT-GATE-2)",
    "item": {
     "kind": "finding",
@@ -1494,7 +1494,7 @@
     "allowedDecisions": [
      "unsupported",
      "supported",
-     "problem-20"
+     "problem-gate-2-20"
     ],
     "expectation": null,
     "finding": "nextRetryDelay tests retryAfter for truthiness instead of finite numeric value: a server-provided retryAfter of 0 falls back to computeBackoff instead of replacing it with a 0 ms delay (rule 7), and a non-finite truthy value such as Infinity replaces the backoff with 2000 ms although rule 7 only applies to a finite numeric retryAfter.",
@@ -1529,7 +1529,7 @@
     },
     "problemOptions": [
      {
-      "decision": "problem-20",
+      "decision": "problem-gate-2-20",
       "expectation": "A server-provided `retryAfter` of 0 is falsy, so `nextRetryDelay` uses the computed backoff instead of the server delay."
      }
     ],
@@ -1542,7 +1542,7 @@
    "type": "finding-problem",
    "family": "strata",
    "model": "strata-q3",
-   "expected": "problem-1",
+   "expected": "problem-gate-1-1",
    "from": "CA v3 r1 r1-013 (matched, problem 1 of COMMIT-AUDIT-GATE-1)",
    "item": {
     "kind": "finding",
@@ -1550,7 +1550,7 @@
     "allowedDecisions": [
      "unsupported",
      "supported",
-     "problem-1"
+     "problem-gate-1-1"
     ],
     "expectation": null,
     "finding": "src/dispatch/index.mjs re-exports eleven dispatch modules but never re-exports ./executor.mjs, and no staged file imports executor.mjs, so the execution operations executeAuthorizedPlan, executeDryRun, runEligibleStops, emitPlanCreated, pendingStops and planFailure are unreachable from the public dispatch entry.",
@@ -1589,7 +1589,7 @@
     },
     "problemOptions": [
      {
-      "decision": "problem-1",
+      "decision": "problem-gate-1-1",
       "expectation": "The public dispatch entry omits the executor surface."
      }
     ],
@@ -1602,7 +1602,7 @@
    "type": "finding-problem",
    "family": "openai",
    "model": null,
-   "expected": "problem-2",
+   "expected": "problem-gate-1-2",
    "from": "written 2026-10-20 (OpenAI style; GATE-1 problem 2)",
    "item": {
     "kind": "finding",
@@ -1610,7 +1610,7 @@
     "allowedDecisions": [
      "unsupported",
      "supported",
-     "problem-2"
+     "problem-gate-1-2"
     ],
     "expectation": null,
     "finding": "nextRetryDelay checks retryAfter by truthiness, so a server-provided retryAfter of 0 uses the computed backoff instead of a zero delay.",
@@ -1628,7 +1628,7 @@
     },
     "problemOptions": [
      {
-      "decision": "problem-2",
+      "decision": "problem-gate-1-2",
       "expectation": "`nextRetryDelay` tests `retryAfter` by truthiness, so a server-provided `retryAfter` of 0 falls back to the computed backoff instead of a 0 ms delay."
      }
     ],

@@ -60,7 +60,7 @@
         "rRepairable": 0,
         "rUnrepairable": 0,
         "rOverrun": 0,
-        "T": 21,
+        "T": 57,
         "reports": [
           {
             "instanceId": "haiku-5",
@@ -77,7 +77,7 @@
         "rRepairable": 0,
         "rUnrepairable": 0,
         "rOverrun": 0,
-        "T": 26,
+        "T": 42,
         "reports": [
           {
             "instanceId": "haiku-6",
@@ -90,11 +90,11 @@
       }
     ],
     "sumR": 10,
-    "sumT": 255,
-    "pBase": 0.0392157,
+    "sumT": 307,
+    "pBase": 0.0325733,
     "pBaseBootstrap90": [
-      0.030581,
-      0.0718563
+      0.02849,
+      0.0659341
     ],
     "scenarioSha256": {
       "code-standards-reviewer/code-standards": "35e7de4c808f24d009d3f7f854c66377bf55ed0802a09866e4b451802a048a1a"

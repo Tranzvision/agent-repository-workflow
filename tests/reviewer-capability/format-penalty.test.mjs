@@ -125,7 +125,7 @@ test('a Spec Readiness report that continues past a requirement-scope problem is
 
 test('the registered baselines match their archives, bootstrap intervals and answer keys', async () => {
     const result = await baseline({unit: 'code-standards'});
-    assert.deepEqual([result.status, result.filesChecked, Number(result.pBase.toFixed(7))], ['succeeded', 10, 0.0392157]);
+    assert.deepEqual([result.status, result.filesChecked, Number(result.pBase.toFixed(7))], ['succeeded', 10, 0.0325733]);
     assert.equal((await baseline({unit: 'nothing'})).status, 'blocked');
     // The spill files of the code-spec repair records are archive files too (3 spills, 5 runs of report and repair record).
     assert.equal((await baseline({unit: 'code-spec'})).filesChecked, 5 * 2 + 3);

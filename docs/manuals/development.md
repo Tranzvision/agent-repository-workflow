@@ -160,6 +160,10 @@ node scripts/reviewer-capability.mjs summary [--markdown] --cell LABEL FILE... [
 node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|anchor-add ...
 ~~~
 
+Scoring reads bare evidence locators in free-form findings, including paths and line ranges inside parentheses or square brackets. When a scoring fix changes the format counts, recalculate the baseline from the same archived reports. To compare historical runs, rescore every group from the same ARW commit.
+
+Commit Audit blind pools use `problem-gate-1-N` and `problem-gate-2-N` to distinguish the two Gates. To rescore earlier Commit Audit reports, regenerate candidates with `score`, rebuild the pools, and adjudicate them with the current brief. Decisions from the earlier brief expire when you rescore.
+
 ### Run the capability suite with a command-line model
 
 Use a release of ARW that includes `arw reviewer-capability`, Node.js 24 or newer, Git, tar, and a working model CLI on Linux or macOS. On Windows, use an ARW installation inside WSL. Run these commands from an ordinary work directory. The installation already contains the scenarios and scoring code.

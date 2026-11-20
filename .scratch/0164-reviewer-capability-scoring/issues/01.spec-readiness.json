@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0164:01",
+  "request": {
+    "digest": "3f2b53f74f8ae6641d6b0dcd80271a7bfbb33bb836c84a0d95d098b181187fe2",
+    "filePath": ".tmp/codex/01a1fa13-37c9-7bb0-8540-9e2b37f0f4a0/0164_01/spec-readiness/requests/request-221700d1-976f-4b30-b271-7debdd7eb7b5.json",
+    "id": "221700d1-976f-4b30-b271-7debdd7eb7b5"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "9d5094e6cdc341bf7f75859f5ecbdf37dd1df9127a8b0f836f5f6dac13b07523"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0164-reviewer-capability-scoring/spec.md",
+      "role": "governing-spec",
+      "sha256": "56cc35c41eac42e8b0d0a00311c2a8e6d911b947389f15493b2f48bfceb3d12f"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0164-reviewer-capability-scoring/issues/01-markdown-evidence-and-gate-decisions.md",
+    "sha256": "e6d501266b0e98e95b53fa82c9676958eefcc93e928cf2fc4abf98abb50fc6ec"
+  },
+  "result": "satisfied"
+}

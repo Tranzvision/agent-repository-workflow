@@ -14,6 +14,7 @@ import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {item} from '../helpers/reviewer-capability-items.mjs';
 
 const SPEC_READINESS = join(import.meta.dirname, '..', 'fixtures', 'reviewer-capability', 'spec-readiness-reviewer', 'spec-readiness');
+const COMMIT_AUDIT = join(import.meta.dirname, '..', 'fixtures', 'reviewer-capability', 'requirements-reviewer', 'commit-audit');
 const LISTING = {status: 'succeeded', result: {notifications: []}};
 const association = (/** @type {string} */ expectation) => ({...item(expectation), candidateId: `c-${expectation}`});
 
@@ -69,6 +70,27 @@ test('scoring: no findings earns nothing, a matched association earns the proble
     assert.deepEqual([clean.candidates.map((/** @type {any} */ item) => item.kind), clean.scores.score < 0], [['finding'], true]);
 });
 
+test('scoring: bare locators in a finding restore Commit Audit Gate 2 evidence', async t => {
+    const directory = await createTemporaryDirectory(t, 'arw-capability-report-');
+    const finding = '- src/dispatch/queue.mjs:32, routeDuration omits parking (queue.mjs:32, 33).'
+        + '\n  See [.scratch/0001-dispatch-control/spec.md:11] and [docs/dispatch/dispatch-policy.md:65-66, 68].'
+        + ' Compare 12:30 and `13:45` at https://example.test/file.mjs:8 or http://[::1]/?path=src/dispatch/queue.mjs:7.';
+    const path = await report(directory, finding + '\n');
+    const {candidates, status} = await score({enumerate: true, noRepair: true, report: path, scenario: COMMIT_AUDIT});
+
+    assert.equal(status, 'succeeded');
+    assert.deepEqual(candidates.map((/** @type {any} */ candidate) => candidate.check), ['COMMIT-AUDIT-GATE-2']);
+    assert.equal(candidates[0].finding, finding);
+    assert.equal(await readFile(path, 'utf8'), finding + '\n');
+    assert.deepEqual(candidates[0].evidence, [
+        {filePath: 'src/dispatch/queue.mjs', line: 32},
+        {filePath: 'src/dispatch/queue.mjs', line: 33},
+        {filePath: '.scratch/0001-dispatch-control/spec.md', line: 11},
+        {filePath: 'docs/dispatch/dispatch-policy.md', lineStart: 65, lineEnd: 66},
+        {filePath: 'docs/dispatch/dispatch-policy.md', line: 68},
+    ]);
+});
+
 test('scoring: inputs that cannot be scored are blocked', async t => {
     const directory = await scenario(t);
     assert.equal((await run(directory, {report: join(directory, 'missing.md')})).status, 'blocked');
@@ -122,6 +144,57 @@ test('score: stale decisions stay pending, provisional bounds enclose the score,
 
 test('a repeated candidate id is found', () => {
     assert.deepEqual([repeatedId([{candidateId: 'a'}, {candidateId: 'b'}]), repeatedId([{candidateId: 'a'}, {candidateId: 'b'}, {candidateId: 'a'}])], [undefined, 'a']);
+});
+
+test('pools: Commit Audit rejects a copied Gate 1 decision for Gate 2', async t => {
+    const root = await createTemporaryDirectory(t, 'arw-capability-pool-');
+    const path = await report(root, '- `src/dispatch/executor.mjs:4` The public index omits its executor export.\n');
+    const input = {noRepair: true, report: path, scenario: COMMIT_AUDIT};
+    const {candidates} = await score({...input, enumerate: true});
+    const [gate1, gate2] = candidates;
+    const gate1Option = gate1.problemOptions.find((/** @type {any} */ option) => option.expectation === 'The public dispatch entry omits the executor surface.');
+    const gate2Option = gate2.problemOptions.find((/** @type {any} */ option) => option.expectation === 'The public entry does not export `executor.mjs`.');
+    const candidatesFile = join(root, 'candidates.json');
+    const name = 'gate';
+    await writeFile(candidatesFile, JSON.stringify(candidates));
+    const build = {action: /** @type {const} */ ('build'), candidates: [candidatesFile], name, root, scenario: COMMIT_AUDIT};
+    const built = await pool(build);
+    assert.equal(built.status, 'succeeded');
+    const [paths] = built.pools;
+    await mkdir(join(paths.adj, 'view'));
+    assert.equal((await pool({action: 'prompt', name, root})).status, 'succeeded');
+
+    const {items} = JSON.parse(await readFile(paths.key, 'utf8'));
+    const judge = (/** @type {string} */ gate2Decision) => ({decisions: Object.entries(items).map(([id, value]) => {
+        const meta = /** @type {any} */ (value);
+        return {id, decision: meta.expected ?? (meta.stableId === gate2.candidateId ? gate2Decision : gate1Option.decision), reason: 'Checked this candidate.'};
+    })});
+    const reply = join(paths.adj, 'decisions-gate.json');
+    const split = async (/** @type {string} */ decision) => {
+        await writeFile(reply, JSON.stringify(judge(decision)));
+        return pool({action: 'split', decisions: reply, name, root});
+    };
+    const invalid = await split(gate1Option.decision);
+    assert.equal(invalid.status, 'blocked');
+    assert.match(invalid.diagnostics[0], /problem-gate-1-1 is not allowed/u);
+    const storePath = join(root, name, 'decisions.json');
+    await assert.rejects(readFile(storePath), {code: 'ENOENT'});
+
+    assert.equal(gate2.problemOptions.find((/** @type {any} */ option) => option.decision === 'problem-gate-2-1').expectation.includes('parking'), true);
+    assert.equal(gate2Option.decision, 'problem-gate-2-7');
+    assert.equal((await split(gate2Option.decision)).written, 2);
+    const override = await pool({action: 'override', decision: gate2Option.decision, id: gate2.candidateId, name, reason: 'Checked the missing export.', root});
+    assert.equal(override.status, 'succeeded');
+    const agent = join(root, 'agent.json');
+    await writeFile(agent, JSON.stringify(LISTING));
+    const rescored = await score({...input, agent, decisions: [storePath]});
+    assert.deepEqual([rescored.candidates, rescored.scores.semanticProblemHits], [[], 2]);
+
+    await writeFile(candidatesFile, JSON.stringify(candidates).replace(/problem-gate-[12]-/gu, 'problem-'));
+    const legacy = await pool({...build, name: 'legacy'});
+    assert.equal(legacy.status, 'blocked');
+    assert.match(legacy.diagnostics[0], /score again/u);
+    await assert.rejects(readFile(join(root, 'legacy', 'key.json')), {code: 'ENOENT'});
 });
 
 test('pools: prompt checks adj, split gives the review lists, override and anchor-add validate', async t => {
