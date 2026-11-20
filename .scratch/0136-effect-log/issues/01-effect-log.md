@@ -1,6 +1,6 @@
 # 增加默认关闭的工作流运行效果离线记录 (Effect Log)
 
-Status: ready-for-agent
+Status: completed
 
 ## What to build
 
@@ -84,3 +84,6 @@ next ADR number: 0041
 - 台账: lib/commit-audit/commit-audit.mjs 空报告判定与轮次列出的残余重复不修: verify 只需要 "是否有任一非空报告", Effect Log 需要每轮的计数, 两处口径本来不同, 共享函数会多一层参数; 单个报告读取已共用 `roundReport`.
 - 台账: docs/specs/agent-repository-workflow/spec.md 的 "Effect Log 的依赖方向" 段保留: 上一轮 Reviewer 明确要求补该句 (并补 `scripts/release-vm.mjs` 边), 本轮意见相反, 以长期规格依赖方向须有文字为准; Reading side 一节只保留读取方可依赖的事实, 计算规则句不删, 以免与 Files and records 契约脱节.
 - 台账: docs/specs/agent-repository-workflow/spec.md 的 `agent-task` 段保留接续次数与尝试次数的汇总句, 不修: 它是 effort spec 同一合同的原句, 上一轮 requirements Reviewer 指出删去会使长期规格与 effort spec 不一致, 两位 Reviewer 意见相反, 以合同一致为准.
+- 体积 (2026-11-20 补记 Status): 本次候选只把 `Status` 改为 `completed` (实施在 ec174fc 提交时漏改), 所以 `prepare` 实测 0, 与上面 Validation 记录的实施数字不符, 属预期.
+- 台账: lib/effect-log/effect-log.mjs:33-35 转入后续 issue 第 4 轮提交审核 (Status 补记) 报 `configuredDirectory` 把配置文件不可读也当作不存在而静默关闭日志; 这是 ec174fc 及之后提交已有的行为, 本次候选未触及, 未复现, 由 Main 排后续 issue 核实.
+- 台账: lib/background-agent/manager.mjs:109-128,822-825 转入后续 issue 第 4 轮报 `failStart(entry, true)` 先转 `ended` 再 `recordTask(entry, true)` 可能对同一次启动失败写两条 `agent-task`; 既有代码, 本次候选未触及, 未复现, 由 Main 排后续 issue 核实.
