@@ -27,6 +27,7 @@
 | 修改共享工作流或平台投射 | [Workflow Distribution 和 Platform Projection](#workflow-distribution-和-platform-projection) | 实际工作流文件, 分发配置和开发长期规格 |
 | 采用外部 Skill Package 更新 | [Upstream Sync](#upstream-sync) | 来源配置和 `$upstream-sync` Skill |
 | 修改 Reviewer Role, 独立运行或验证 Reviewer 能力 | [Reviewer 配置和能力验证](#reviewer-配置和能力验证) | 规范 Role, 用户配置和 Reviewer 能力规则 |
+| 从 ARW 安装中用命令行模型做基准测试 | [使用命令行模型运行能力测试集](#使用命令行模型运行能力测试集) | 配置模型, 规划和续跑调用, 导出结果包 |
 | 验证跨操作系统安装或维护受验环境 | [跨操作系统验证环境](#跨操作系统验证环境) | 活动 issue 和 `$release` Skill |
 | 验证并发布稳定版本 | [稳定版本发布](#稳定版本发布) | 发布长期规格和 `$release` Skill |
 
@@ -66,7 +67,7 @@ pnpm test
 | 仓库工作流和工作流分发载荷 | `lib/repository-workflow/`, `lib/workflow-distribution/` |
 | 安装, 引导脚本和卸载 | 根 `install.mjs`, `uninstall.mjs`, `lib/installation/` |
 | 平台投射和平台环境 | `lib/arw-common/platform-adapter.mjs`, `lib/arw-common/platform-environment.mjs` |
-| 源码仓库发布和 Reviewer 能力 | `lib/release/`, `lib/reviewer-capability/`, `lib/reviewer-capability-setup.mjs`, `lib/reviewer-capability-view.mjs` |
+| 发布和 Reviewer 能力运行 | `lib/release/`, `lib/reviewer-capability/`, `lib/reviewer-capability-cli.mjs`, `lib/reviewer-capability-setup.mjs`, `lib/reviewer-capability-view.mjs` |
 | 多仓库 Application 与 JIRA 工作流 | `lib/application-jira/` 与 [多仓库与 JIRA 手册](application-jira.zh-CN.md) |
 | 文本, 术语和语言分析 | `lib/document-terms/`, `lib/common/`, `lib/arw-common/` 中对应公共能力 |
 
@@ -145,7 +146,7 @@ node scripts/check-workflow-distribution.mjs
 
 当你修改规范 Reviewer Role, Reviewer 专属审核运行逻辑或用于检验审核质量的能力测试场景时, 需要走这条路线验证 Reviewer 能力. 规范 Role 位于 `docs/agents/roles/`, 共同执行与通信规则见 [Reviewer 责任](../agents/reviewer.md). 跨仓库共享的后台 Agent 容量, 连接和恢复由 [产品后台 Agent 规则](../specs/agent-repository-workflow/spec.md#background-agent-control) 与 [安装管理规则](../specs/agent-repository-workflow-installation/spec.md#background-agent-management) 拥有; 用户模型与档位设置保存在 ARW 程序目录的 `config.json` 和仓库的 `arw.config.json` 中, 其格式及默认值见 [Reviewer 配置规格](../specs/agent-repository-workflow-installation/spec.md#reviewer-configuration).
 
-运行能力测试时, 由维护者显式调用源码专用的 `$reviewer-capability` Skill. 测试场景 (物化后的夹具, 答案键, 盲裁 brief 与锚点) 保存在 `tests/fixtures/reviewer-capability/` 中. 该 Skill 会调用以下命令, 每条命令都输出 JSON, 成功退出 `0`, 被阻断或失败退出 `1`, 用法错误退出 `2`:
+需要验证对 ARW 原生 Reviewer 工作流的修改时, 由维护者显式调用源码专用的 `$reviewer-capability` Skill. 测试场景 (物化后的夹具, 答案键, 盲裁 brief 与锚点) 保存在 `tests/fixtures/reviewer-capability/` 中. ARW 发布版包含这些夹具及其 Git 来源信息, 供已安装的命令行模型运行使用. 源码专用的 Skill 会调用以下命令. 每条命令都输出 JSON, 成功退出 `0`, 被阻断或失败退出 `1`, 用法错误退出 `2`:
 
 ```text
 node scripts/reviewer-capability.mjs run <scenario-directory> <new-instance-directory> --settings JSON
@@ -159,9 +160,66 @@ node scripts/reviewer-capability.mjs summary [--markdown] --cell LABEL FILE... [
 node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|anchor-add ...
 ```
 
+场景设置接受可选的 `handoff.md`. 若该文件存在却无法读取, 或夹具指定了未知的 Reviewer role, 设置会在创建场景或其恢复目录之前报错.
+
+评分会读取自由格式发现中的裸证据定位符, 包括括号或方括号中的路径和行号范围. 当评分修复改变了格式计数时, 从同一批归档报告重新计算基线. 要比较历史运行, 请在同一个 ARW commit 下为每组重新评分.
+
+Commit Audit 盲裁池使用 `problem-gate-1-N` 与 `problem-gate-2-N` 区分两个 Gate. 要重新评分更早的 Commit Audit 报告, 用 `score` 重新生成候选, 重建池, 并按当前 brief 重新裁决. 重新评分时, 旧 brief 下的裁决失效.
+
+### 使用命令行模型运行能力测试集
+
+在已安装 ARW 的机器上运行能力测试集, 需要满足以下条件: 使用包含 `arw reviewer-capability` 的 ARW 发布版, Node.js 24 或更高版本, Git, tar, 以及一个可正常工作的模型 CLI, 运行环境为 Linux 或 macOS. 在 Windows 上请在 WSL 中使用 ARW 安装. 在普通的工作目录中运行这些命令. 安装内已包含测试场景与评分代码.
+
+在安装了 `agy` 并已登录的机器上, 把下面的示例保存为 `agy.json`:
+
+```json
+{
+  "provider": "agy",
+  "version_command": ["agy", "--version"],
+  "command": [
+    "agy", "-p", "Read the file {prompt_file} and do exactly what it says.",
+    "--model", "gemini-4-{model}-{effort}", "--effort", "{effort}",
+    "--output-format", "json", "--print-timeout", "60m",
+    "--settings", "{file.settings.json}", "--add-dir", "{cwd}", "--sandbox"
+  ],
+  "files": {
+    "settings.json": {
+      "agentMode": "auto",
+      "permissions": {
+        "allow": [
+          "read_file({cwd})", "read_file({prompt_file})", "write_file({report_dir})",
+          "command(ls)", "command(echo)", "command(wc)", "command(sort)",
+          "command(git status)", "command(git diff)", "command(git log)", "command(git show)"
+        ],
+        "deny": [
+          "command(sudo)", "command(rm -rf)", "command(curl)", "command(wget)",
+          "command(git push)", "write_file({cwd}/.git)"
+        ]
+      }
+    }
+  }
+}
+```
+
+确认你的 CLI 版本支持这些参数, 并会执行文件与工具权限. 读取范围只限于生成的场景目录和提示文件, 写入范围只限于报告目录. 答案键位于安装目录中. `portable-scan` 检查可以标出命令输出或报告中提到的已安装路径; 静默读取则不在其可见范围内.
+
+```sh
+arw reviewer-capability check --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability check --config ./agy.json --model hydrogen --efforts high --out ./rbout --call
+arw reviewer-capability plan --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability run --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability pack --out ./rbout --bundle ./hydrogen.tar.gz
+```
+
+`check` 会构建每个选定的场景. 加上 `--call` 会发送一次小提示, 可能消耗模型额度. `plan` 列出剩余实例, 不调用 CLI. 两者接受与 `run` 相同的矩阵, `run` 默认每个档位每个场景运行五次. 只跑单个实例用 `--n 1 --scenarios code-spec`. 配置是参数向量, 不经过 shell 传递. 其他 CLI 可以通过标准输入接收合并后的提示, 或在参数中使用 `{prompt}` 或 `{prompt_file}`. 它必须把报告写到 `{report_path}`, 该路径同时通过环境变量 `RB_REPORT_PATH` 传入. `arw reviewer-capability --help` 列出全部选项.
+
+`run` 每次调用后检查用量. 退出码 `75` 表示超出限制. 读取 `rbout/STOPPED.json`, 再用 `--ack '继续的理由'` 重新运行同一命令即可继续. 要在两次调用之间暂停, 创建空文件 `rbout/STOP`; 删除它并用相同设置重新运行, 即可从未完成的实例继续. 每次调用默认超时一小时. 超时的调用如果已交付可用报告, 仍可评分. 在模型调用期间按 Ctrl+C 会停止命令, 并以退出码 `130` 结束. 耗时是挂钟时间的估计值, 暂停扣除为零. 报告输出超过 300,000 个 token 会触发用量停止. 当 CLI 不提供 token 计数时, 运行仍会限制调用次数和耗时, 并在模型命令产生超过 16 MB 合并输出时将其停止.
+
+`pack` 会打印归档路径. 省略 `--bundle` 时, 会在 `--out` 下生成带时间戳的归档. 该 gzip 压缩的 tar 包含 `manifest.json` 以及 `runs/<cell>/` 下已完成的实例, 每个实例成员都有 SHA-256 和字节数. 清单记录 ARW 版本, Git commit, 夹具树和 CLI 身份. 请把 Git 来源信息与归档一起保存, 以便导入方能把分数对应到确切的夹具集. 参见 [结果包合同](../specs/agent-repository-workflow/spec.md#command-line-reviewer-capability).
+
 ### 跨操作系统验证环境
 
-仅靠本机单元测试无法证明安装程序, PATH 登记和 `arw workflow init` 在干净的真实操作系统上都能正常工作. 要在真实 Windows 与 Linux 系统中完成端到端验证, 使用源码仓库专用的 `$release` Skill (`.agents/skills/release/`), 其中规定了 VM 配置, 受验系统要求和快照纪律. 执行验证时, `scripts/release-vm.mjs` 会先还原干净的 VMware 快照, 经 SSH 传入候选 Git bundle, 配置的 `agent-assisted.tgz` 夹具和 `--archive` 指定的安装压缩包 (由 `scripts/pack-release.mjs` 生成), 在 guest 中运行 `scripts/release-guest-check.mjs`, 跑完后再次还原快照.
+仅靠本机单元测试无法证明安装程序, PATH 登记和 `arw workflow init` 在干净的真实操作系统上都能正常工作. 要在真实 Windows 与 Linux 系统中完成端到端验证, 使用源码仓库专用的 `$release` Skill (`.agents/skills/release/`), 其中规定了 VM 配置, 受验系统要求和快照纪律. 执行验证前, 先运行 `scripts/release-vm.mjs check`, 确认 `--archive` 指定的安装压缩包存在, 且检出目录的 `package.json` 包身份有效; 检查通过后才触碰 VM. 之后 `scripts/release-vm.mjs` 会还原干净的 VMware 快照, 经 SSH 传入候选 Git bundle, 配置的 `agent-assisted.tgz` 夹具和安装压缩包 (由 `scripts/pack-release.mjs` 生成), 在 guest 中运行 `scripts/release-guest-check.mjs`, 跑完后再次还原快照.
 
 ### 稳定版本发布
 

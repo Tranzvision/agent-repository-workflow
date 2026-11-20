@@ -1,0 +1,12 @@
+# 更新日志
+
+[English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
+
+## 未发布
+
+- 交互式卸载会把不支持的平台报告为卸载错误.
+- Reviewer 能力设置会报告无法读取的 handoff 文件, 并在 Reviewer role 未知时不留下恢复目录.
+- Release VM 检查在触碰 VM 之前, 会拒绝缺失的安装压缩包, 或无法读取或无效的检出包身份.
+- Reviewer 能力评分会读取自由文本发现中的裸证据定位符, 包括方括号中的引用. Code Standards 格式基线现在包含其归档报告中恢复的定位符. Commit Audit 盲裁池为每个 Gate 使用不同的问题裁决. 要重新评分更早的 Commit Audit 报告, 请重新生成候选和池, 并重新裁决.
+- 可以在 ARW 安装中用 `agy` 等命令行模型运行 Reviewer 能力测试集. `reviewer-capability` 命令可以检查配置, 规划调用, 在用量限制后续跑, 并用 SHA-256 校验和打包已完成的结果.
+- 独立 Reviewer 只报告高和中严重性的发现. 正确性, 数据丢失, 安全和并发缺陷总是至少为中等严重性. 没有高或中严重性发现的审核, 在报告中返回 `No problems.`.

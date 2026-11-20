@@ -1,5 +1,7 @@
 # Changelog
 
+[English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
+
 ## Unreleased
 
 - Interactive uninstall now reports unsupported platforms as an uninstallation error.

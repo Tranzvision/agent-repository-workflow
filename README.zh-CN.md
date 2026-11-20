@@ -311,7 +311,7 @@ arw agent start <name> [agent-arguments...]
 审核并提交 issue:<NNNN>:<NN> 的实现. 只包含这张 issue 授权的修改, 保留其他工作树内容.
 ```
 
-Main Agent 会先核对完成证据并锁定准确的 staged candidate, 然后运行 `arw commit-audit prepare`. ARW 会根据该 issue 和适用 spec 推导出审核范围并生成空白的 txt 报告, 随后并行启动两个独立 Reviewer: `requirements-reviewer` 逐条核对并写下未满足的需求问题, `code-standards-reviewer` 则检查仓库代码与写作标准并指出可以删减的冗余代码 (两者在未发现问题时均写入 `No problems.`). 只有当两个 Reviewer 都正常结束且报告的所有问题都已妥善处理后, Main Agent 才会运行 `arw commit-audit verify` 及剩余的机械检查并完成提交. 如果修复问题后需要复审, Reviewer 只会审查变化部分及其影响范围, 未受影响的原结论保持有效.
+Main Agent 会先核对完成证据并锁定准确的 staged candidate, 然后运行 `arw commit-audit prepare`. ARW 会根据该 issue 和适用 spec 推导出审核范围并生成空白的 txt 报告, 随后两个独立 Reviewer 并行审查已暂存候选: `requirements-reviewer` 检查它是否满足需求, `code-standards-reviewer` 检查仓库代码与写作标准并指出可以删减的冗余代码. 只有当两个 Reviewer 都正常结束且报告的所有问题都已妥善处理后, Main Agent 才会运行 `arw commit-audit verify` 及剩余的机械检查并完成提交. 如果修复问题后需要复审, Reviewer 只会审查变化部分及其影响范围, 未受影响的原结论保持有效.
 
 如果某次提交候选只包含调查记录, 设计文档或其它封闭的非实施内容, Agent 可以走较轻量的提交路线; 但只要候选中包含了当前仓库的实施交付物, 就必须走完上述完整的实施提交流程. 至于具体的差异比较准备, 审核结果复用和异常恢复规则, 由目标仓库的 `code-review` 与 `commit` Skill 直接管理, 本 README 不再重复展开它们的完整协议.
 
@@ -402,6 +402,8 @@ arw agent start <name> [agent-arguments...]
 - `spec-readiness-reviewer`: 在设计定稿, 准备开始编码前运行一次, 审核该 issue 所选的治理设计是否反映现状, 完整且足以实施; 后续若有修改则只复审变化部分.
 - `requirements-reviewer`: 在用户明确请求 implementation commit 后运行, 逐项核对已暂存候选是否满足 issue 要求和适用的长期规范要求.
 - `code-standards-reviewer`: 在提交审核阶段与 `requirements-reviewer` 并行运行, 检查已暂存候选是否符合仓库标准以及适用的写作与代码规则.
+
+三个角色都只报告高和中严重性的发现. 正确性, 数据丢失, 安全和并发缺陷总是至少为中等严重性. Reviewer 会省略低严重性的发现, 并在没有高或中严重性发现时准确写入 `No problems.`.
 
 整个协作过程中, Main Agent 与各 Reviewer 的时间线和分工关系如下:
 
@@ -498,6 +500,7 @@ Main Agent
 
 - [在多个仓库中分发工作并同步 JIRA](docs/manuals/application-jira.zh-CN.md): 当一项 JIRA 需求必须由多个 Git 仓库共同完成时, 从适用性判断进入仓库责任, 操作顺序和失败恢复.
 - [Agent CLI 指南](docs/manuals/agent-cli.zh-CN.md): 当你已经决定用 ARW 保存并启动外部 Agent CLI 配置时, 查阅配置, 参数透传以及进程和会话边界.
+- [用命令行 Reviewer 做基准测试](docs/manuals/development.zh-CN.md#使用命令行模型运行能力测试集): 从 ARW 安装运行四个场景并打包结果以便导入.
 - [与 Agent 对话的日常命令](docs/manuals/daily-agent-conversation-commands.zh-CN.md): 当你已经处于 Agent 对话中并希望快速选择可发送内容时, 使用带判断提示的速查内容.
 - [开发者指南](docs/manuals/development.zh-CN.md): 当你已经克隆 ARW Source Checkout 并准备维护实现, 文档, Workflow Distribution 或发布候选时, 选择维护路线和验证入口.
 - [Skill 手册](docs/manuals/skills.zh-CN.md): 当你想了解 ARW 安装了哪些 Skill, 哪些由 Agent 自动使用, 哪些需要你点名时, 查看带用途和触发时机的清单.
