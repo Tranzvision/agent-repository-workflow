@@ -80,7 +80,7 @@ node install-arw.mjs --version MAJOR.MINOR.PATCH
 源码维护者和开发者请使用下面的命令克隆完整公开仓库. 其中 `-c core.autocrlf=false` 会在首次检出前关闭换行符转换, 且只把这项设置保存在当前克隆出的仓库中:
 
 ```text
-git clone -c core.autocrlf=false --branch main https://github.com/pellorao/agent-repository-workflow.git
+git clone -c core.autocrlf=false --branch main https://github.com/Tranzvision/agent-repository-workflow.git
 cd agent-repository-workflow
 node install.mjs
 ```

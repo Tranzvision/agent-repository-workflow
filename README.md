@@ -82,7 +82,7 @@ node install-arw.mjs --version MAJOR.MINOR.PATCH
 If you are a source maintainer or developer installing from source, clone the public repository with `-c core.autocrlf=false`. That flag disables line-ending conversion before the first checkout and scopes the setting to this repository only:
 
 ```text
-git clone -c core.autocrlf=false --branch main https://github.com/pellorao/agent-repository-workflow.git
+git clone -c core.autocrlf=false --branch main https://github.com/Tranzvision/agent-repository-workflow.git
 cd agent-repository-workflow
 node install.mjs
 ```

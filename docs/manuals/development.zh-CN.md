@@ -122,7 +122,7 @@ node scripts/generate-install-arw.mjs --check
 
 如果要直接从克隆的源码仓库测试安装, 在检出根目录运行 `node install.mjs`; 测试卸载则在 ARW 安装目录中运行 `node uninstall.mjs`.
 
-注意区分两条安装路线: 普通用户从公开 GitHub 仓库 ([pellorao/agent-repository-workflow](https://github.com/pellorao/agent-repository-workflow)) 单独下载 Bootstrap 脚本来安装稳定版本, 它会从 GitHub release 下载 `arw.tar.gz`, 不会回退到 `main`; 而维护者和开发者克隆 `main` 分支后在检出根目录运行 `node install.mjs`, 则属于本地来源模式, 需要外部 Node.js 和 Git, 安装身份记为 `<version>-pre`.
+注意区分两条安装路线: 普通用户从公开 GitHub 仓库 ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) 单独下载 Bootstrap 脚本来安装稳定版本, 它会从 GitHub release 下载 `arw.tar.gz`, 不会回退到 `main`; 而维护者和开发者克隆 `main` 分支后在检出根目录运行 `node install.mjs`, 则属于本地来源模式, 需要外部 Node.js 和 Git, 安装身份记为 `<version>-pre`.
 
 ### Workflow Distribution 和 Platform Projection
 

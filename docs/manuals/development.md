@@ -122,7 +122,7 @@ node scripts/generate-install-arw.mjs --check
 
 To test installation directly from your cloned Source Checkout, run `node install.mjs` from the repository root; to uninstall, run `node uninstall.mjs` inside the ARW installation directory.
 
-Keep the two installation paths distinct. End users install stable releases from the public GitHub repository ([pellorao/agent-repository-workflow](https://github.com/pellorao/agent-repository-workflow)) using the standalone Bootstrap script, which downloads `arw.tar.gz` from a GitHub release and never falls back to `main`. Maintainers and developers who clone `main` and run `node install.mjs` from the checkout root use local-source mode instead, which requires external Node.js and Git and stamps the installation with a `<version>-pre` identity.
+Keep the two installation paths distinct. End users install stable releases from the public GitHub repository ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) using the standalone Bootstrap script, which downloads `arw.tar.gz` from a GitHub release and never falls back to `main`. Maintainers and developers who clone `main` and run `node install.mjs` from the checkout root use local-source mode instead, which requires external Node.js and Git and stamps the installation with a `<version>-pre` identity.
 
 ### Workflow Distribution and Platform Projection
 
