@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0161:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 不需要治理设计; 本 issue 只在 0.5.4 发布后推进产品版本 (release Skill 第 5 节), 单 effort 单实施 issue."
+  },
+  "subject": {
+    "filePath": ".scratch/0161-version-0-5-5/issues/01-version-0-5-5.md",
+    "sha256": "4a939ba4ccc5e0ddb327f1d36fc879890ab5f372cc2e20b965c842399a6af0db"
+  },
+  "result": "not-applicable"
+}
