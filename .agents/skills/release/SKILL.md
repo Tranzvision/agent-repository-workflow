@@ -10,8 +10,9 @@ disable-model-invocation: true
 
 ## 1. Confirm the version
 
-1. 读取 `package.json` 的 `version`, 向维护者提问: `是否确认对 <version> 版本进行发布验证?`. 只有明确肯定才继续. 如果维护者说版本不对, 停止, 由另一个 issue 修改 `package.json`.
-2. 确认 `<version>` 高于 `git tag --merged HEAD` 中的全部稳定版本 tag, 并确认 `<version>` tag 在本地和 `git ls-remote --tags origin <version>` 中都不存在.
+1. 版本号按 0.x 阶段的规则升: 相对上一个稳定版本 tag 以来的改动, 含新功能 (用户可见的新能力或行为变化) 时升第二位 (MINOR) 并把第三位归零, 只有修复时升第三位 (PATCH). 读取 `package.json` 的 `version`, 对照 `git log <上一个 tag>..HEAD` 核对它符合该规则; 不符合时停止, 由另一个 issue 修改 `package.json`.
+2. 向维护者提问: `是否确认对 <version> 版本进行发布验证?`. 只有明确肯定才继续. 如果维护者说版本不对, 停止, 由另一个 issue 修改 `package.json`.
+3. 确认 `<version>` 高于 `git tag --merged HEAD` 中的全部稳定版本 tag, 并确认 `<version>` tag 在本地和 `git ls-remote --tags origin <version>` 中都不存在.
 
 ## 2. Check the candidate locally
 
@@ -55,7 +56,7 @@ disable-model-invocation: true
 
 ## 5. Advance main
 
-发布和公开 Bootstrap 验证完成后, 用一个独立 issue 把 `package.json` 的 `version` 推进到下一个开发版本 (下一个更高的 `MAJOR.MINOR.PATCH`), 运行 `node scripts/generate-install-arw.mjs` 并提交. 之后源码安装的 `-pre` 身份基于新版本. 发布版本的 fixture 更新也在此时按 `./references/fixtures.md` 进行; 第 3 节第 10 步运行过漂移检查时, 按 `../reviewer-capability/drift-check.md` 第 4 项写回登记表.
+发布和公开 Bootstrap 验证完成后, 用一个独立 issue 把 `package.json` 的 `version` 推进到下一个开发版本 (先按 PATCH 升一位; 发版前经第 1 节第 1 步核对, 若自上一个 tag 起已有新功能, 改成下一个 MINOR 并把 PATCH 归零), 运行 `node scripts/generate-install-arw.mjs` 并提交. 之后源码安装的 `-pre` 身份基于新版本. 发布版本的 fixture 更新也在此时按 `./references/fixtures.md` 进行; 第 3 节第 10 步运行过漂移检查时, 按 `../reviewer-capability/drift-check.md` 第 4 项写回登记表.
 
 ## Records
 
