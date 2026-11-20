@@ -114,7 +114,7 @@ The validation rules determine the exact check scope and how to read the results
 
 When your change affects how users install or uninstall ARW, including the standalone downloadable bootstrap script, the installation payload, initial global configuration, or the uninstall entry point, follow this route. The [installation long-term specification (Chinese)](../specs/agent-repository-workflow-installation/spec.md) governs installer behavior and payload contents, while the [development long-term specification (Chinese)](../specs/agent-repository-workflow-development/spec.md) defines how source files map to generated artifacts.
 
-Because the standalone bootstrap script is generated from source, regenerate and verify it with:
+Because the standalone bootstrap script is generated from source, regenerate it with the command below; `--check` writes nothing and only reports whether the existing script matches the source, so use it to verify without regenerating:
 
 ~~~text
 node scripts/generate-install-arw.mjs
@@ -123,11 +123,11 @@ node scripts/generate-install-arw.mjs --check
 
 To test installation directly from your cloned Source Checkout, run `node install.mjs` from the repository root; to uninstall, run `node uninstall.mjs` inside the ARW installation directory.
 
-Keep the two installation paths distinct. End users install stable releases from the public GitHub repository ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) using the standalone Bootstrap script, which downloads `arw.tar.gz` from a GitHub release and never falls back to `main`. Maintainers and developers who clone `main` and run `node install.mjs` from the checkout root use local-source mode instead, which requires external Node.js and Git and stamps the installation with a `<version>-pre` identity.
+Keep the two installation paths distinct. End users install stable releases from the public GitHub repository ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) using the standalone Bootstrap script, which downloads `arw.tar.gz` from a GitHub release and never falls back to `main`. Maintainers and developers who clone `main` and run `node install.mjs` from the checkout root use local-source mode instead, which requires external Node.js and stamps the installation with a `<version>-pre` identity.
 
 ### Workflow Distribution and Platform Projection
 
-If you edit the shared Agent workflows that ARW installs into user repositories, or change distribution settings, platform projections, or platform-native seed files, you must synchronize the distribution payload. In the source repository, `.agents/skills/`, the managed regions of Agent documents, canonical Roles, and fixed license files are the authoring sources; `distribution/` is the generated installation payload synchronized before a release. The [development long-term specification (Chinese)](../specs/agent-repository-workflow-development/spec.md) defines how sources map to `distribution/`, and the [platform standards (Chinese)](../../.agents/skills/platform-standards/SKILL.md) specify the target formats and entry points for each platform.
+If you edit the shared Agent workflows that ARW installs into user repositories, or change distribution settings, platform projections, or platform-native seed files, you need to synchronize the distribution payload before a release. In the source repository, `.agents/skills/`, the managed regions of Agent documents, canonical Roles, and fixed license files are the authoring sources; `distribution/` is the generated installation payload synchronized before a release. The [development long-term specification (Chinese)](../specs/agent-repository-workflow-development/spec.md) defines how sources map to `distribution/`, and the [platform standards (Chinese)](../../.agents/skills/platform-standards/SKILL.md) specify the target formats and entry points for each platform.
 
 To synchronize `distribution/` from your source edits and run the production checks, use:
 
@@ -136,7 +136,7 @@ node scripts/sync-workflow-distribution.mjs
 node scripts/check-workflow-distribution.mjs
 ~~~
 
-The sync command takes no arguments. Both the development specification and the platform standards define which inputs these commands read, and the [Reference check (Chinese)](../specs/agent-repository-workflow-development/spec.md#reference-check) section of the development specification explains how to handle notices emitted during synchronization.
+The sync command takes no arguments and requires your edits under `.agents/skills/`, `AGENTS.md`, `docs/agents`, `docs/licenses/arw`, and `distribution/` to be staged first, because the Git index is its recovery baseline. Both the development specification and the platform standards define which inputs these commands read, and the [Reference check (Chinese)](../specs/agent-repository-workflow-development/spec.md#reference-check) section of the development specification explains how to handle notices emitted during synchronization.
 
 ### Upstream Sync
 

@@ -89,12 +89,12 @@ ARW 必须在 Codex 和 Claude Code 中都完整可用, 包括 `arw background-a
 # Source Checkout Validation
 
 - 测试命令见 `docs/agents/source-checkout-validation.md`. 只含 Agent 规则与文档的提交也运行该文档所列的分发, Claude Code 投影和安装引导脚本检查, 作为 `commit` Skill 非实施分类的补充, 此类提交的分类另含 `distribution/` 副本与根 `README.zh-CN.md` 中的 Markdown. 修改某个区域的确定性测试前读取 `docs/agents/source-checkout-coverage.md`. 发布验证和发布只在维护者显式调用 `$release` Skill 时进行.
-- 安装: `node install.mjs` (相关 issue 授权时从克隆安装), 卸载: 在安装目录运行 `node uninstall.mjs`.
+- 安装: `node install.mjs` (从克隆安装会改动本机安装, 只在授权 issue 的 `## What to build` 或验收要求写明时进行), 卸载: 在安装目录运行 `node uninstall.mjs`.
 
 # Source Checkout Workflow Triggers
 
 - 处理 Source Checkout 旧结构迁移时, 读取 `docs/agents/source-checkout-issue-workflow.md`.
-- 改动 Reviewer 规则 (Reviewer 角色指令, `docs/agents/reviewer.md`, Reviewer 交接与 Request 内容, 各 Skill 与根 `AGENTS.md` 中约束 Reviewer 行为或复审处置的规则, Reviewer 运行时) 前, 以及维护者显式调用 `$reviewer-capability` Skill 时, 读取 `docs/agents/source-checkout-reviewer-testing.md` (所改文件没有任何 Reviewer 在审核时读取的, 不做能力 A/B, 见该文件首段).
+- 改动 Reviewer 规则 (Reviewer 角色指令, `docs/agents/reviewer.md`, Reviewer 交接与 Request 内容, 各 Skill 与根 `AGENTS.md` 中约束 Reviewer 行为或复审处置的规则, Reviewer 运行时) 前, 以及维护者显式调用 `$reviewer-capability` Skill 时, 读取 `docs/agents/source-checkout-reviewer-testing.md`.
 - 增删或改变 Reviewer 当作审查标准读取的通用指令 (根 `AGENTS.md`, `issue-tracking` 等) 所含检查项的改动后, 读取 `docs/agents/source-checkout-reviewer-testing.md` 登记待测项.
 - Upstream Sync (采用上游 Skill 新版本) 只在维护者显式调用 `$upstream-sync` Skill 时进行.
 - 研究或修改受支持的 Agent 平台标准, Projection 配置, Skill 引用规则或目标路径前, 读取 `.agents/skills/platform-standards/SKILL.md`.
@@ -105,6 +105,6 @@ ARW 必须在 Codex 和 Claude Code 中都完整可用, 包括 `arw background-a
 
 - `rule-and-design-changes` Skill 的 User confirmation: 本仓库中, 与用户沟通的 Main Agent 对 Agent 指令和设计文档改动的确认等同于用户确认. Main Agent 可以自行拟定并确认这类改动, subagent 以 Main Agent 分配的改动内容为确认; 维护者按实施 issue 复核整体 diff. 确认依据写入授权 issue 的 `## Comments` 或提交说明.
 - `tests/fixtures/reviewer-capability/**` 中供合成场景使用的 Agent 指令, 规范和其他文档 (含盲裁 `brief.md`) 是测试数据, 不触发 `rule-and-design-changes` Skill 的用户确认, 不论其文档形式或文件名. 本例外不包括治理验证工作流本身的真实规则或长期规范.
-- 单个测试回调耗时阈值为 100 毫秒. 作为 `validation` 与 `test-performance-optimization` Skill 要求逐例批准超阈值案例的 Baseline 例外, 本仓库不为缩短测试耗时修改生产代码 (含为测试增加的注入接缝); 不改生产代码就降不到阈值以下的测试保留超时, 不逐例请求批准.
+- 单个测试回调耗时阈值为 100 毫秒. 作为 `validation` 与 `test-performance-optimization` Skill 要求逐例批准超阈值案例的 Baseline 例外, 本仓库不为缩短测试耗时修改生产代码 (含为测试增加的注入接缝); 不改生产代码就降不到阈值以下的测试保留超时, 不逐例请求批准, 但在该测试旁用注释写明原因.
 - 不对本仓库运行 `arw workflow init|update|verify|remove`; 它是 Workflow Distribution 的创作源, 各 Skill 中 `arw workflow verify` 的回退在本仓库不适用. Source Checkout 验证使用 Workflow Distribution 的生产检查, Repository Workflow 验证使用隔离的目标仓库.
 <!-- arw:repository-owned:end -->

@@ -114,7 +114,7 @@ git diff --check -- <changed-path>...
 
 当改动涉及用户如何安装或卸载 ARW (包括可单独下载的引导脚本, 安装载荷, 初始全局配置或卸载入口) 时, 采用这条路线. 安装行为与载荷责任由 [安装长期规格](../specs/agent-repository-workflow-installation/spec.md) 拥有, 源码文件与派生文件的对应关系由 [开发长期规格](../specs/agent-repository-workflow-development/spec.md) 拥有.
 
-由于可单独下载的引导脚本由源码生成, 修改后使用以下命令重新生成并核对:
+由于可单独下载的引导脚本由源码生成, 修改后用第一条命令重新生成; `--check` 不写文件, 只核对已有脚本是否与源码一致, 想不重新生成就核对时用它:
 
 ```text
 node scripts/generate-install-arw.mjs
@@ -123,11 +123,11 @@ node scripts/generate-install-arw.mjs --check
 
 如果要直接从克隆的源码仓库测试安装, 在检出根目录运行 `node install.mjs`; 测试卸载则在 ARW 安装目录中运行 `node uninstall.mjs`.
 
-注意区分两条安装路线: 普通用户从公开 GitHub 仓库 ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) 单独下载 Bootstrap 脚本来安装稳定版本, 它会从 GitHub release 下载 `arw.tar.gz`, 不会回退到 `main`; 而维护者和开发者克隆 `main` 分支后在检出根目录运行 `node install.mjs`, 则属于本地来源模式, 需要外部 Node.js 和 Git, 安装身份记为 `<version>-pre`.
+注意区分两条安装路线: 普通用户从公开 GitHub 仓库 ([Tranzvision/agent-repository-workflow](https://github.com/Tranzvision/agent-repository-workflow)) 单独下载 Bootstrap 脚本来安装稳定版本, 它会从 GitHub release 下载 `arw.tar.gz`, 不会回退到 `main`; 而维护者和开发者克隆 `main` 分支后在检出根目录运行 `node install.mjs`, 则属于本地来源模式, 需要外部 Node.js, 安装身份记为 `<version>-pre`.
 
 ### Workflow Distribution 和 Platform Projection
 
-如果你修改了实际共享的工作流内容, 分发配置, 平台投射或平台原生种子文件, 就需要同步更新工作流分发载荷. 在源码仓库中, `.agents/skills/`, 受管理的 Agent 文档区域, 规范 Role 和固定许可证文件是编写来源, 而 `distribution/` 是发布前同步生成的安装载荷. 两者之间的完整责任关系由 [开发长期规格](../specs/agent-repository-workflow-development/spec.md) 拥有, 各平台的目标格式与入口由 [平台标准](../../.agents/skills/platform-standards/SKILL.md) 说明.
+如果你修改了实际共享的工作流内容, 分发配置, 平台投射或平台原生种子文件, 就需要在发布前同步更新工作流分发载荷. 在源码仓库中, `.agents/skills/`, 受管理的 Agent 文档区域, 规范 Role 和固定许可证文件是编写来源, 而 `distribution/` 是发布前同步生成的安装载荷. 两者之间的完整责任关系由 [开发长期规格](../specs/agent-repository-workflow-development/spec.md) 拥有, 各平台的目标格式与入口由 [平台标准](../../.agents/skills/platform-standards/SKILL.md) 说明.
 
 使用以下命令完成发布前同步和生产检查:
 
@@ -136,7 +136,7 @@ node scripts/sync-workflow-distribution.mjs
 node scripts/check-workflow-distribution.mjs
 ```
 
-同步命令不带参数. 这两个命令读取哪些输入以开发长期规格和平台标准为准, 同步过程中所发提示的处理方式见开发长期规格的 [Reference check](../specs/agent-repository-workflow-development/spec.md#reference-check).
+同步命令不带参数, 并要求 `.agents/skills/`, `AGENTS.md`, `docs/agents`, `docs/licenses/arw` 和 `distribution/` 下的改动已先暂存, 因为 Git 暂存区是它的恢复基线. 这两个命令读取哪些输入以开发长期规格和平台标准为准, 同步过程中所发提示的处理方式见开发长期规格的 [Reference check](../specs/agent-repository-workflow-development/spec.md#reference-check).
 
 ### Upstream Sync
 

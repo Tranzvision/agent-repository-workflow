@@ -14,4 +14,4 @@
 
 运行 `arw commit-audit verify --non-implementation`, 它完成上述分类, 单一 effort, 未暂存替代内容 (含子模块 `HEAD`), 终态转换, ARW Artifact 解析, 文本格式, `git diff --cached --check` 和身份保留的全部机械检查, 不做语义或跨文件检查. 错误列表为空才提交; 失败时修复候选后重跑, 完整候选包含实施工作时改用实施 issue 工作流.
 
-该工作流不运行 Spec Readiness, Commit Audit, Code Review 或任何独立 Reviewer (规则与文档例外的 `requirements-reviewer` 除外).
+该工作流不运行 Spec Readiness, Commit Audit 的审核轮, Code Review 或任何独立 Reviewer (规则与文档例外的 `requirements-reviewer` 除外), 只运行上述 `verify --non-implementation`.

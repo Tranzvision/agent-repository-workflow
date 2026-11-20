@@ -14,6 +14,6 @@
 - `node arw.mjs terms check --include .scratch/<NNNN>-<effort-slug>/` - 在即时模式下根据术语表验证当前工作树和当前 issue 的实际 effort 目录.
 - `git diff --check` - 检查已跟踪差异中的空白错误.
 
-管理进程运行安装目录中的代码 (安装目录有 `lib/arw-background-agent-host.mjs` 时), 管理进程一侧的改动须 `node install.mjs` 后才在真实管理进程中端到端生效; 确定性测试直接构造管理进程, 不受影响.
+管理进程运行安装目录中的代码 (安装目录有 `lib/arw-background-agent-host.mjs` 时), 管理进程一侧的改动须 `node install.mjs` 后才在真实管理进程中端到端生效 (安装的授权见根 `AGENTS.md`); 确定性测试直接构造管理进程, 不受影响.
 
 Source Checkout 使用 pnpm 11, TypeScript 和 Node.js 24 类型声明作为开发工具. 除非后续 issue 明确添加该范围, 否则不得引入或运行 Vitest, ESLint, Prettier, Playwright, 浏览器检查或其他第三方工具.
