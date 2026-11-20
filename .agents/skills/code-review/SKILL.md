@@ -78,15 +78,13 @@ Reviewer 身份由审查轴固定的 `input.role` 值和完整排序的授权 is
 
 每次调用接收:
 
-- 使用具名 Reviewer 时, 对应的规范角色路径.
+- `instructions` 与 `handoff` 按 `../reviewer-launch/other-reviews.md` 的 Other reviews 节准备.
 - 不可变比较身份, 只读 Git 命令和适用提交区间.
 - 完整的纳入路径集合.
 - 适用验证事实, 准确标识尚未完成的检查; Standards 轴另收授权 issue 写明的预估净增行数.
 - 完整绑定的适用 Agent 指令及其来源路径和 SHA-256 映射.
 - 仅 Requirements 轴接收完整治理要求副本及其来源路径和 SHA-256 记录.
 - 准确绑定的 `reportPath` 和只交付结果的指令.
-
-不在 Reviewer 提示中重复规范角色的审查准则.
 
 完成条件: 每个需要新判断的轴以 `{"status":"ready"}` 确认完整交付或明确不可用, 未重跑的适用轴具有完整有效通过结果, 本轮输入保持不变. 只有完整交付后才把新报告作为结果读取. 缺失, 不可读或空文件不证明成功, Main Agent 不重建替代报告.
 

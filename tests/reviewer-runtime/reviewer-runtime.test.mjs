@@ -778,6 +778,40 @@ test('a nonretryable native failure freezes work and releases its local budget a
     assert.equal(fixture.native.calls.some(call=>call.operation==='stop'),false);await runtime.close();
 });
 
+test('a provider stop persists an isolated Reviewer failure after the native environment exits', async t => {
+    const fixture = createReviewerRuntimeFixture();
+    /** @type {{stop?: (reason: string, code: string) => Promise<void>}} */
+    const policy = {};
+    const nativeSessions = {open: async (/** @type {Parameters<typeof fixture.native.nativeSessions.open>[0]} */ input) => {
+        const session = await fixture.native.nativeSessions.open(input);
+        session.createProviderWorkPolicy = ({stop}) => {
+            policy.stop = stop;
+            return null;
+        };
+        return session;
+    }};
+    const runtime = createReviewerRuntime({...options(fixture), nativeSessions});
+    t.after(async () => { await runtime.close(); });
+    const receipt = succeeded(await runtime.execute({operation: 'spawn_agent', input: {
+        ...reviewerHandoff, identity: {kind: 'isolated', instanceId: 'deadline'},
+    }}));
+    const active = succeeded(await runtime.inspect({runId: receipt.runId}));
+    assert.equal(active.state, 'running');
+    assert.ok(active.recoveryPath);
+    assert.ok(policy.stop);
+
+    const message = 'The isolated Reviewer reached its work limit.';
+    await policy.stop(message, 'local-reviewer-timeout');
+
+    const recoveryFile = relative(reviewerHandoff.cwd, active.recoveryPath).split('\\').join('/');
+    const savedBytes = fixture.filesystem.snapshot(reviewerHandoff.cwd).get(recoveryFile);
+    assert.ok(savedBytes);
+    const saved = JSON.parse(savedBytes.toString());
+    assert.equal(saved.state, 'failed');
+    assert.equal(saved.environmentState, 'exited');
+    assert.deepEqual(saved.failure, {code: 'local-reviewer-timeout', message});
+});
+
 test('an unexpected native service exit keeps persisted Reviewer end unknown and work stable while unverified resources keep capacity',async t=>{
     const directory=await createTemporaryDirectory(t,'arw-reviewer-unexpected-exit-');
     const workspace=join(directory,'.tmp','codex','test-session');

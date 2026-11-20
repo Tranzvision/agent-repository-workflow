@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0162:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "按根 AGENTS.md 的 Source Checkout Baseline 例外, 本单 issue effort 修复既有恢复合同并澄清现有审核说明, 无设计决定且不依赖共用 spec."
+  },
+  "subject": {
+    "filePath": ".scratch/0162-reviewer-stop-recovery/issues/01-persist-reviewer-stop-failure.md",
+    "sha256": "3b5d4e5a37ec1195419882dafc288ab1df6b6e1c539b806553734ff051450b13"
+  },
+  "result": "not-applicable"
+}
