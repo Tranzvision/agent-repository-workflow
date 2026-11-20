@@ -59,15 +59,15 @@ Installer 和 Uninstaller 把通知与成功摘要逐行写入标准输出, 把�
 
 `release-manifest.json` 是安装载荷清单的唯一配置. 它的顶层字段封闭为 `configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles`.
 
-`configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles` 的准确值由源码仓库当前清单决定. `runtimeFiles` 必须包含已安装 `arw terms check` 所需的完整 Document Terms, Markdown 和 Document Repository 运行时依赖. 已安装命令只从安装载荷读取这些依赖, 不读取 Source Checkout 内部脚本, 测试路径或其他未登记来源. 清单不保存 `product`, `releaseManifestVersion`, `workflowDistributionManifest` 或产品版本. 安装载荷不在代码中重复硬编码运行时与启动器清单.
+`configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles` 的准确值由源码仓库当前清单决定. `runtimeFiles` 必须包含已安装 `arw terms check` 所需的完整 Document Terms, Markdown 和 Document Repository 运行时依赖. 已安装命令只从安装载荷读取依赖. 命令行 Reviewer 能力套件的已登记场景和 Reviewer 指令是运行资源, 由源码仓库的现有场景与指令提供. 清单不保存 `product`, `releaseManifestVersion`, `workflowDistributionManifest` 或产品版本. 安装载荷不在代码中重复硬编码运行时与启动器清单.
 
-`configSeed` 和 `distributionRoot` 是非空来源相对路径. Filesystem Module 根据来源根解析它们并阻断越界结果, 不应用另一套跨平台文件名语法. `configSeed` 只定位安全普通来源文件; Installation Payload 成功结果只把它的完整内容作为 `configSeedBytes` 返回, Engine Installation Module 固定把这些字节用于安装根目录 `config.json`. `launchers` 是封闭对象, 只包含 `darwin`, `linux` 和 `win32`; 每个值是按字节序排序的非空来源相对路径数组. `runtimeFiles` 是采用相同规则的非空数组. 每个启动器或运行时路径同时是来源路径和安装目录中的目标相对路径, 不增加条目对象或第二份目标映射. 所选平台的启动器, `runtimeFiles` 和 `distributionRoot` 下完整验证载荷合并后, 使用 Filesystem Module 返回的范围相对目标检查精确或大小写等价重复, 并拒绝与安装根 `config.json` 或 `manifest.json` 大小写等价的目标. 这些冲突阻断整个载荷, 不静默排除条目. `configSeedBytes` 不进入普通载荷, 最终 `{path, bytes}` 载荷按路径字节序排序. 本文的字节序排序指 JavaScript 字符串比较顺序 (UTF-16 码元), 对 ASCII 路径与 UTF-8 字节序相同.
+`configSeed` 和 `distributionRoot` 是非空来源相对路径. Filesystem Module 根据来源根解析它们并阻断越界结果, 不应用另一套跨平台文件名语法. `configSeed` 只定位安全普通来源文件; Installation Payload 成功结果只把它的完整内容作为 `configSeedBytes` 返回, Engine Installation Module 固定把这些字节用于安装根目录 `config.json`. `launchers` 是封闭对象, 只包含 `darwin`, `linux` 和 `win32`; 每个值是按字节序排序的非空来源相对路径数组. `runtimeFiles` 是采用相同规则的非空数组. 能力夹具根目录和 Reviewer 角色目录作为整目录资源登记, 展开为其下的安全普通文件. 每个启动器或运行时路径同时是来源路径和安装目录中的目标相对路径, 不增加条目对象或第二份目标映射. 所选平台的启动器, `runtimeFiles` 和 `distributionRoot` 下完整验证载荷合并后, 使用 Filesystem Module 返回的范围相对目标检查精确或大小写等价重复, 并拒绝与安装根 `config.json` 或 `manifest.json` 大小写等价的目标. 这些冲突阻断整个载荷, 不静默排除条目. `configSeedBytes` 不进入普通载荷, 最终 `{path, bytes}` 载荷按路径字节序排序. 本文的字节序排序指 JavaScript 字符串比较顺序 (UTF-16 码元), 对 ASCII 路径与 UTF-8 字节序相同.
 
 Installation Payload Module 验证清单的封闭结构, 平台启动器选择, 相对路径包含关系, 安全普通来源文件, 重复目标和大小写冲突. 它通过 Filesystem Module 的规范相对路径拼接 Interface 组合 `distributionRoot` 与每个 Workflow Distribution 条目, 因而输出不含重复分隔符的规范目标路径, 再通过同一 Module 的相对路径范围操作确认结果位于来源根内. 它从 `distributionRoot` 读取完整且验证通过的 Workflow Distribution. 本地与正式来源使用同一种载荷展开方式.
 
-正式发布在任何安装写入前独立验证所选标签, 软件包身份和载荷. `package.json` 随安装压缩包提供以供身份验证, 但不进入 ARW 安装目录. `release-manifest.json`, 引导安装脚本, 根安装程序, `config.install.json`, 测试, 源码仓库文档和维护脚本也不进入安装.
+正式发布在任何安装写入前独立验证所选标签, 软件包身份和载荷. `package.json` 随安装压缩包提供以供身份验证, 但不进入 ARW 安装目录. `release-manifest.json`, 引导安装脚本, 根安装程序, `config.install.json`, 测试, 未作为能力运行资源登记的源码仓库文档和维护脚本也不进入安装.
 
-安装压缩包 `arw.tar.gz` 由发布流程用 `scripts/pack-release.mjs` 从 `release-manifest.json` 生成, 只含 `install.mjs`, `package.json`, `release-manifest.json`, `config.install.json`, 平台启动器, `runtimeFiles` 与 `distributionRoot` 下的完整内容, 以及 `install.mjs` 的模块导入闭包; 不含测试, 测试夹具和只服务 Source Checkout 维护的文件.
+安装压缩包 `arw.tar.gz` 由发布流程用 `scripts/pack-release.mjs` 从 `release-manifest.json` 生成, 只含 `install.mjs`, `package.json`, `release-manifest.json`, `config.install.json`, 平台启动器, `runtimeFiles` 与 `distributionRoot` 下的完整内容, 以及 `install.mjs` 的模块导入闭包; 另含构建时生成的能力运行出处记录. 安装程序将其随能力运行资源一并安装和管理. 从 Git 源码检出安装时, 直接从该检出取得出处. 安装压缩包不含测试程序或只服务 Source Checkout 维护的文件.
 
 安装载荷同时包含根 `LICENSE.txt`, 与来源保持准确字节并沿用普通载荷的归属, 修复, 升级和卸载责任. 该文件通过既有 `runtimeFiles` 清单登记, 不增加独立许可状态或修改第三方许可.
 

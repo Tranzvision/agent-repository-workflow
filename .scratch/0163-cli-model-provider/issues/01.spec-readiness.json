@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0163:01",
+  "request": {
+    "digest": "4d93cc51822255d7f95fbac883e1ecbc6c55e8257f2e2aeb5725e4a3cec3b2fd",
+    "filePath": ".tmp/codex/01a1f9a0-d2d3-7753-8374-8d674c6fe782/0163_01/spec-readiness/requests/request-693d0a27-1feb-421b-b3c9-8e4be4b69ed1.json",
+    "id": "693d0a27-1feb-421b-b3c9-8e4be4b69ed1"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "9d5094e6cdc341bf7f75859f5ecbdf37dd1df9127a8b0f836f5f6dac13b07523"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0163-cli-model-provider/spec.md",
+      "role": "governing-spec",
+      "sha256": "a30f85a2528b88846d9e57d13d81f5e7891fafb1c139c8c38c13ec6d89cabbfc"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-development/spec.md",
+      "role": "governing-spec",
+      "sha256": "ab122cab45b4b7b96e50db35362928522fbb69b7913cecf93eecceed7c515aec"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-installation/spec.md",
+      "role": "governing-spec",
+      "sha256": "881c1e7af90edf9255f9cbe72c1845924e66372a8ed5e47a0dbe460cdcab7a8e"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-release/spec.md",
+      "role": "governing-spec",
+      "sha256": "196984b1a51a01195789cca9509bfde9efef804c37f132dc6e85b86800dcdbe9"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow/spec.md",
+      "role": "governing-spec",
+      "sha256": "d9f69d6497a6a5f86dcca0b2fdcb319339eb20b34a322a41955507b446d57bb5"
+    },
+    {
+      "filePath": "lib/installation/installation-payload.mjs",
+      "role": "architecture-evidence",
+      "sha256": "1a5ba5e839e1ada9bb88c24aaa36c92a3877b86fdca76f7596ce97cac62d0146"
+    },
+    {
+      "filePath": "lib/reviewer-capability-run.mjs",
+      "role": "architecture-evidence",
+      "sha256": "61849e25e3aeea85f35cb7f691c60df172286e117af331cac44694580d1595df"
+    },
+    {
+      "filePath": "lib/reviewer-capability-setup.mjs",
+      "role": "architecture-evidence",
+      "sha256": "f2f5f8181b514405a7e1fe8ee75df649cc3b588cbd5c055568b178530cee389a"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0163-cli-model-provider/issues/01-cli-model-provider.md",
+    "sha256": "8694fd7b436f0de41e270aec11b94554658fbbbd9b349a2272ed87328d3ec6ea"
+  },
+  "result": "satisfied"
+}

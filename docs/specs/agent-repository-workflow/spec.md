@@ -218,7 +218,7 @@ arw --version
 - `1`: 发现项, 阻断问题, 格式错误数据, 配置, 仓库, 编辑器, I/O 或操作失败;
 - `2`: 用法错误.
 
-`arw agent start <name>` 是唯一子进程退出码传递例外. 子 CLI 正常返回非负整数时, ARW 原样返回. ARW 自己产生的用法错误, 写入前检查, 启动失败和缺失退出码仍使用上面约定.
+`arw reviewer-capability` 的中断和用量退出值见 Command-line Reviewer capability 节. `arw agent start <name>` 是唯一子进程退出码传递例外. 子 CLI 正常返回非负整数时, ARW 原样返回. ARW 自己产生的用法错误, 写入前检查, 启动失败和缺失退出码仍使用上面约定.
 
 ## ARW Artifact operations
 
@@ -387,7 +387,7 @@ Strata 驱动只从 `../agent-repository-workflow-installation/spec.md` 的 Shar
 
 ### Reviewer runtime
 
-普通 Code Standards, 要求符合审核和 Spec Readiness 审核, Reviewer Capability 验证及基准执行共用后台 Agent 控制入口, 并由 Reviewer 专属运行责任约束. Reviewer 调用方交付完整角色, 已准备输入, 工作目录, 授权临时写入范围和报告绑定, 不引入额外管理模型. Reviewer 层从调用入口所属 Engine 的全局 `config.json` 与发起仓库的 `arw.config.json` 统一解析角色的模型, 提供方, 推理强度与服务档位, 仓库按字段覆盖全局, 不受外部 Main Agent CLI 配置或服务档位影响. 普通请求不得覆盖用户选择, 能力验证和基准的隔离实例可显式覆盖本轮设置. 配置来源, 格式及默认值由 `../agent-repository-workflow-installation/spec.md` 的 Reviewer configuration 节拥有. 所有模型使用同一完整规范角色文档和公共 Reviewer 规则, 模型差异不形成专有角色正文或输出覆盖规则. 模型设置由上述统筹流程确定并完整交付原生线程与回合, 运行程序信任这份选择与交付, 不将模型, 提供方, 推理强度或服务档位与原生运行记录重复比对. 普通审核, 能力验证和基准执行使用同一边界.
+普通 Code Standards, 要求符合审核和 Spec Readiness 审核以及原生 Reviewer Capability 运行共用后台 Agent 控制入口, 并由 Reviewer 专属运行责任约束. Reviewer 调用方交付完整角色, 已准备输入, 工作目录, 授权临时写入范围和报告绑定, 不引入额外管理模型. Reviewer 层从调用入口所属 Engine 的全局 `config.json` 与发起仓库的 `arw.config.json` 统一解析角色的模型, 提供方, 推理强度与服务档位, 仓库按字段覆盖全局, 不受外部 Main Agent CLI 配置或服务档位影响. 普通请求不得覆盖用户选择, 能力验证和基准的隔离实例可显式覆盖本轮设置. 配置来源, 格式及默认值由 `../agent-repository-workflow-installation/spec.md` 的 Reviewer configuration 节拥有. 所有模型使用同一完整规范角色文档和公共 Reviewer 规则, 模型差异不形成专有角色正文或输出覆盖规则. 模型设置由上述统筹流程确定并完整交付原生线程与回合, 运行程序信任这份选择与交付, 不将模型, 提供方, 推理强度或服务档位与原生运行记录重复比对. 命令行模型能力运行使用本规格 Command-line Reviewer capability 节的独立入口.
 
 独立 Reviewer 在自己的审核运行环境中独自完成全部适用检查, 不创建, 复用或恢复子 Agent, 也不把部分审核交给其他 Agent. 它不占用与用户沟通的 Main Agent 的子 Agent 槽位, 对检查覆盖, 证据和最终报告质量负责.
 
@@ -482,6 +482,32 @@ Reviewer 耗时只计算同一审核任务的工作时间. 原始墙钟仍为任
 ### Platform support
 
 Codex 与 Claude Code 都完整支持静态 Skill 与 `AGENTS.md` / `CLAUDE.md` 投射, 安装, 更新和 `arw background-agent`. 用户级管理进程按 Reviewer 设置选择后端: `modelProvider` 为 `anthropic` 时用非交互运行的 `claude -p` 的 Claude 后端, 其他提供方用共享 Codex App Server; 两种后端实现同一 `NativeSessions` 接口, 同等提供本节全部后台 Agent 控制, 包括运行中的 `send_message`, 待决的原生请求和中断. Claude 后端的回合进程与退出核对见 Seams and Adapters 节, 取舍见 `docs/adr/0033-run-each-claude-turn-as-a-stream-json-process.md`. 静态投射不证明 Reviewer 可执行, 平台差异不豁免审核关卡. 公共运行合同保持一个权威来源, 不为任何平台维护第二套 Reviewer 运行流程.
+
+## Command-line Reviewer capability
+
+`arw reviewer-capability check|plan|run --config <json> --model <label> --efforts <list> --out <dir> [--model-id <id>] [--scenarios <list>] [--n <count>] [--work <dir>]` 接收命令配置和输出目录. 缺省运行全部四个场景, 每格五次. 路径以调用者工作目录解析. 参数不合法退出 `2`. 输入或打包失败退出 `1`. `--efforts` 和 `--scenarios` 使用逗号分隔的非空列表, 列表元素与命令选项均不允许重复. 模型与 effort 名称采用 ASCII 正则 `^[A-Za-z0-9][A-Za-z0-9._]*(-[A-Za-z0-9._]+)*$`; 场景为 `commit-audit`, `code-spec`, `code-standards` 或 `spec-readiness`. `--n` 和 `--limit-seconds` 为正整数.
+
+配置为 JSON 对象. 必需的 `command` 是非空字符串参数数组, 首项为可执行命令. 可选的 `provider` 是非空字符串, 缺省为 `"cli"`. 可选的 `version_command` 是非空字符串参数数组, 按字面执行, `run` 记录其首行标准输出, 缺失或无输出时记录空字符串. 可选的 `files` 把普通文件名映射到字符串或 JSON 模板, 文件名使用 ASCII 正则 `^[A-Za-z0-9][A-Za-z0-9._-]*$`. 实例启动前将模板中的字符串值替换后写入独立目录, 并由 `{file.<name>}` 引用绝对路径. 可选的 `env` 把环境变量名映射到字符串, 替换占位符后覆盖继承环境. 进程同时收到当前实例的 `RB_REPORT_PATH`, `RB_CWD`, `RB_PROMPT_FILE`, `RB_MODEL`, `RB_EFFORT` 和 `RB_SCENARIO`.
+
+模型以实例为工作目录, 以 `{report_path}` 为报告目的地. 模板支持 `{prompt}`, `{prompt_file}`, `{cwd}`, `{report_path}`, `{report_dir}`, `{model}`, `{model_id}`, `{effort}`, `{scenario}` 和已声明的 `{file.<name>}`. 未知占位符使配置无效. 未在命令中引用提示词或提示文件时通过标准输入传入提示词. 进程可回报 JSON `usage` 中的 `input_tokens`, `cache_read_tokens` 和 `output_tokens`. `check` 只核对配置并各搭建一次选定场景. 可选 `check --call` 用同一配置发送一次小提示. `plan` 给出实例和估计用量, 不启动模型进程. 两个操作均不提交运行记录.
+
+占位符适用于 `command` 的每个参数, `env` 的每个值和 `files` 模板中的每个字符串值. 替换后的每个命令参数保持为独立参数, 不交给 shell 解释. `{model}` 来自 `--model`, `{model_id}` 来自 `--model-id` (缺省为 `--model`), `{effort}` 和 `{scenario}` 来自当前实例. `{prompt}` 是完整提示, `{prompt_file}` 是保存它的文件绝对路径, `{cwd}` 是实例目录, `{report_dir}` 是 `{report_path}` 的父目录. `check --call` 使用首个选定 effort 和场景.
+
+`run [--ack <reason>] [--limit-seconds <seconds>]` 串行执行. 每实例缺省 3600 秒. 超时终止模型进程, 对可用报告照常计分, 无可用报告时记录 0 分. 未超时但未交付报告的实例作废. 明示访问夹具或 ARW 安装目录时作废. 失败或作废保留诊断和计数. 同一原因连续作废两次时退出 `3`, 无报告的阈值为三次, 连续失败三次也退出 `3`. 作废实例在其余待运行项后重试, 每实例最多八次可计尝试. 每次模型调用后比较预估调用数和预估耗时的两倍. 单次命令报告的有效输出数超过 300000 tokens 时触发停止. 缺少有效 token 数时仍以调用数, 耗时和输出字节数控制用量, 记录缺失值为 `null`. 单次模型调用的标准输出与标准错误合计超过 16000000 字节时终止进程组, 记录失败并触发用量停止. 用量停止写入 `STOPPED.json` 并退出 `75`. 续跑要提供 `--ack` 和处置说明方可解除用量停止. `<out>/STOP` 在下一次调用前停止. 同一模型和矩阵在同一输出目录重启时跳过已完成实例. 运行开始前检查输出目录中的已登记来源与配置, 防止把不同设置的同名实例混在一起. 一个输出目录同一时间由一个操作者使用.
+
+模型调用, 探测或版本命令运行时收到 `SIGINT` 或 `SIGTERM`, ARW 终止该命令的进程组并退出 `130`. 被中断的实例不标记为已完成.
+
+`arw reviewer-capability pack --out <dir> [--bundle <tar.gz>]` 打包已完成实例. 省略 `--bundle` 时, 在 `--out` 下写 `bundle-<YYYYMMDD-HHmmssSSS>.tar.gz` (UTC), 并在成功时向标准输出报告准确路径. 归档只在全部写入成功后发布为目的文件. 出错时标准错误报告原因, 不创建目的文件或覆盖该路径原有的文件.
+
+结果包是 gzip 压缩的 tar. 除根目录的 `manifest.json` 外, 每个成员是 `runs/<dir>/<file>` 的普通文件. `dir` 为 `<model>-<effort>-<scenario>-r<n>`, 按 ASCII 正则 `^[A-Za-z0-9][A-Za-z0-9._]*(-[A-Za-z0-9._]+)*-r[1-9][0-9]*$` 核对. `scenario` 为 `commit-audit`, `code-spec`, `code-standards` 或 `spec-readiness`. 必需文件是 `run.json`, `driver.json`, `agent.json`, `score.json`; 可选文件是 `candidates.json`, `repair.json` 和至多一份 `report.txt`, `report.md` 或 `report.jsonl`. 不允许重复路径, 链接, 目录成员, 未列出的文件和其他路径.
+
+`manifest.json` 是 JSON 对象 `{schema, tool, created, arw, arwVersion, harness, cells}`. `schema` 和 `tool` 均为整数 `1`; `created` 是 UTC ISO 8601 字符串; `arw` 是 `{commit, fixtureTree, treeDirty}`, 前两项是 Git 对象 ID, 后一项是布尔值; `arwVersion` 为版本字符串; `harness` 是 `{provider, version}`, 两项均为字符串, 版本未知时为 `""`. `cells` 是非空的 `{dir, files}` 数组, `dir` 唯一, `files` 是以文件名为键, 值为 `{sha256, bytes}` 的对象; `sha256` 是小写 64 位十六进制字符串, `bytes` 是非负整数字节数. 文件表与实际成员一一对应, 不给 `manifest.json` 本身登记摘要.
+
+`run.json.arw` 与 manifest 的 `arw` 同形, `runtime.arwVersion` 是 ARW 版本, `settings.modelProvider` 是提供方. `driver.json.harnessVersion` 是命令版本. `run.json` 的报告与修复路径是实例内文件名或 `null`, 实例 id 为不透明且包内唯一的 `i-<12 hex>`. `driver.json` 标记完成并记录 `inspection: "portable-scan"`. 打包先按实例完成记录和原始文件字节核验内容, 确认全部实例的 ARW 出处, ARW 版本和命令提供方一致, 再发布归档. 每个 `driver.json.harnessVersion` 必须一致. `manifest.harness.version` 取该共同值, 空字符串也参与比较. 导入方核对准确的成员集合, 字节数和 SHA-256, 并比较 `run.json.arw`, `run.json.runtime.arwVersion`, `run.json.settings.modelProvider` 和 `driver.json.harnessVersion` 与包级对应字段. 值不一致时拒绝整个结果包. 导入方按已接受的 Git 提交和夹具树绑定干净来源. 模型标准输出, 环境和配置文件留在打包范围之外.
+
+模型进程按配置的参数和环境直接启动. 用统一的进程边界执行 `check --call` 和实例运行. 模型的原生隔离能力由配置提供. 命令需要把允许读取的范围限定在实例和提示词, 把写入范围限定在报告目录. 基于文本的泄漏检查只能发现输出或报告中可观察的路径, 因此 `driver.json` 记录实际使用的检查方式, 供导入方解释有效性.
+
+该命令在提供 POSIX 进程组, Git 与 tar 的环境运行. Windows 用户可在 WSL 安装并运行 ARW; 不具备这些能力时返回具体诊断. 结果供能力评估和盲裁, 不作为普通独立审核的工作记录.
 
 ## Spec Readiness
 

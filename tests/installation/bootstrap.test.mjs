@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import childProcess from 'node:child_process';
 import {EventEmitter} from 'node:events';
 import {syncBuiltinESMExports} from 'node:module';
-import {access, copyFile, mkdir, readFile, writeFile} from 'node:fs/promises';
+import {access, copyFile, mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import test, {after} from 'node:test';
@@ -10,6 +10,8 @@ import test, {after} from 'node:test';
 import {moduleSpecifiers, resolveSourceImport} from '../helpers/module-imports.mjs';
 import {installFakeCommand, runExitedProcess, runSuccessfulProcess} from '../helpers/process.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {ARW_VERSION} from '../../lib/arw-common/identity.mjs';
+import {CAPABILITY_FIXTURES, CAPABILITY_ORIGIN} from '../../lib/arw-common/reviewer-capability-resources.mjs';
 import {generateBootstrapArtifact} from '../../lib/installation/bootstrap-artifact.mjs';
 import {BootstrapUsageError, runBootstrap} from '../../lib/installation/bootstrap.mjs';
 
@@ -178,8 +180,9 @@ test('bootstrap extracts the real release archive without Git and the Installer 
         download: async () => readFile(ARCHIVE),
         launchInstaller: async ({directory}) => {
             directories.push(directory);
-            await Promise.all(['lib', 'distribution', 'package.json'].map(entry => access(join(directory, entry))));
-            await assert.rejects(access(join(directory, 'tests')));
+            await Promise.all(['lib', 'distribution', 'package.json', CAPABILITY_FIXTURES, CAPABILITY_ORIGIN].map(entry => access(join(directory, entry))));
+            await assert.rejects(access(join(directory, '.git')));
+            assert.deepEqual(await readdir(join(directory, 'tests')), ['fixtures']);
             for (const file of closure) {
                 for (const specifier of moduleSpecifiers(await readFile(join(directory, file), 'utf8')).filter(name => name.startsWith('.'))) {
                     const imported = resolveSourceImport(file, specifier);
@@ -195,6 +198,71 @@ test('bootstrap extracts the real release archive without Git and the Installer 
 
     assert.equal(result, 0);
     await assert.rejects(access(directories[0]));
+});
+
+test('the released installation runs all four Reviewer scenarios independently using a fake provider', {skip: process.platform === 'win32'}, async t => {
+    // Exercise the shipped archive, actual Installer and CLI, Git fixture construction and the existing scoring command.
+    const cwd = await createTemporaryDirectory(t, 'arw-installed-capability-');
+    const home = join(cwd, 'home');
+    const unpacked = join(cwd, 'release');
+    await Promise.all([mkdir(home), mkdir(unpacked)]);
+    const env = {...process.env, HOME: home, USERPROFILE: home, CODEX_HOME: ''};
+    await runSuccessfulProcess('tar', ['-xzf', ARCHIVE, '-C', unpacked], {cwd, env});
+    const origin = JSON.parse(await readFile(join(unpacked, CAPABILITY_ORIGIN), 'utf8'));
+    await runSuccessfulProcess(process.execPath, [join(unpacked, 'install.mjs'), '--non-interactive', '--register-path', 'false',
+        '--reinitialize-config', 'false', '--release-tag', ARW_VERSION], {cwd, env});
+    const installation = join(home, '.agent-repository-workflow');
+    await assert.rejects(access(join(installation, '.git')), {code: 'ENOENT'});
+    const installedVersion = (await runSuccessfulProcess(process.execPath, [join(installation, 'arw.mjs'), '--version'], {cwd, env})).stdout.trim();
+    const calls = join(cwd, 'calls');
+    await writeFile(join(cwd, 'fake.mjs'), [
+        "import {appendFileSync, readFileSync, writeFileSync} from 'node:fs';",
+        'const {CALLS, RB_REPORT_PATH, RB_PROMPT_FILE, RB_SCENARIO, RB_CWD} = process.env;',
+        'if (process.cwd() !== RB_CWD) process.exit(90);',
+        "const prompt = readFileSync(RB_PROMPT_FILE, 'utf8');",
+        "appendFileSync(CALLS, RB_SCENARIO + '\\n');",
+        "if (prompt.includes('single word OK')) process.stdout.write('OK');",
+        "else if (prompt.includes(RB_REPORT_PATH)) writeFileSync(RB_REPORT_PATH, 'No problems.');",
+        'else process.exit(91);',
+    ].join('\n'));
+    const config = {provider: 'fake', command: [process.execPath, join(cwd, 'fake.mjs'), '{prompt_file}'],
+        version_command: [process.execPath, '-e', 'console.log("fake 1")'], env: {CALLS: calls}};
+    await writeFile(join(cwd, 'model.json'), JSON.stringify(config));
+    const cli = (/** @type {string} */ operation, /** @type {string[]} */ args) => runSuccessfulProcess(process.execPath,
+        [join(installation, 'arw.mjs'), 'reviewer-capability', operation, ...args], {cwd, env});
+    const args = ['--config', 'model.json', '--model', 'fake', '--efforts', 'high', '--n', '1', '--out', 'results'];
+    const check = await cli('check', args);
+    assert.equal(check.stdout.match(/: succeeded/gu)?.length, 4);
+    assert.match((await cli('plan', args)).stdout, /4 model calls/u);
+    await assert.rejects(access(calls), {code: 'ENOENT'});
+    await cli('check', [...args, '--scenarios', 'code-spec', '--call']);
+    assert.equal(await readFile(calls, 'utf8'), 'code-spec\n');
+    await cli('run', args);
+    assert.deepEqual((await readFile(calls, 'utf8')).trim().split('\n'), ['code-spec', 'commit-audit', 'code-spec', 'code-standards', 'spec-readiness']);
+    const bundle = (await cli('pack', ['--out', 'results'])).stdout.trim();
+    assert.match(bundle, /\/results\/bundle-\d{8}-\d{9}\.tar\.gz$/u);
+    const {stdout: manifestText} = await runSuccessfulProcess('tar', ['-xOzf', bundle, 'manifest.json'], {cwd, env});
+    const manifest = JSON.parse(manifestText);
+    assert.equal(manifest.arwVersion, installedVersion);
+    assert.deepEqual(manifest.arw, origin);
+    assert.deepEqual(manifest.harness, {provider: 'fake', version: 'fake 1'});
+    assert.equal(manifest.cells.length, 4);
+    const sourceScoreCommand = join(SOURCE_DIRECTORY, 'scripts', 'reviewer-capability.mjs');
+    for (const {dir} of manifest.cells) {
+        const instance = join(cwd, 'results', 'runs', dir);
+        const record = JSON.parse(await readFile(join(instance, 'run.json'), 'utf8'));
+        assert.equal(record.validity.valid, true, dir);
+        const sourceFixture = join(SOURCE_DIRECTORY, CAPABILITY_FIXTURES, record.scenario);
+        const {stdout} = await runSuccessfulProcess(process.execPath, [sourceScoreCommand, 'score', sourceFixture,
+            join(instance, record.report), '--no-repair', '--agent', join(instance, 'agent.json'), '--instance', record.id], {cwd, env});
+        assert.deepEqual({diagnostics: [], ...JSON.parse(stdout)}, JSON.parse(await readFile(join(instance, 'score.json'), 'utf8')));
+    }
+    // A broken scoring input is a failed attempt, with no completed result to package.
+    await writeFile(join(installation, CAPABILITY_FIXTURES, 'format-baseline', 'registry.json'), '{}');
+    const failed = await runExitedProcess(process.execPath, [join(installation, 'arw.mjs'), 'reviewer-capability', 'run',
+        ...args.slice(0, -1), 'failed-results', '--scenarios', 'code-spec'], {cwd, env});
+    assert.match(failed.stdout, /failed \(score:/u);
+    await assert.rejects(access(join(cwd, 'failed-results', 'runs')), {code: 'ENOENT'});
 });
 
 test('bootstrap runs tar inside the download directory with a relative archive name', async t => {

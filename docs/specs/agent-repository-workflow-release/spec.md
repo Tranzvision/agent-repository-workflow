@@ -23,11 +23,11 @@
 
 写入前确认本地与规范远端的 tag 都指向已验证 commit, 并完成 `gh` 认证预检. 先只读查看同 tag 的 Release: 已存在且 tag, 经 Git 解析的 commit, title 和正文全部匹配, 并且是正式已发布对象, 且资产 `arw.tar.gz` 存在时, 视为幂等成功; 冲突或读取失败时停止. 只有明确不存在时才用 `--verify-tag` 创建, 不提供 `--target`. 创建后, 以及超时或结果不明时, 都只做只读核对, 不盲目重复创建. `targetCommitish` 不能证明 tag 提交.
 
-发布资产是只含安装载荷的压缩包 `arw.tar.gz`, Bootstrap 按固定名称从该 release 下载. 创建 GitHub 托管发布对象是 Main Agent 使用外部维护者工具完成的操作, 不是 ARW runtime Module. ARW 代码不读取 `gh` 凭据.
+发布资产是安装压缩包 `arw.tar.gz`, Bootstrap 按固定名称从该 release 下载. 生成压缩包时记录构建所用 Git 提交, 工作树状态和能力夹具树, 让安装后的能力套件无需源码检出即可写出可核对的结果出处. 创建 GitHub 托管发布对象是 Main Agent 使用外部维护者工具完成的操作, 不是 ARW runtime Module. ARW 代码不读取 `gh` 凭据.
 
 ## Reviewer capability tests
 
-Reviewer 能力测试不是发布门禁. 维护者需要时显式调用源码专用的 `$reviewer-capability` Skill (`.agents/skills/reviewer-capability/`): 用 `tests/fixtures/reviewer-capability/<role>/<scenario>/` 中带隐藏预期的场景 (4 个计划, 夹具直接保存物化结果, 不含补丁链), 通过 `arw background-agent` 在 Codex 和 Claude 后端运行 Reviewer, 再用 `scripts/reviewer-capability.mjs` 计分, 组盲池, 生成视图并统计, 由盲裁裁判 (至少 sonnet high) 裁决候选的召回和误报. 套件只属于 Source Checkout, 不进入 Workflow Distribution 和 release 安装包; 评分与盲裁工具的合同由 `../agent-repository-workflow-development/spec.md` 的 Module Design 节拥有. 结果用于评估角色指令, 模型和报告格式, 不授权审核, 提交或发布. 发布时可选的漂移检查见 Optional checks, 它不是门禁, 判定漂移后继续或放弃发布由维护者决定.
+Reviewer 能力测试不是发布门禁. 维护者需要时显式调用源码专用的 `$reviewer-capability` Skill (`.agents/skills/reviewer-capability/`): 用 `tests/fixtures/reviewer-capability/<role>/<scenario>/` 中带隐藏预期的场景 (4 个计划, 夹具直接保存物化结果, 不含补丁链), 通过 `arw background-agent` 在 Codex 和 Claude 后端运行 Reviewer, 再用 `scripts/reviewer-capability.mjs` 计分, 组盲池, 生成视图并统计, 由盲裁裁判 (至少 sonnet high) 裁决候选的召回和误报. 上述原生运行维护入口, 盲裁和 Skill 只属于 Source Checkout. 发布安装包携带 `arw reviewer-capability` 所需运行代码, 场景, 计分资源与出处, 不把这些资源和 Skill 投影到目标仓库; 评分与盲裁工具的合同由 `../agent-repository-workflow-development/spec.md` 的 Module Design 节拥有. 结果用于评估角色指令, 模型和报告格式, 不授权审核, 提交或发布. 发布时可选的漂移检查见 Optional checks, 它不是门禁, 判定漂移后继续或放弃发布由维护者决定.
 
 ## Failure recovery and authorization
 

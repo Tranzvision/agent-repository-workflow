@@ -5,11 +5,13 @@ import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {CAPABILITY_FIXTURES, CAPABILITY_ORIGIN} from '../../lib/arw-common/reviewer-capability-resources.mjs';
 import {loadInstallationPayload} from '../../lib/installation/installation-payload.mjs';
 
 const SOURCE_DIRECTORY = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 test('Installation Payload Interface returns the canonical platform payload without package metadata', async () => {
+    // The real payload verifies that fixture bytes and checkout provenance survive the installation boundary.
     const result = await loadInstallationPayload({
         platform: 'win32',
         sourceDirectory: SOURCE_DIRECTORY,
@@ -31,6 +33,12 @@ test('Installation Payload Interface returns the canonical platform payload with
     assert.deepEqual(payloadByPath.get('arw'), await readFile(new URL('../../arw', import.meta.url)));
     assert.deepEqual(payloadByPath.get('arw.cmd'), await readFile(new URL('../../arw.cmd', import.meta.url)));
     assert.deepEqual(payloadByPath.get('distribution/config.json'), await readFile(new URL('../../distribution/config.json', import.meta.url)));
+    assert.deepEqual(payloadByPath.get('docs/agents/reviewer.md'), await readFile(join(SOURCE_DIRECTORY, 'docs/agents/reviewer.md')));
+    const origin = JSON.parse(payloadByPath.get(CAPABILITY_ORIGIN)?.toString() ?? 'null');
+    assert.match(origin.commit, /^[a-f0-9]{40,64}$/u);
+    assert.match(origin.fixtureTree, /^[a-f0-9]{40,64}$/u);
+    assert.equal(typeof origin.treeDirty, 'boolean');
+    assert.ok([...payloadByPath.keys()].some(path => path.startsWith(CAPABILITY_FIXTURES + '/')));
     assert.equal(payloadByPath.has('config.json'), false);
     assert.equal(payloadByPath.has('manifest.json'), false);
     assert.equal(payloadByPath.has('package.json'), false);
@@ -39,7 +47,7 @@ test('Installation Payload Interface returns the canonical platform payload with
     assert.deepEqual(result.verificationPaths, [
         'config.install.json',
         'release-manifest.json',
-        ...payloadByPath.keys(),
+        ...[...payloadByPath.keys()].filter(path => path !== CAPABILITY_ORIGIN),
     ].sort());
 });
 

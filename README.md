@@ -502,6 +502,7 @@ When you are ready to go deeper into a specific workflow or specification, conti
 
 - [Distribute work across repositories and sync JIRA](docs/manuals/application-jira.md): When one JIRA request must be completed across multiple Git repositories, use this to judge fit and follow repository responsibilities, operation order, and failure recovery.
 - [Agent CLI Guide](docs/manuals/agent-cli.md): When you have decided to save and start an external Agent CLI configuration with ARW, read about configuration, argument forwarding, and process and session boundaries.
+- [Benchmark a command-line Reviewer](docs/manuals/development.md#run-the-capability-suite-with-a-command-line-model) to run the four scenarios from an ARW installation and package the results for import.
 - [Everyday commands for Agent conversations](docs/manuals/daily-agent-conversation-commands.md): When you are already in an Agent conversation and want to choose a request to send, use this quick reference with decision prompts.
 - [Developer Guide](docs/manuals/development.md): When you have cloned ARW Source Checkout and are preparing to maintain implementation, documentation, Workflow Distribution, or a release candidate, use this to choose a maintenance path and validation entry point.
 - [Skills manual](docs/manuals/skills.md): When you want to know which Skills ARW installs, which ones the Agent uses automatically, and which ones you must name, use this list with a purpose and trigger for each.

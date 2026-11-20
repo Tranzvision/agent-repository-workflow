@@ -10,6 +10,7 @@ import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {createRepository as createGitRepository} from '../helpers/repository-fixture.mjs';
 import {completeGlobalConfigurationBytes} from '../../lib/arw-common/config.mjs';
 import {ARW_VERSION, parseArwVersion} from '../../lib/arw-common/identity.mjs';
+import {CAPABILITY_FIXTURES, CAPABILITY_INSTRUCTIONS} from '../../lib/arw-common/reviewer-capability-resources.mjs';
 import {createSharedModelCatalog} from '../../lib/background-agent/model-catalog.mjs';
 import {loadInstallationPayload} from '../../lib/installation/installation-payload.mjs';
 import {installRelease as productionInstallRelease, parseInstallArguments, runInstaller as productionRunInstaller} from '../../lib/installation/installation.mjs';
@@ -67,6 +68,7 @@ const loadTestInstallationPayload = async (/** @type {unknown} */ input) => {
     return TEST_INSTALLATION_PAYLOAD;
 };
 const LOCAL_SOURCE_PATHS = [
+    'AGENTS.md',
     'LICENSE.txt',
     'arw',
     'arw.cmd',
@@ -78,6 +80,8 @@ const LOCAL_SOURCE_PATHS = [
     'package.json',
     'release-manifest.json',
     'uninstall.mjs',
+    ...CAPABILITY_INSTRUCTIONS,
+    CAPABILITY_FIXTURES,
 ];
 const RELEASE_ARGUMENTS = [
     '--release-tag',
@@ -532,14 +536,18 @@ test('first installation copies the complete runtime and executes the installed 
 
     assert.deepEqual(config, TEST_CONFIGURATION_DEFAULTS);
     assert.deepEqual(files, [
+        '.agents',
+        'AGENTS.md',
         'LICENSE.txt',
         'arw',
         'arw.mjs',
         'background-agent-state',
         'config.json',
         'distribution',
+        'docs',
         'lib',
         'manifest.json',
+        'tests',
         'uninstall.mjs',
     ]);
     assert.deepEqual(libraryFiles, [...new Set(payload.payload

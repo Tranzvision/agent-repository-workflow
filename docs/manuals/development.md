@@ -27,6 +27,7 @@ Use the table below to match your goal to its maintenance route and primary sour
 | Change a shared workflow or platform projection | [Workflow Distribution and Platform Projection](#workflow-distribution-and-platform-projection) | Actual workflow files, distribution configuration, and development long-term specification |
 | Adopt an external Skill Package update | [Upstream Sync](#upstream-sync) | Source configuration and the `$upstream-sync` Skill |
 | Change a Reviewer Role, independent execution, or Reviewer capability validation | [Reviewer configuration and capability validation](#reviewer-configuration-and-capability-validation) | Canonical Role, user configuration, and Reviewer capability rules |
+| Benchmark a command-line model from an ARW installation | [Run the capability suite with a command-line model](#run-the-capability-suite-with-a-command-line-model) | Configure a model, plan and resume calls, and export a result bundle |
 | Validate cross-operating-system installation or maintain the test environment | [Cross-operating-system validation environment](#cross-operating-system-validation-environment) | Active issue and the `$release` Skill |
 | Validate or publish a stable release | [Stable release](#stable-release) | Release long-term specification and the `$release` Skill |
 
@@ -66,7 +67,7 @@ Once your baseline passes, check the applicable long-term specification to see w
 | Repository workflows and Workflow Distribution payloads | `lib/repository-workflow/` and `lib/workflow-distribution/` |
 | Installation, bootstrap script, and uninstall | Root `install.mjs`, `uninstall.mjs`, and `lib/installation/` |
 | Platform projections and platform environments | `lib/arw-common/platform-adapter.mjs` and `lib/arw-common/platform-environment.mjs` |
-| Source Checkout releases and Reviewer capabilities | `lib/release/`, `lib/reviewer-capability/`, `lib/reviewer-capability-setup.mjs`, and `lib/reviewer-capability-view.mjs` |
+| Releases and Reviewer capability runs | `lib/release/`, `lib/reviewer-capability/`, `lib/reviewer-capability-cli.mjs`, `lib/reviewer-capability-setup.mjs`, and `lib/reviewer-capability-view.mjs` |
 | Multi-repository Application and JIRA workflow | `lib/application-jira/` and the [multi-repository and JIRA manual](application-jira.md) |
 | Text, terminology, and language analysis | The relevant shared capabilities in `lib/document-terms/`, `lib/common/`, and `lib/arw-common/` |
 
@@ -145,7 +146,7 @@ Some Skills in `.agents/skills/` originate from an external Skill Package rather
 
 When you change canonical Reviewer Roles, Reviewer execution rules, or the capability scenarios that test Reviewer quality, you need to verify that Reviewers still catch what they should. Canonical Roles live in `docs/agents/roles/`, and shared execution and communication rules live in [Reviewer responsibilities (Chinese)](../agents/reviewer.md). Cross-repository background Agent capacity, connection handling, and recovery belong to the [product background Agent rules (Chinese)](../specs/agent-repository-workflow/spec.md#background-agent-control) and [installation management rules (Chinese)](../specs/agent-repository-workflow-installation/spec.md#background-agent-management), while user model and tier settings (stored in the ARW program directory's `config.json` and the repository's `arw.config.json`) follow the [Reviewer configuration specification (Chinese)](../specs/agent-repository-workflow-installation/spec.md#reviewer-configuration).
 
-To run Reviewer capability validation, explicitly invoke the source-only `$reviewer-capability` Skill. Its test scenarios (materialized fixtures, answer keys, blind-judge briefs, and anchors) live in `tests/fixtures/reviewer-capability/`. The Skill drives the commands below, each of which prints JSON and exits with `0` on success, `1` when blocked or failed, or `2` on a usage error:
+To validate changes to ARW's native Reviewer workflow, explicitly invoke the source-only `$reviewer-capability` Skill. The scenario fixtures, answer keys, blind-judge briefs, and anchors live in `tests/fixtures/reviewer-capability/`. ARW releases include those fixtures and their Git provenance for installed command-line model runs. The source-only Skill drives the commands below. Each prints JSON and exits with `0` on success, `1` when blocked or failed, or `2` on a usage error.
 
 ~~~text
 node scripts/reviewer-capability.mjs run <scenario-directory> <new-instance-directory> --settings JSON
@@ -158,6 +159,57 @@ node scripts/reviewer-capability.mjs baseline <unit>
 node scripts/reviewer-capability.mjs summary [--markdown] --cell LABEL FILE... [--cell LABEL FILE...] [--compare CONTROL-LABEL CANDIDATE-LABEL] [--report-range LABEL=LEVEL,... ...] [--range-penalty P]
 node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|anchor-add ...
 ~~~
+
+### Run the capability suite with a command-line model
+
+Use a release of ARW that includes `arw reviewer-capability`, Node.js 24 or newer, Git, tar, and a working model CLI on Linux or macOS. On Windows, use an ARW installation inside WSL. Run these commands from an ordinary work directory. The installation already contains the scenarios and scoring code.
+
+Save this example as `agy.json` on a machine where `agy` is installed and signed in.
+
+~~~json
+{
+  "provider": "agy",
+  "version_command": ["agy", "--version"],
+  "command": [
+    "agy", "-p", "Read the file {prompt_file} and do exactly what it says.",
+    "--model", "gemini-4-{model}-{effort}", "--effort", "{effort}",
+    "--output-format", "json", "--print-timeout", "60m",
+    "--settings", "{file.settings.json}", "--add-dir", "{cwd}", "--sandbox"
+  ],
+  "files": {
+    "settings.json": {
+      "agentMode": "auto",
+      "permissions": {
+        "allow": [
+          "read_file({cwd})", "read_file({prompt_file})", "write_file({report_dir})",
+          "command(ls)", "command(echo)", "command(wc)", "command(sort)",
+          "command(git status)", "command(git diff)", "command(git log)", "command(git show)"
+        ],
+        "deny": [
+          "command(sudo)", "command(rm -rf)", "command(curl)", "command(wget)",
+          "command(git push)", "write_file({cwd}/.git)"
+        ]
+      }
+    }
+  }
+}
+~~~
+
+Confirm that your CLI version supports these flags and enforces the file and tool permissions. Allow reads only inside the generated scenario and from the prompt file, and writes only in the report directory. The answer keys are present in the installation. The `portable-scan` check can flag installed paths mentioned in command output or a report. A silent read is outside its visibility.
+
+~~~sh
+arw reviewer-capability check --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability check --config ./agy.json --model hydrogen --efforts high --out ./rbout --call
+arw reviewer-capability plan --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability run --config ./agy.json --model hydrogen --efforts high --out ./rbout
+arw reviewer-capability pack --out ./rbout --bundle ./hydrogen.tar.gz
+~~~
+
+`check` builds each selected scenario. Adding `--call` sends one small prompt and can use model quota. `plan` lists the remaining instances without invoking the CLI. Both accept the same matrix as `run`, which defaults to five runs per effort and scenario. Use `--n 1 --scenarios code-spec` for a single instance. Configuration is an argument vector and does not pass through a shell. Another CLI can take the combined prompt by standard input or use `{prompt}` or `{prompt_file}` in its arguments. It must deliver the report at `{report_path}`, also passed in `RB_REPORT_PATH`. `arw reviewer-capability --help` lists the options.
+
+`run` checks usage after each call. Exit `75` means a limit was exceeded. Read `rbout/STOPPED.json` and rerun the same command with `--ack 'reason for resuming'` to continue. To pause between calls, create an empty `rbout/STOP`. Remove it and rerun with the same settings to continue from unfinished instances. The default timeout is one hour per call. A timed-out call can still be scored if it delivered a usable report. Sending Ctrl+C during a model call stops the command and exits with `130`. Durations are measured wall-clock estimates and pause deductions are zero. Reported output above 300,000 tokens triggers a usage stop. When the CLI omits token counts, the run still limits calls and elapsed time and stops any model command that produces over 16 MB of combined output.
+
+`pack` prints the archive path. Omit `--bundle` to write a timestamped archive under `--out`. The gzip-compressed tar contains `manifest.json` and the completed instances under `runs/<cell>/`, with SHA-256 and byte counts for every instance member. The manifest records the ARW version, Git commit, fixture tree and CLI identity. Keep the Git provenance with the archive so the importing system can match scores to the exact fixture set. See the [result bundle contract (Chinese)](../specs/agent-repository-workflow/spec.md#command-line-reviewer-capability).
 
 ### Cross-operating-system validation environment
 
