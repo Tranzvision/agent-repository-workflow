@@ -51,6 +51,107 @@ const run = async (/** @type {import('node:test').TestContext} */ t, /** @type {
 };
 const codexRecords = (/** @type {any[]} */ ...middle) => [codex.meta(), ...middle, codex.done];
 
+const agy = {
+    init: (/** @type {string} */ cwd, id = THREAD) => ({event: 'init', conversation_id: id, init: {cwd}}),
+    step: (/** @type {number} */ index, /** @type {object} */ fields) => ({event: 'step_update', step_update: {
+        conversation_id: THREAD, step_index: index, state: 'DONE', ...fields,
+    }}),
+    tool: (/** @type {string} */ name, /** @type {object} */ parameters, output = 'ok') => ({
+        step_type: 'tool', tool_name: name, tool_info: {name, parameters, output},
+    }),
+    done: {event: 'result', result: {conversation_id: THREAD, status: 'SUCCESS', response: 'Reviewed.', num_turns: 1}},
+};
+
+test('inspect accepts a completed agy record and counts a tool step once', async t => {
+    const {instance, fixtures, sessionPath} = await setup(t, []);
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(0, {step_type: 'user_input'}),
+        agy.step(2, {step_type: 'tool', tool_name: 'run_command', state: 'ACTIVE'}),
+        agy.step(2, agy.tool('run_command', {CommandLine: 'cat src/a.mjs'})),
+        agy.done,
+    ]));
+
+    assert.deepEqual(await inspect({fixtures, instance}), {
+        calls: 1, diagnostics: [], flags: [], interrupted: false, sessionPath,
+        status: 'succeeded', threadId: THREAD, unfinished: [],
+    });
+});
+
+test('agy inspection flags paths, tools, and returned answer keys', async t => {
+    const {instance, fixtures, root} = await setup(t, []);
+    const sibling = join(root, 'run', 'two');
+    const external = join(sibling, 'another [review].txt');
+    const commandTarget = join(sibling, 'external.txt');
+    await writeFile(external, 'external');
+    await writeFile(commandTarget, 'external');
+    const sessionPath = join(instance, 'agy.jsonl');
+    await writeFile(join(instance, 'agent.json'), JSON.stringify({result: {
+        threadId: THREAD, snapshot: {members: [{sessionPath}]},
+    }}));
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(1, agy.tool('view_file', {AbsolutePath: external}, KEY)),
+        agy.step(2, agy.tool('run_command', {CommandLine: 'cat ./external.txt', Cwd: '../two'})),
+        agy.step(3, agy.tool('search_web', {query: 'external evidence'})),
+        agy.step(4, agy.tool('write_to_file', {TargetFile: 'report.txt', CodeContent: external})),
+        agy.step(5, {step_type: 'agent_response', text_delta: KEY}),
+        agy.step(6, agy.tool('grep_search', {SearchPath: '../two/*.txt', Query: 'external'})),
+        agy.done,
+    ]));
+
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.equal(result.status, 'succeeded');
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.position, flag.kind, flag.match]), [
+        [2, 'path', external], [2, 'answer-key', KEY.toLowerCase()],
+        [3, 'path', commandTarget], [3, 'path', sibling], [4, 'tool', 'search_web'], [7, 'path', sibling],
+    ]);
+});
+
+test('agy inspection checks the known arguments of an interrupted tool call', async t => {
+    const {instance, fixtures, root, sessionPath} = await setup(t, [], {completion: null});
+    const target = join(root, 'run', 'two');
+    const parameters = {CommandLine: 'ls', Cwd: target};
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(1, {step_type: 'tool', tool_name: 'run_command', state: 'ACTIVE', tool_info: {name: 'run_command', parameters}}),
+    ]));
+
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.equal(result.status, 'succeeded');
+    assert.equal(result.interrupted, true);
+    assert.deepEqual(result.unfinished.map((/** @type {any} */ call) => call.position), [2]);
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.kind, flag.match]), [['path', target]]);
+});
+
+test('agy inspection blocks unusable records instead of returning a clean result', async t => {
+    const {instance, fixtures, root, sessionPath} = await setup(t, []);
+    const init = agy.init(instance);
+    const active = agy.step(1, {step_type: 'tool', tool_name: 'run_command', state: 'ACTIVE'});
+    const delegated = agy.step(1, {step_type: 'tool', subagent_info: {subagents: [{conversation_id: 'child'}]}});
+    const cases = [
+        ['missing init', [agy.done]],
+        ['wrong thread', [agy.init(instance, 'another-thread'), agy.done]],
+        ['wrong working directory', [agy.init(root), agy.done]],
+        ['wrong result thread', [init, {event: 'result', result: {...agy.done.result, conversation_id: 'another-thread'}}]],
+        ['subagent', [init, delegated, agy.done]],
+        ['malformed tool call', [init, agy.step(1, agy.tool('view_file', {AbsolutePath: false})), agy.done]],
+        ['missing final result', [init]],
+        ['unfinished tool', [init, active, agy.done]],
+        ['trailing event', [init, agy.done, agy.step(1, {step_type: 'checkpoint'})]],
+        ['old json envelope', [agy.done.result]],
+    ];
+    for (const [scenario, records] of /** @type {Array<[string, any[]]>} */ (cases)) {
+        await writeFile(sessionPath, lines(records));
+        assert.equal((await inspect({fixtures, instance})).status, 'blocked', scenario);
+    }
+    await writeFile(join(instance, 'agent.json'), JSON.stringify({result: {
+        threadId: THREAD, completion: null, snapshot: {members: [{sessionPath}]},
+    }}));
+    await writeFile(sessionPath, lines([init, active]));
+    assert.equal((await inspect({fixtures, instance})).status, 'blocked', 'interrupted before tool parameters were captured');
+});
+
 test('a Reviewer that reads inside the instance with allowed tools has no flags, on both backends', async t => {
     const first = await setup(t, []);
     const codexClean = codexRecords(codex.call('c1'), codex.run('git diff --cached HEAD && sed -n "/a/,/b/p" src/a.mjs 2>/dev/null', first.instance), codex.out('c1', 'file text'));

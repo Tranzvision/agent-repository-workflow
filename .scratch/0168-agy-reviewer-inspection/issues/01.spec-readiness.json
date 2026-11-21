@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0168:01",
+  "request": {
+    "digest": "46161f6d9f9c6ae854c64d901db51d750fca5044b78b6237ff41a07d95e99abd",
+    "filePath": ".tmp/codex/01a1fda6-9cde-76d1-9e81-e24ae797c4c5/0168_01/spec-readiness/requests/request-6a7827b8-c5c0-4a26-9999-9f3432dad82a.json",
+    "id": "6a7827b8-c5c0-4a26-9999-9f3432dad82a"
+  },
+  "reviewerRole": {
+    "filePath": "docs/agents/roles/spec-readiness-reviewer.md",
+    "id": "spec-readiness-reviewer",
+    "sha256": "9d5094e6cdc341bf7f75859f5ecbdf37dd1df9127a8b0f836f5f6dac13b07523"
+  },
+  "inputs": [
+    {
+      "filePath": ".scratch/0168-agy-reviewer-inspection/spec.md",
+      "role": "governing-spec",
+      "sha256": "77c5c3f39ff361dfee32fd108074dc79ec7be8a9e92500fd5e5bcf8e06526133"
+    },
+    {
+      "filePath": "CONTEXT.md",
+      "role": "domain-context",
+      "sha256": "6f89aa3efc9e393170b2d9380bacf5b1b11aea0d9c614e9367384d99767bb1fb"
+    },
+    {
+      "filePath": "docs/specs/agent-repository-workflow-development/spec.md",
+      "role": "governing-spec",
+      "sha256": "3a9a39012e34c542fd3caf6007101e35d5f8f303eaf56e2b846111ac946b6f11"
+    },
+    {
+      "filePath": "lib/reviewer-capability/inspection.mjs",
+      "role": "architecture-evidence",
+      "sha256": "078b0685d289ce9424228987f25fe043179c9e9fe22aae7dc13c5035b8ecc549"
+    }
+  ],
+  "subject": {
+    "filePath": ".scratch/0168-agy-reviewer-inspection/issues/01-inspect-agy-records.md",
+    "sha256": "e00e26d22aa8bf05957a9d85179fd5eba158601beed41c8c39846291c3037dd4"
+  },
+  "result": "satisfied"
+}

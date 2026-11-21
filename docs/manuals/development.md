@@ -162,6 +162,8 @@ node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|ancho
 
 Scenario setup accepts an optional `handoff.md`. If the file exists but cannot be read, or if the fixture names an unknown Reviewer role, setup reports an error before creating the scenario or its recovery directory.
 
+For a single-turn Antigravity CLI (`agy`) review, start the CLI in the instance directory and save its unmodified stdout with `--output-format stream-json`. Pass the prompt directly or keep its file inside the instance. Once the process has stopped, set `result.threadId` in the instance's `agent.json` to the stream's initial `conversation_id` and `result.snapshot.members` to a one-element array with the absolute `sessionPath` of the saved stream. Set `result.completion` to `null` if the run was interrupted. Run `inspect` on that instance to check tool names, paths, and returned answer-key text. An unusable record blocks inspection, and an interrupted record can list unfinished calls whose arguments were captured. See the [Antigravity headless stream format](https://antigravity.google/docs/cli/headless/#streaming-json).
+
 Scoring reads bare evidence locators in free-form findings, including paths and line ranges inside parentheses or square brackets. Spec Readiness evidence must point to real lines in the Reviewer's inputs or extracted issue subject. Answer key validation and scoring both use the case weights to check tier balance. When a scoring fix changes the format counts, recalculate the baseline from the same archived reports. To compare historical runs, rescore every group from the same ARW commit.
 
 Commit Audit blind pools use `problem-gate-1-N` and `problem-gate-2-N` to distinguish the two Gates. To rescore earlier Commit Audit reports, regenerate candidates with `score`, rebuild the pools, and adjudicate them with the current brief. Decisions from the earlier brief expire when you rescore.
@@ -252,7 +254,7 @@ Unlike the root entry points, direct children of `scripts/` are maintenance tool
 | `scripts/project-claude-skills.mjs` | Generate `.claude/skills/` from `.agents/skills/`, or check with `--check` that they match |
 | `scripts/release-guest-check.mjs` | In a disposable test system, check install, PATH registration, `arw workflow init`, and uninstall |
 | `scripts/release-vm.mjs` | Run the guest check in a VMware VM and restore its snapshot |
-| `scripts/reviewer-capability.mjs` | Reviewer capability suite entry: run and export instances, build a scenario repository, repair and score reports, check format baselines, summarize cells, build and use blind pools |
+| `scripts/reviewer-capability.mjs` | Reviewer capability suite entry: run and export instances, inspect session records, build a scenario repository, repair and score reports, check format baselines, summarize cells, build and use blind pools |
 | `scripts/sync-workflow-distribution.mjs` | Synchronize the pre-release Workflow Distribution in one command |
 | `scripts/upstream-sync.mjs` | Build the upstream three-way view for the `$upstream-sync` Skill |
 
