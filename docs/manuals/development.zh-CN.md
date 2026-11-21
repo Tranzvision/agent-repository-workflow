@@ -162,7 +162,7 @@ node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|ancho
 
 场景设置接受可选的 `handoff.md`. 若该文件存在却无法读取, 或夹具指定了未知的 Reviewer role, 设置会在创建场景或其恢复目录之前报错.
 
-评分会读取自由格式发现中的裸证据定位符, 包括括号或方括号中的路径和行号范围. 当评分修复改变了格式计数时, 从同一批归档报告重新计算基线. 要比较历史运行, 请在同一个 ARW commit 下为每组重新评分.
+评分会读取自由格式发现中的裸证据定位符, 包括括号或方括号中的路径和行号范围. Spec Readiness 证据必须指向 Reviewer 输入或提取出的 issue 审核对象中的真实行. 答案键校验与评分都使用用例权重检查层级平衡. 当评分修复改变了格式计数时, 从同一批归档报告重新计算基线. 要比较历史运行, 请在同一个 ARW commit 下为每组重新评分.
 
 Commit Audit 盲裁池使用 `problem-gate-1-N` 与 `problem-gate-2-N` 区分两个 Gate. 要重新评分更早的 Commit Audit 报告, 用 `score` 重新生成候选, 重建池, 并按当前 brief 重新裁决. 重新评分时, 旧 brief 下的裁决失效.
 

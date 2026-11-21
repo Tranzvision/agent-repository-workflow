@@ -89,7 +89,7 @@ ARW 中的一切工作都从运行 `arw` CLI 命令和维护 `.scratch` 下的�
 #### `spec-readiness` (自动使用)
 
 - 何时: 实施 issue 的设计定稿 (或修订) 后, 开始任何实施工作前需要独立的设计审核.
-- 做什么: 准备审核输入 (治理规范, ADR, 上下文文档), 通过 `reviewer-launch` 启动 Spec Readiness Reviewer, 再依次运行 `generate`, `promote` 和 `verify`. 修正问题后需要开启新一轮审核. 如果修正涉及某条规则, 需先搜索该规则的所有表述, 并在准备下一轮前一起更新. "不需要治理设计" 的例外必须由你明确确认.
+- 做什么: 准备审核输入 (治理规范, ADR, 上下文文档), 通过 `reviewer-launch` 启动 Spec Readiness Reviewer, 再依次运行 `generate`, `promote` 和 `verify`. 预检会在正文中查找缺失路径和超出范围的行号引用, 并跳过围栏代码块. 修正问题后需要开启新一轮审核. 如果修正涉及某条规则, 需先搜索该规则的所有表述, 并在准备下一轮前一起更新. "不需要治理设计" 的例外必须由你明确确认.
 - 留下什么: `.scratch/<NNNN>-<effort-slug>/issues/<NN>.spec-readiness.json`. 记录缺失, 过期或结果为 `gap` 时会阻断开始实施, 但不阻断无关工作. 一旦开始实施, 只有 issue 自身的审核对象发生变化才会阻断提交 (`verify --subject-only`).
 - 相关: `arw spec-readiness prepare|generate|promote|verify`; `implement`, `reviewer-launch`, `rule-and-design-changes`.
 
