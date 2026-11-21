@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0167:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "根 AGENTS.md 的 Source Checkout Baseline 例外已常设确认: 此单一实施 issue 的提示复用既有关卡结果与摘要分类, 无待决设计也无需另订治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0167-commit-audit-gate1-warning/issues/01-warn-about-empty-gate1.md",
+    "sha256": "94d9d44d00dea15f71f9ad69e88e454ce490b5c0971cc1464d4d522a69951f4f"
+  },
+  "result": "not-applicable"
+}

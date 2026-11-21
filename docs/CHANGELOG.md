@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- `arw commit-audit prepare` warns when staged code changes leave Gate 1 empty, prompting you to check whether a finished issue's status update is missing from the candidate. The warning is advisory.
 - Spec Readiness prechecks report line ranges that extend past the end of a file and skip path examples in fenced code blocks.
 - Reviewer capability scoring checks evidence against real lines in the Spec Readiness subject and uses the production issue parser to find the subject boundaries. Answer key validation uses the same case weights as scoring.
 - Interactive uninstall now reports unsupported platforms as an uninstallation error.

@@ -319,8 +319,8 @@ test('prepare numbers a new round after the highest existing one, so verify chec
     assert.equal(await verifyRound(repository.root), '');
 });
 
-test('prepare summarizes staged net growth by category, skips .scratch records and numbers the next ADR', async t => {
-    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+test('prepare summarizes staged net growth by category without the Gate 1 warning for a terminal transition', async t => {
+    const repository = await stagedRepository(t, {statuses: ['completed']});
     // One more change of every kind the summary distinguishes.
     const files = {'docs/adr/0001-a.md': '# A\n', 'docs/adr/0004-b.md': '# B\n', 'docs/agents/reviewer.md': '#\n', 'docs/note.md': 'hello', 'tests/x.test.mjs': 'a\nb\nc\n'};
     for (const [path, text] of Object.entries(files)) {
@@ -328,7 +328,8 @@ test('prepare summarizes staged net growth by category, skips .scratch records a
         await writeFile(join(repository.root, path), text, 'utf8');
     }
     await runGit(repository.root, ['add', '.']);
-    const {summary} = await prepareCommitAudit({inputPath: await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']}), platformAdapter: adapter, repositoryRoot: repository.root});
+    const {summary, warning} = await prepareCommitAudit({inputPath: await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']}), platformAdapter: adapter, repositoryRoot: repository.root});
+    assert.equal(warning, null);
     assert.equal(summary, [
         'code: +9 lines (files: 2)', '  generated.txt +1', '  implementation.mjs +8',
         'documents: -11 characters (files: 4)', '  docs/adr/0001-a.md +4', '  docs/adr/0004-b.md +4', '  docs/agents/reviewer.md -24', '  docs/note.md +5',
@@ -376,16 +377,37 @@ test('prepare treats a missing Validation or Acceptance criteria section as empt
     assert.equal(summary.split('\n').at(-1), 'next ADR number: 0001');
 });
 
-test('the prepare command keeps standard output to the round directory and writes the summary to standard error', async t => {
+test('the prepare command warns on stderr when staged code changes leave Gate 1 empty', async t => {
     const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    await commitAll(repository.root, 'initial code');
+    await writeFile(join(repository.root, 'implementation.mjs'), implementation.replace('value1 = 1', 'value1 = 2'));
+    await runGit(repository.root, ['add', 'implementation.mjs']);
     const environment = {CLAUDECODE: process.env.CLAUDECODE, CODEX_THREAD_ID: process.env.CODEX_THREAD_ID};
     t.after(() => Object.assign(process.env, environment));
     delete process.env.CLAUDECODE;
     process.env.CODEX_THREAD_ID = 'summary-session';
-    const {events} = await run(['commit-audit', 'prepare', '--input', await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']})], repository);
-    assert.deepEqual(events.map(event => event.channel), ['stdout', 'stderr']);
+    const {events, result} = await run(['commit-audit', 'prepare', '--input', await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']})], repository);
+    assert.equal(result, 0);
+    assert.deepEqual(events.map(event => event.channel), ['stdout', 'stderr', 'stderr']);
     assert.match(events[0].message, /\/_commit-audit\/1$/u);
-    assert.match(events[1].message, /^code: \+9 lines \(files: 2\)\n/u);
+    assert.equal(events[1].message, 'warning: Gate 1 is empty for staged code changes. If an authorizing issue is complete, stage its Status update to avoid delaying Gate 1 and Gate 2.');
+    assert.equal(events[2].message, [
+        'code: 0 lines (files: 1)', '  implementation.mjs 0',
+        'documents: 0 characters (files: 0)', 'tests: 0 lines (files: 0)', 'next ADR number: 0001',
+    ].join('\n'));
+    const request = JSON.parse(await readFile(join(events[0].message, 'request.json'), 'utf8'));
+    assert.deepEqual(request.gate1, []);
+    assert.equal(request.gate2, null);
+});
+
+test('prepare leaves Gate 1 empty without a warning for staged tests and documents', async t => {
+    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    await runGit(repository.root, ['rm', '-qf', '--cached', 'implementation.mjs', 'generated.txt']);
+    await writeFile(join(repository.root, 'implementation.test.mjs'), 'test\n');
+    await writeFile(join(repository.root, 'README.md'), '# Readme\n');
+    await runGit(repository.root, ['add', 'implementation.test.mjs', 'README.md']);
+    const {warning} = await prepareCommitAudit({inputPath: await writeInput(repository.root, {authorizingIssueIds: ['issue:0001:01']}), platformAdapter: adapter, repositoryRoot: repository.root});
+    assert.equal(warning, null);
 });
 
 test('verify --non-implementation rejects non-canonical effort directories and NUL Markdown, and keeps checking after an Artifact error', async t => {
