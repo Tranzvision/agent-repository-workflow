@@ -12,5 +12,5 @@ Reviewer 当作审查标准读取的通用指令 (根 `AGENTS.md`, `issue-tracki
 
 | 提交 | 文件:行 | 改了哪条检查 | 登记日期 |
 |---|---|---|---|
-| `b42278c` | `.agents/skills/issue-tracking/SKILL.md:22` | 作者侧禁止以提交及其后事实或其他审核结果为验收条件, 改写入预期验证, 要求符合审核把这类验收项写成 issue 问题 (`roles/requirements-reviewer.md`); Main 裁定本轮登记待测, 不触发能力 A/B | 2026-11-13 |
-| `9e12759` | `.agents/skills/issue-tracking/SKILL.md:24` | 作者侧要求自然语言分类验收项列有限正反例, 不写开放条件; Spec Readiness Reviewer 读取该节, 属新增检查项; 本轮登记待测, 不触发能力 A/B | 2026-11-14 |
+
+`b42278c` 与 `9e12759` 已于 2026-11-20 由 capretest 的 F4 臂 (luna xhigh, 对照为还原这两项) 测过, 用户决定保留, 表已清空.
