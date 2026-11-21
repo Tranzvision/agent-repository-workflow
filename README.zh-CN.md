@@ -311,7 +311,7 @@ arw agent start <name> [agent-arguments...]
 审核并提交 issue:<NNNN>:<NN> 的实现. 只包含这张 issue 授权的修改, 保留其他工作树内容.
 ```
 
-Main Agent 会先核对完成证据并锁定准确的 staged candidate, 然后运行 `arw commit-audit prepare`. ARW 会根据该 issue 和适用 spec 推导出审核范围并生成空白的 txt 报告, 随后两个独立 Reviewer 并行审查已暂存候选: `requirements-reviewer` 检查它是否满足需求, `code-standards-reviewer` 检查仓库代码与写作标准并指出可以删减的冗余代码. 只有当两个 Reviewer 都正常结束且报告的所有问题都已妥善处理后, Main Agent 才会运行 `arw commit-audit verify` 及剩余的机械检查并完成提交. 如果修复问题后需要复审, Reviewer 只会审查变化部分及其影响范围, 未受影响的原结论保持有效.
+Main Agent 会先核对完成证据并锁定准确的 staged candidate, 然后运行 `arw commit-audit prepare`. ARW 会根据该 issue 和适用 spec 推导出审核范围并生成空白的 txt 报告. 如果候选包含代码改动而 Gate 1 中没有任何 issue 进入终态, `prepare` 会在 stderr 输出一条仅供参考的警告, 帮助发现漏暂存的 `Status:` 更新. 随后两个独立 Reviewer 并行审查已暂存候选: `requirements-reviewer` 检查它是否满足需求, `code-standards-reviewer` 检查仓库代码与写作标准并指出可以删减的冗余代码. 只有当两个 Reviewer 都正常结束且报告的所有问题都已妥善处理后, Main Agent 才会运行 `arw commit-audit verify` 及剩余的机械检查并完成提交. 如果修复问题后需要复审, Reviewer 只会审查变化部分及其影响范围, 未受影响的原结论保持有效.
 
 如果某次提交候选只包含调查记录, 设计文档或其它封闭的非实施内容, Agent 可以走较轻量的提交路线; 但只要候选中包含了当前仓库的实施交付物, 就必须走完上述完整的实施提交流程. 至于具体的差异比较准备, 审核结果复用和异常恢复规则, 由目标仓库的 `code-review` 与 `commit` Skill 直接管理, 本 README 不再重复展开它们的完整协议.
 

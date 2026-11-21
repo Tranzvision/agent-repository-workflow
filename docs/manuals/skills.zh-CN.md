@@ -104,6 +104,7 @@ ARW 中的一切工作都从运行 `arw` CLI 命令和维护 `.scratch` 下的�
 
 - 何时: 你明确要求执行 Git 提交. 仅仅完成 issue 本身绝不会触发提交.
 - 做什么: 先对已暂存的文件分类. 包含实施工作的候选走完整流程: 更新 issue 记录, `arw commit-audit prepare`, 并行启动两个 Reviewer (要求符合和 Code Standards), 逐条核对发现的问题, `arw commit-audit verify`, `arw spec-readiness verify --subject-only` (属于行为保持重构例外的 issue 没有就绪记录, 跳过此项), 最后执行提交. 只含规划记录, Agent 规则和文档 (包括根 README, `CONTEXT.md` 和 `CLAUDE.md`) 的候选走较轻的路线, 由 `arw commit-audit verify --non-implementation` 检查. 提交说明遵循 Conventional Commits, 任何一个关卡失败都会立即停止提交.
+- prepare 诊断: 已暂存的代码改动使 Gate 1 为空时, `prepare` 会在 stderr 输出警告. 请检查已完成的授权 issue 是否仍需暂存其状态更新.
 - 留下什么: `.tmp` 下的审核轮记录以及 Git 提交本身.
 - 相关: `code-review`, `reviewer-launch`, `spec-readiness`, `issue-tracking`.
 
