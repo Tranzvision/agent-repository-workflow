@@ -68,7 +68,8 @@ for (let index = 0; index < rest.length; index += 1) {
     } else usage(`Unknown option --${option}.`);
 }
 
-const [action, ...args] = command === 'pool' ? positional : ['', ...positional];
+const action = command === 'pool' ? positional.shift() : undefined;
+const args = positional;
 let result;
 if (command === 'run' && args.length === 2) {
     const parsed = parseJsonText(values.settings ?? '');

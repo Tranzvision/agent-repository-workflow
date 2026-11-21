@@ -162,7 +162,7 @@ node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|ancho
 
 Scenario setup accepts an optional `handoff.md`. If the file exists but cannot be read, or if the fixture names an unknown Reviewer role, setup reports an error before creating the scenario or its recovery directory.
 
-Scoring reads bare evidence locators in free-form findings, including paths and line ranges inside parentheses or square brackets. When a scoring fix changes the format counts, recalculate the baseline from the same archived reports. To compare historical runs, rescore every group from the same ARW commit.
+Scoring reads bare evidence locators in free-form findings, including paths and line ranges inside parentheses or square brackets. Spec Readiness evidence must point to real lines in the Reviewer's inputs or extracted issue subject. Answer key validation and scoring both use the case weights to check tier balance. When a scoring fix changes the format counts, recalculate the baseline from the same archived reports. To compare historical runs, rescore every group from the same ARW commit.
 
 Commit Audit blind pools use `problem-gate-1-N` and `problem-gate-2-N` to distinguish the two Gates. To rescore earlier Commit Audit reports, regenerate candidates with `score`, rebuild the pools, and adjudicate them with the current brief. Decisions from the earlier brief expire when you rescore.
 

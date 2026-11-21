@@ -89,7 +89,7 @@ Once an issue is tracked in `.scratch`, these Skills govern how its design is re
 #### `spec-readiness` (automatic)
 
 - When: an implementation issue's design is finished (or revised) and needs an independent design review before any implementation begins.
-- What it does: prepares the inputs (governing specification, ADRs, context documents), starts a Spec Readiness Reviewer through `reviewer-launch`, and then runs `generate`, `promote`, and `verify`. Fixing findings requires a new review round. If a fix changes a rule, search for all statements of that rule and update them together before preparing the round. Claiming a "no governing design needed" exception requires your explicit confirmation.
+- What it does: prepares the inputs (governing specification, ADRs, context documents), starts a Spec Readiness Reviewer through `reviewer-launch`, and then runs `generate`, `promote`, and `verify`. The precheck looks for missing paths and out-of-range line references in prose and skips fenced code blocks. Fixing findings requires a new review round. If a fix changes a rule, search for all statements of that rule and update them together before preparing the round. Claiming a "no governing design needed" exception requires your explicit confirmation.
 - Leaves behind: `.scratch/<NNNN>-<effort-slug>/issues/<NN>.spec-readiness.json`. A missing, stale, or `gap` record blocks starting implementation, but does not block unrelated work. Once implementation has started, only a change to the issue's own review subject blocks the commit (`verify --subject-only`).
 - Related: `arw spec-readiness prepare|generate|promote|verify`; `implement`, `reviewer-launch`, `rule-and-design-changes`.
 

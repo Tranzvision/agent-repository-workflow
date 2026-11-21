@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Spec Readiness prechecks report line ranges that extend past the end of a file and skip path examples in fenced code blocks.
+- Reviewer capability scoring checks evidence against real lines in the Spec Readiness subject and uses the production issue parser to find the subject boundaries. Answer key validation uses the same case weights as scoring.
 - Interactive uninstall now reports unsupported platforms as an uninstallation error.
 - Reviewer capability setup reports unreadable handoff files and leaves no recovery directory when the Reviewer role is unknown.
 - Release VM checks reject a missing installation archive or an unreadable or invalid checkout package identity before touching the VM.

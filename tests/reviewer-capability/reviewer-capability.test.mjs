@@ -6,6 +6,7 @@ import {join} from 'node:path';
 import test from 'node:test';
 
 import {loadScenario} from '../../lib/reviewer-capability/scenario.mjs';
+import {normalizeBodyEvidence} from '../../lib/reviewer-capability/evidence.mjs';
 import {sha256} from '../../lib/common/json.mjs';
 import {pool, repeatedId, score, summary} from '../../lib/reviewer-capability/operations.mjs';
 import {candidateFingerprint} from '../../lib/reviewer-capability/pool.mjs';
@@ -48,6 +49,42 @@ test('the shuffle matches Python random.Random(20261020)', () => {
     const values = Array.from({length: 30}, (_, index) => index);
     createRandom(20261020).shuffle(values);
     assert.deepEqual(values, [19, 7, 18, 12, 5, 0, 11, 9, 16, 13, 8, 28, 21, 3, 17, 29, 25, 22, 4, 2, 27, 26, 1, 15, 6, 10, 20, 23, 14, 24]);
+});
+
+test('body evidence rejects range endpoints past the last real line', () => {
+    const filePath = 'example.md';
+    for (const source of ['body\n', 'body\r\n', 'body']) {
+        const sources = new Map([[filePath, source]]);
+        assert.deepEqual(normalizeBodyEvidence([{filePath, lineStart: 1, lineEnd: 1}], sources), [{filePath, line: 1}]);
+        assert.throws(() => normalizeBodyEvidence([{filePath, lineStart: 1, lineEnd: 2}], sources), /Evidence line does not exist: example\.md:2/u);
+    }
+    assert.throws(() => normalizeBodyEvidence([{filePath, lineStart: 1, lineEnd: 1}], new Map([[filePath, '']])), /Evidence line does not exist: example\.md:1/u);
+});
+
+test('the answer key checks the same weighted k tiers as scoring', async t => {
+    const directory = await scenario(t);
+    const path = join(directory, 'expected.json');
+    const key = JSON.parse(await readFile(path, 'utf8'));
+    Object.assign(key.scopes[0].problemCases[0], {k: 1, judgmentShare: 0.5});
+    key.scopes[0].cleanCases[0].k = 1;
+    await writeFile(path, JSON.stringify(key));
+    await assert.rejects(loadScenario(directory), /0\.5 problem and 1 clean cases at k 1/u);
+    key.scopes[0].cleanCases[0].judgmentShare = 0.5;
+    await writeFile(path, JSON.stringify(key));
+    await loadScenario(directory);
+});
+
+test('spec readiness scenario uses the same fenced heading boundaries as the issue subject', async t => {
+    const directory = await scenario(t, 'spec-readiness-reviewer');
+    const subjectPath = '.scratch/0001-demo/issues/01-demo.md';
+    const issueDirectory = join(directory, 'candidate', '.scratch', '0001-demo', 'issues');
+    await mkdir(issueDirectory, {recursive: true});
+    const content = '## What to build\n\nBody.\n\n## Acceptance criteria\n\n~~~md\n## Example heading\n~~~\n\n- [ ] Actual criterion.\n';
+    const path = join(directory, 'candidate', subjectPath);
+    await writeFile(path, `# Demo\n\n${content}\n## Blocked by\n\n- None\n`);
+    assert.equal((await loadScenario(directory)).sources.get(subjectPath), `${content}\n`);
+    await writeFile(path, '# Demo\n\n## What to build\n\nMissing acceptance criteria.\n');
+    await assert.rejects(loadScenario(directory), /malformed What to build or Acceptance criteria placement/u);
 });
 
 test('scoring: no findings earns nothing, a matched association earns the problem, an unmatched finding costs a clean case', async t => {

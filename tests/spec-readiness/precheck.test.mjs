@@ -63,6 +63,21 @@ test('precheck stays silent for a clean subject', async t => {
     assert.deepEqual(await precheckSpecReadiness({repositoryRoot: root, subject: {content: subjectOf('做事.', '- [ ] 观察: 通过.'), filePath: 'issue.md'}, texts: []}), []);
 });
 
+test('precheck checks range endpoints and empty files while ignoring fenced examples', async t => {
+    const root = await createTemporaryDirectory(t, 'precheck-');
+    await mkdir(join(root, 'lib'));
+    await writeFile(join(root, 'lib', 'present.mjs'), 'one\ntwo\n');
+    await writeFile(join(root, 'lib', 'empty.mjs'), '');
+    const content = subjectOf(
+        '见 lib/present.mjs:1-2, lib/present.mjs:2-4 和 lib/empty.mjs:1.\n\n~~~\nlib/present.mjs:99 和 `lib/example.mjs`.\n~~~',
+        '- [ ] 观察: 仅报告正文的越界引用.',
+    );
+    assert.deepEqual(await precheckSpecReadiness({repositoryRoot: root, subject: {content, filePath: 'issue.md'}, texts: []}), [
+        'warning: issue.md: lib/present.mjs:2-4 超出该文件的行数.',
+        'warning: issue.md: lib/empty.mjs:1 超出该文件的行数.',
+    ]);
+});
+
 test('precheck ignores fenced acceptance headings and criteria after the next section', async t => {
     const root = await createTemporaryDirectory(t, 'precheck-');
     const subject = subjectOf('~~~\n## Acceptance criteria\n- [ ] 观察: Commit Audit 通过.\n~~~', '- [ ] 观察: 输出含 ok.')
