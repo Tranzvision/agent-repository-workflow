@@ -162,6 +162,8 @@ node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|ancho
 
 场景设置接受可选的 `handoff.md`. 若该文件存在却无法读取, 或夹具指定了未知的 Reviewer role, 设置会在创建场景或其恢复目录之前报错.
 
+对单轮的 Antigravity CLI (`agy`) Reviewer 审查, 在实例目录中启动该 CLI, 并以 `--output-format stream-json` 保存其未经修改的 stdout. 可直接传入提示词, 或把提示词文件放在实例目录内. 进程停止后, 将实例 `agent.json` 中的 `result.threadId` 设为该流的初始 `conversation_id`, 将 `result.snapshot.members` 设为只含一个元素的数组, 元素为已保存流的绝对路径 `sessionPath`. 若运行被中断, 将 `result.completion` 设为 `null`. 对该实例运行 `inspect`, 以检查工具名称, 路径和返回的答案键文本. 不可用的记录会阻止检查; 被中断的记录可能列出未完成的调用及其已捕获的参数. 参见 [Antigravity headless stream 格式](https://antigravity.google/docs/cli/headless/#streaming-json).
+
 评分会读取自由格式发现中的裸证据定位符, 包括括号或方括号中的路径和行号范围. Spec Readiness 证据必须指向 Reviewer 输入或提取出的 issue 审核对象中的真实行. 答案键校验与评分都使用用例权重检查层级平衡. 当评分修复改变了格式计数时, 从同一批归档报告重新计算基线. 要比较历史运行, 请在同一个 ARW commit 下为每组重新评分.
 
 Commit Audit 盲裁池使用 `problem-gate-1-N` 与 `problem-gate-2-N` 区分两个 Gate. 要重新评分更早的 Commit Audit 报告, 用 `score` 重新生成候选, 重建池, 并按当前 brief 重新裁决. 重新评分时, 旧 brief 下的裁决失效.
@@ -252,7 +254,7 @@ arw reviewer-capability pack --out ./rbout --bundle ./hydrogen.tar.gz
 | `scripts/project-claude-skills.mjs` | 由 `.agents/skills/` 生成 `.claude/skills/`, 或用 `--check` 检查两者是否一致 |
 | `scripts/release-guest-check.mjs` | 在可丢弃的受验系统中检查安装, PATH 登记, `arw workflow init` 和卸载 |
 | `scripts/release-vm.mjs` | 在 VMware VM 中运行 guest 检查并还原快照 |
-| `scripts/reviewer-capability.mjs` | Reviewer 能力套件入口: 运行与导出实例, 搭建场景仓库, 修复报告并计分, 校验格式罚基线, 汇总各格统计, 组盲池并记录裁决 |
+| `scripts/reviewer-capability.mjs` | Reviewer 能力套件入口: 运行与导出实例, 检查会话记录, 搭建场景仓库, 修复报告并计分, 校验格式罚基线, 汇总各格统计, 组盲池并记录裁决 |
 | `scripts/sync-workflow-distribution.mjs` | 一次命令完成发布前工作流分发同步 |
 | `scripts/upstream-sync.mjs` | 为 `$upstream-sync` Skill 生成上游三方视图 |
 
