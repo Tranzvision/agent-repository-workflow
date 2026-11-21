@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {access, readFile, writeFile} from 'node:fs/promises';
+import {access, mkdir, readFile, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
@@ -324,6 +324,20 @@ test('Code Map CLI 只公开有命名空间的只读验证操作', async t => {
     ]) {
         assert.throws(() => parseCommand(args), error => error instanceof UsageError && error.exitCode === 2);
     }
+});
+
+test('workflow init escapes Code Map gap paths in the post-init handoff', async t => {
+    const repository = await createRepositoryWithMockGit(t);
+    const directory = 'src/a\nb';
+    await mkdir(join(repository.root, directory), {recursive: true});
+    await writeFile(join(repository.root, directory, 'f.js'), 'x\n');
+    await repository.git.commitAll('code');
+    const args = ['workflow', 'init', '--non-interactive', '--platform', 'codex', '--domain-layout', 'single-context',
+        '--code-map-root', directory, '--code-map-include', '**/*.js', '--code-map-exclude'];
+    const initialized = await run(args, repository, {workflowDependencies: createUpdateDependencies(ORIGINAL_MANAGED_AGENTS, repository)});
+    assert.equal(initialized.result, 0, JSON.stringify(initialized.events));
+    const handoff = initialized.events.map(event => event.message).join('\n');
+    assert.match(handoff, /^- src\/a\\nb\/README\.md$/mu);
 });
 
 test('workflow init and remove reject dry-run as an inapplicable option', async () => {

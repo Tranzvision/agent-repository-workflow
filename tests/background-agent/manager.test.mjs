@@ -447,6 +447,21 @@ test('active native work rejects changed follow-up settings before message alloc
   assert.equal(fake.native.rootStops,0);
 });
 
+test('an idle follow-up rejects malformed settings before accepting a message',async t=>{
+  const fake=await harness(t);
+  const started=result(await fake.start());
+  await waitDelivered(fake.stateStore,started.messageId);
+  fake.native.finish(started.runId);
+  await tick();
+  const before=result(await fake.execute(started.runId,'messages',{direction:'main-to-agent'}));
+  for(const bad of [null,'x',{model:'only'}]){
+    const rejected=await fake.execute(started.runId,'followup_task',{handoff:'next',settings:bad});
+    assert.equal(rejected.status,'failed');
+  }
+  const after=result(await fake.execute(started.runId,'messages',{direction:'main-to-agent'}));
+  assert.deepEqual(after.messages,before.messages);
+});
+
 test('unverified tool work cannot be evicted to exceed the root capacity',async t=>{
   const fake=await harness(t,{maxInstances:1,unsafeIdle:true});
   const first=await fake.start();
@@ -708,6 +723,35 @@ test('failed key return keeps the normal shared server alive for a later confirm
   assert.equal(service.releaseCount,1);
   assert.equal(fake.native.closeCount,2);
   assert.deepEqual(fake.stateStore.listProviders(),[]);
+});
+
+test('a failed lease return does not stop later stored leases from being returned',async t=>{
+  /** @type {string[]} */const released=[];
+  const createStrataDriver=/** @type {typeof import('../../lib/background-agent/strata-driver.mjs').createStrataDriver} */ (
+    /** @type {unknown} */ (()=>({
+      async status(){return{status:'stopped',model:null};},
+      async release(/** @type {{leaseKey:string}} */ {leaseKey}){
+        if(leaseKey==='key-a')throw new Error('Controller A release failed.');
+        released.push(leaseKey);return{ownership:'free',previousKeyRevoked:true};},
+    })));
+  const providers={a:{driver:/** @type {const} */('strata'),installationDirectory:'/a'},b:{driver:/** @type {const} */('strata'),installationDirectory:'/b'}};
+  const fake=await harness(t,{providers,createStrataDriver});
+  fake.stateStore.saveProvider({providerId:'a',controllerUrl:'http://controller/a',leaseKey:'key-a'});
+  fake.stateStore.saveProvider({providerId:'b',controllerUrl:'http://controller/b',leaseKey:'key-b'});
+  await fake.manager.close();
+  const store=createBackgroundAgentStateStore({runtimeDirectory:fake.directory,clock:fake.clock});
+  const sessions={...fake.native.nativeSessions,async close(){return{
+    environmentState:/** @type {const} */('exited'),previousProcessState:/** @type {const} */('ended'),
+  };},async ensureServer(input={}){
+    await /** @type {{onPreviousExit?:()=>Promise<void>}} */(input).onPreviousExit?.();
+  }};
+  const manager=await createBackgroundAgentManager({nativeSessions:sessions,maxInstances:2,stateStore:store,
+    clock:fake.clock,modelCatalog:{getProviders:async()=>providers},createStrataDriver});
+  const accepted=result(await manager.execute({ownerId:'main',controllerId:'main',operation:'spawn_agent',input:{
+    role:'generic',settings,cwd:fake.directory,stateDirectory:fake.directory,readPaths:[],writePaths:[],instructions:'i',handoff:'work'}}));
+  await waitFailedDelivery(store,accepted.messageId,'failed');
+  assert.deepEqual(released,['key-b']);
+  assert.deepEqual(store.listProviders().map(provider=>provider.providerId),['a']);
 });
 
 test('failed immediate Strata lease save cannot create a root or acquire a replacement key',async t=>{
@@ -1596,6 +1640,21 @@ test('agent-task records once a working task turned unknown by a failed steer or
   lost.native.vanish(run.runId);
   await lostSession.dispatchAccepted({messageId:next.messageId});
   assert.deepEqual(lost.effects.map(item=>item.fields.outcome),['unknown'],'a snapshot turning a working task unknown mid-dispatch adds no second record');
+});
+
+test('a failed batched steer marks every queued message it carried as unknown',async t=>{
+  const fake=await harness(t);
+  const started=result(await fake.start());await waitDelivered(fake.stateStore,started.messageId);
+  const entry=fake.manager.owned(started.runId,'main-1','main-1');
+  assert.ok(entry.native);
+  entry.native.steer=async()=>{throw new Error('Native steer was lost.');};
+  const session=fake.manager.proxy(entry);
+  const turnId=/** @type {string} */(entry.turnId);
+  const first=await session.acceptTask({handoff:'first',turnId});
+  const second=await session.acceptTask({handoff:'second',turnId});
+  await session.dispatchAccepted({messageId:second.messageId});
+  assert.equal(fake.stateStore.getMessage(second.messageId)?.deliveryStatus,'unknown');
+  assert.equal(fake.stateStore.getMessage(first.messageId)?.deliveryStatus,'unknown');
 });
 
 test('restart recovery records a working task that became unknown, and nothing for an idle one', async t=>{

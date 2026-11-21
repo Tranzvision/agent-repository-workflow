@@ -246,3 +246,12 @@ test('spec readiness prepare writes no Effect Log file when it is not enabled', 
     assert.equal(prepared.result, 0);
     assert.equal(prepared.events.some(event => event.message.includes('effect log')), false);
 });
+
+test('spec readiness prepare reports why its JSON input was rejected', async t => {
+    const repository = await createRepository(t);
+    for (const [stdin, message] of [['{', 'Spec Readiness stdin cannot be read: The input is not valid JSON.'], ['[]', 'Spec Readiness stdin must be a JSON object.']]) {
+        const prepared = await run(['spec-readiness', 'prepare', '--issue', 'issue:0001:01'], repository, {stdin});
+        assert.equal(prepared.result, 1);
+        assert.deepEqual(prepared.events, [{channel: 'stderr', message}]);
+    }
+});

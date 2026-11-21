@@ -142,6 +142,7 @@ test('provider settings default to four instances for OpenAI and Anthropic and k
     });
     assert.equal(validateConfig({...value, backgroundAgent: {}}).backgroundAgent?.providers.anthropic.maxInstances, 4);
     assert.throws(() => validateConfig({...value, backgroundAgent: {providers: []}}), /providers must be an object/u);
+    assert.throws(() => validateConfig({...value, backgroundAgent: {providers: null}}), /providers must be an object/u);
     assert.throws(() => validateConfig({...value, backgroundAgent: {providers: {openai: 1}}}), /providers must be an object/u);
     const completed = completeGlobalConfigurationBytes(Buffer.from(JSON.stringify(value)));
     assert.deepEqual(JSON.parse(completed.bytes.toString('utf8')).backgroundAgent.providers, {

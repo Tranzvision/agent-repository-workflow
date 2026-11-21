@@ -4,6 +4,9 @@
 
 ## 未发布
 
+- 空的选项值会被拒绝, 读不出的 Spec Readiness `prepare` 输入会报告解析错误, 初始化后的 handoff 会转义清单文本.
+- 配置会拒绝非对象的 `background.providers`. issue 解析器会拒绝格式错误的 `None` 阻塞行, 以及 Wayfinder issue 中的 External dependency. Commit Audit 不再把 Application Source Issue 当作实施 issue, 并拒绝编号相同的第二个 effort 目录, 忽略符号链接的规则文件.
+- 后台 Agent: 启动失败会立即报告 spawn 错误, `followup_task` 会校验 settings, 批量消息失败时把其中每条消息都标为 unknown, 一个提供方租约归还失败不再阻止其余租约归还, 原生卸载只用一个期限, 已加载线程的发现能找到列在父线程之前的成员, resume 的记录路径变化时会取消订阅已加载的线程.
 - 评审能力的 `inspect` 会检查已保存的 Antigravity CLI (`agy`) 无界面运行流中的工具名称, 路径和返回的答案键文本, 包括留有可用证据的中断运行.
 - `arw commit-audit prepare` 在已暂存的代码改动使 Gate 1 为空时发出警告, 提示检查已完成 issue 的状态更新是否漏掉. 该警告只是建议性的.
 - Spec Readiness 预检会报告超出文件末尾的行号范围, 并跳过围栏代码块中的路径示例.

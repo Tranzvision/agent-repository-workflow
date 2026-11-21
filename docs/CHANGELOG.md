@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+- Option values that are empty are rejected, Spec Readiness `prepare` input that cannot be read reports its parse error, and the post-init handoff escapes checklist text.
+- Configuration rejects a non-object `background.providers`. The issue parser rejects a malformed `None` blocker line and an External dependency in a Wayfinder issue. Application Source Issues no longer count as implementation issues in Commit Audit, which also rejects a second effort directory with the same number and ignores symlinked rule files.
+- Background Agent: a failed launch reports its spawn error immediately, `followup_task` validates its settings, a failed batched message marks every message it carried as unknown, one failed provider lease return no longer stops the others, native unload keeps a single deadline, loaded-thread discovery finds members listed before their parent, and a resume whose record path changed unsubscribes the loaded thread.
 - Reviewer capability `inspect` checks tools, paths, and returned answer-key text in saved Antigravity CLI (`agy`) headless streams, including interrupted runs with usable evidence.
 - `arw commit-audit prepare` warns when staged code changes leave Gate 1 empty, prompting you to check whether a finished issue's status update is missing from the candidate. The warning is advisory.
 - Spec Readiness prechecks report line ranges that extend past the end of a file and skip path examples in fenced code blocks.

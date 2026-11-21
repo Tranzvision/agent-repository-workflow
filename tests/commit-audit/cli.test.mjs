@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, rename, rm, symlink, writeFile} from 'node:fs/promises';
 import {basename, dirname, join} from 'node:path';
 import {test} from 'node:test';
 
@@ -105,6 +105,32 @@ test('prepare writes a fixed-version round for both Reviewers and follows up the
     assert.equal(followup.input.runId, 'run-1');
     assert.match(followup.input.handoff, new RegExp(`git diff ${first.request.tree} ${second.request.tree}`, 'u'));
     assert.equal((await line(second.round, 'code-standards-reviewer')).operation, 'spawn_agent');
+});
+
+test('an Application Source issue neither authorizes a commit nor holds back the effort gate', async t => {
+    const repository = await stagedRepository(t, {statuses: ['completed']});
+    const source = issueText('ready-for-agent').replace('Status: ready-for-agent\n', 'Status: ready-for-agent\nApplication source issue: `issue:payments:0001:02`\n');
+    await writeIssue(repository.root, '0001-workflow', '02-source.md', source);
+    await runGit(repository.root, ['add', '.scratch']);
+    await assert.rejects(prepare(repository.root, {authorizingIssueIds: ['issue:0001:02']}), /not present in the staged candidate/u);
+    const {request} = await prepare(repository.root, {authorizingIssueIds: ['issue:0001:01']});
+    assert.notEqual(request.gate2, null);
+});
+
+test('prepare rejects a second effort directory with the same number even when it holds only research files', async t => {
+    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    await mkdir(join(repository.root, '.scratch', '0001-other', 'research'), {recursive: true});
+    await writeFile(join(repository.root, '.scratch', '0001-other', 'research', 'notes.md'), '# Notes\n', 'utf8');
+    await runGit(repository.root, ['add', '.scratch']);
+    await assert.rejects(prepare(repository.root, {authorizingIssueIds: ['issue:0001:01']}), /duplicate effort number/u);
+});
+
+test('prepare does not copy a symlinked rule file as its target path', async t => {
+    const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
+    await symlink('reviewer.md', join(repository.root, 'docs/agents/link.md'));
+    await runGit(repository.root, ['add', 'docs/agents/link.md']);
+    const {round} = await prepare(repository.root, {authorizingIssueIds: ['issue:0001:01']});
+    assert.equal(await readFile(join(round, 'rules', 'docs/agents/link.md'), 'utf8').catch(() => null), null);
 });
 
 test('prepare points both Reviewers at the Comments ledger of every authorizing issue', async t => {
@@ -479,7 +505,7 @@ test('verify accumulates canonical issue parse errors without dropping independe
 
 test('prepare leaves effort prototype and research files out of the Code Standards paths', async t => {
     const repository = await stagedRepository(t, {statuses: ['ready-for-agent']});
-    for (const path of ['.scratch/0001-effort/prototype/draft.mjs', '.scratch/0001-effort/research/notes.md']) {
+    for (const path of ['.scratch/0001-workflow/prototype/draft.mjs', '.scratch/0001-workflow/research/notes.md']) {
         await mkdir(dirname(join(repository.root, path)), {recursive: true});
         await writeFile(join(repository.root, path), 'data\n');
     }

@@ -462,6 +462,8 @@ test('migration reports the deterministic legacy error matrix', () => {
         ['c-cross-effort', '# Cross\n\nStatus: ready-for-agent\n\n## Blocked by\n\n- other/issues/01-target.md\n', 'Blocked by explicitly references another effort: other.'],
         ['b-empty-status', '# Empty\n\n**Status:**\n', 'Implementation issue must have one non-empty Status.'],
         ['a-unparseable', '# Broken\n\nStatus: ready-for-agent\n\n## Blocked by\n\nNone needs manual review\n', 'Blocked by cannot be parsed: None needs manual review.'],
+        ['a-bullet', '# Broken\n\nStatus: ready-for-agent\n\n## Blocked by\n\n- None needs manual review\n', 'Blocked by cannot be parsed: - None needs manual review.'],
+        ['a-inline', '# Broken\n\nStatus: ready-for-agent\nBlocked by: None needs manual review\n', 'Blocked by cannot be parsed: None needs manual review.'],
     ];
     const result = migrateIssueDocuments(cases.map(([sourceKey, text]) => ({
         effort: 'matrix',
@@ -634,6 +636,7 @@ test('strict read reports the deterministic malformed document matrix', () => {
         ['unknown-status', '# Title\n\nStatus: future\n\n## Blocked by\n\n- None\n', 'Unknown implementation Status: future.'],
         ['unknown-type', '# Title\n\nType: review\nBlocked by: None\n', 'Unknown Wayfinder Type: review.'],
         ['wayfinder-status', '# Title\n\nType: task\nStatus: completed\nBlocked by: None\n', 'Invalid Wayfinder Status: completed.'],
+        ['wayfinder-external', '# Title\n\nType: task\nBlocked by: External dependency: `issue:ledger:0009:03` - Wait for the ledger contract.\n', 'Wayfinder Blocked by cannot contain an External dependency.'],
         ['inline-implementation', '# Title\n\nStatus: completed\nBlocked by: None\n', 'Implementation issue must use a Blocked by section.'],
         ['empty-section', '# Title\n\nStatus: completed\n\n## Blocked by\n', 'Blocked by section must contain a bullet item.'],
         ['duplicate-blocker', '# Title\n\nStatus: completed\n\n## Blocked by\n\n- 01\n- 01\n', 'Blocked by repeats issue 01.'],

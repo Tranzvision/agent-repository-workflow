@@ -376,6 +376,17 @@ test('unsubscribe acceptance cannot claim root unload while the original thread 
   assert.equal(fake.spawnCount,1);
 });
 
+test('unload observation keeps one deadline while unrelated notifications arrive',async()=>{
+  const fake=harness(message=>message.method==='thread/unsubscribe'?{status:'unsubscribed'}:undefined,async()=>{},40);
+  const session=await fake.open();
+  await session.start({instructions:'rules'});
+  const chatter=setInterval(()=>fake.emit({method:'thread/status/changed',params:{threadId:rootId,status:{type:'idle'}}}),5);
+  const stopped=session.stop().then(()=>'stopped',error=>String(error.message));
+  const outcome=await Promise.race([stopped,new Promise(resolve=>setTimeout(()=>resolve('still waiting'),150))]);
+  clearInterval(chatter);
+  assert.match(outcome,/unload was not observed/);
+});
+
 test('cold factory close distinguishes a confirmed ended process from an absent identity',async()=>{
   /** @type {'alive'|'unknown'|'ended'|'absent'} */
   let state='alive';
@@ -700,6 +711,25 @@ test('fresh paginated root skips unavailable turn pagination while still discove
   assert.equal(duringTurn.factsComplete, true);
   assert.equal(fake.messages.some((message) => message.method === 'thread/turns/list' && params(message).threadId === rootId), true);
   await session.stop();
+});
+
+test('loaded discovery keeps a descendant listed before its unindexed parent',async()=>{
+  const fake=harness(message=>message.method==='thread/list'?{data:[],nextCursor:null}:undefined);
+  fake.nativeThreads.set('grandchild',thread('grandchild','child','grandchild-turn'));
+  fake.nativeThreads.set('child',thread('child',rootId,'child-turn'));
+  fake.nativeFiles.set('/native/child.jsonl',records('child',{parent:rootId,turnId:'child-turn'}));
+  fake.nativeFiles.set('/native/grandchild.jsonl',records('grandchild',{parent:'child',turnId:'grandchild-turn'}));
+  const session=await fake.open();
+  await session.start({instructions:'rules'});
+  const found=await session.snapshot({rootThreadId:rootId});
+  assert.deepEqual(found.members.map(member=>member.threadId),['child','grandchild',rootId]);
+});
+
+test('a resume whose record path changed unsubscribes the thread it just loaded',async()=>{
+  const fake=harness();
+  const session=await fake.open();
+  await assert.rejects(session.resume({threadId:rootId,expectedSessionPath:'/native/other.jsonl',instructions:'rules'}),/record path changed/);
+  assert.deepEqual(fake.messages.filter(message=>message.method==='thread/unsubscribe').map(message=>params(message).threadId),[rootId]);
 });
 
 test('resume targets the original Thread.id and never returns an earlier final response for a new turn', async t => {

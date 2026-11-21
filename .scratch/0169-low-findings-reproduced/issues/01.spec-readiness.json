@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0169:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "源码仓库常设例外. 此单 issue effort 修正已定义行为并机械清理实现, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0169-low-findings-reproduced/issues/01-low-findings-reproduced.md",
+    "sha256": "243521dc51e5a771a6458719b777652b71c184526f9b021f742a70cd7ef16227"
+  },
+  "result": "not-applicable"
+}

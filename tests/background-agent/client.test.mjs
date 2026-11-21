@@ -312,3 +312,14 @@ test('maintenance on a control port held by another service is unknown and never
   assert.equal(result.status,'unknown');
   assert.deepEqual(requests,[]);
 });
+
+test('a manager that cannot be spawned is reported as a launch failure',async t=>{
+  const runtimeDirectory=await createTemporaryDirectory(t,'arw-background-agent-spawn-');
+  const execPath=process.execPath;
+  process.execPath=join(runtimeDirectory,'missing-node');
+  const client=createBackgroundAgentClient({runtimeDirectory,port:await closedPort(),maintenancePort:await closedPort(),messageTimeoutMs:30000,entryPoint:'/unused-entry.mjs'});
+  try {
+    await assert.rejects(client.execute({operation:'list_agents',input:{}}),/missing-node/);
+    assert.deepEqual(await stderrFiles(runtimeDirectory),[]);
+  }finally{process.execPath=execPath;await client.close();}
+});

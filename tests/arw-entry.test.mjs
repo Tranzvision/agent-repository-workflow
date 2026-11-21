@@ -265,3 +265,8 @@ test('commands without configuration execute when config.json is missing', async
     assert.equal(missingConfig.result, 1);
     assert.match(missingConfig.events[0].message, /Configuration file not found: config.json/u);
 });
+
+test('an empty option value is a usage error instead of an absent input', () => {
+    assert.throws(() => parseCommand(['spec-readiness', 'prepare', '--issue', 'issue:0001:01', '--input', '']), /Missing value for --input/u);
+    assert.throws(() => parseCommand(['spec-readiness', 'verify', '--issue', '']), /Missing value for --issue/u);
+});
