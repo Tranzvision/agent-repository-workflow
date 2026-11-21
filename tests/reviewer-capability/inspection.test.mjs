@@ -108,6 +108,21 @@ test('agy inspection flags paths, tools, and returned answer keys', async t => {
     ]);
 });
 
+test('agy write tools are flagged for an external path that does not exist, a read of it is not', async t => {
+    const {instance, fixtures, root} = await setup(t, []);
+    const missing = join(root, 'run', 'two', 'new.txt');
+    const sessionPath = join(instance, 'agy.jsonl');
+    await writeFile(join(instance, 'agent.json'), JSON.stringify({result: {threadId: THREAD, snapshot: {members: [{sessionPath}]}}}));
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(1, agy.tool('write_to_file', {TargetFile: missing, CodeContent: 'x'})),
+        agy.step(2, agy.tool('view_file', {AbsolutePath: missing})),
+        agy.done,
+    ]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.position, flag.kind, flag.match]), [[2, 'path', missing]]);
+});
+
 test('agy inspection checks the known arguments of an interrupted tool call', async t => {
     const {instance, fixtures, root, sessionPath} = await setup(t, [], {completion: null});
     const target = join(root, 'run', 'two');
