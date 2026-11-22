@@ -416,3 +416,24 @@ test('Document Terms excludes negated files inside excluded directories for work
         assert.equal(result.contexts[0].summary.documents, 2);
     }
 });
+
+test('lone CR characters advance the reported line', async () => {
+    const {result} = await checkContents([['CONTEXT.md', '# Context\r\r## Language\r\r### Core\r']]);
+    const lines = result.contexts.flatMap(context => context.diagnostics).filter(diagnostic => diagnostic.code === 'cr').map(diagnostic => diagnostic.line);
+    assert.deepEqual(lines, [1, 2, 3, 4, 5]);
+});
+
+test('an indented ATX H2 before the local terms section makes it invalid', async () => {
+    const {result} = await checkContents([
+        ['CONTEXT.md', '# Context\n\n## Language\n'],
+        ['README.md', '# Reader\n\n  ## Introduction\n\n## Terms introduced in this document\n\n- **Local Name**: Local definition.\n'],
+    ]);
+    assert.deepEqual(result.contexts[0].diagnostics, [{code: 'local-terms-section-invalid', path: 'README.md'}]);
+});
+
+test('indented ATX headings end a global term definition and open the Contexts section', async () => {
+    const term = await checkContents([['CONTEXT.md', '# Context\n\n## Language\n\n**Amber Compass**:\n   ### Core\n']]);
+    assert.deepEqual(term.result.contexts[0].diagnostics.map(({code}) => code), ['global-term-entry-invalid']);
+    const map = await checkContents([['CONTEXT-MAP.md', '# Map\n\n  ## Contexts\n\n- [A](a/CONTEXT.md)\n'], ['a/CONTEXT.md', validContext()]]);
+    assert.deepEqual(map.result.diagnostics, []);
+});

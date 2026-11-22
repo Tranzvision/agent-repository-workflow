@@ -128,6 +128,11 @@ test('Installation Payload rejects source-only and config seed payload declarati
             runtimeFiles: ['package.json'],
         },
         {
+            configSeed: 'seed.json',
+            name: 'config seed other than config.install.json',
+            runtimeFiles: ['arw.mjs'],
+        },
+        {
             configSeed: 'arw.mjs',
             name: 'config seed overlap',
             runtimeFiles: ['arw.mjs'],

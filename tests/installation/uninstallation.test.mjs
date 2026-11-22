@@ -1027,3 +1027,81 @@ test('help lists each accepted option without performing any installation operat
     }), 2);
     assert.equal(errors.join('\n'), 'Unknown or repeated option: --help.\nRun node uninstall.mjs --help for usage.');
 });
+
+test('Uninstaller rewrites the Windows PATH with the value kind observed now', async t => {
+    const home = await createHome(t);
+    const installationDirectory = await writeInstallation(home, {
+        pathOwnership: [{createdValue: false, entry: join(home, '.agent-repository-workflow'), kind: 'windows-user-path', valueKind: 'String'}],
+    });
+    /** @type {{kind: string, value: string}[]} */
+    const writes = [];
+    const result = await runUninstaller(['--non-interactive'], {
+        environment: {USERPROFILE: home},
+        platform: 'win32',
+        stderr: message => assert.fail(message),
+        stdout: () => {},
+        windowsPath: {
+            read: async () => ({exists: true, kind: 'ExpandString', value: `${installationDirectory};C:\\Tools`}),
+            write: async update => {
+                writes.push(update);
+            },
+            notify: async () => true,
+        },
+    });
+    assert.equal(result, 0);
+    assert.deepEqual(writes, [{kind: 'ExpandString', value: 'C:\\Tools'}]);
+});
+
+test('uninstallation reports partial when only empty directories were removed before a failure', async t => {
+    const home = await createHome(t);
+    const installationDirectory = await writeInstallation(home, {managedFiles: ['lib/a.mjs']});
+    await rm(join(installationDirectory, 'lib', 'a.mjs'));
+    const result = await uninstallRelease({removeConfig: false, removeInstallation: true, stopBackgroundAgents: false}, {
+        createFilesystem: async input => {
+            const created = await createScopedFilesystem(input);
+            if (created.status !== 'succeeded') return created;
+            return {
+                ...created,
+                scopedFilesystem: {
+                    ...created.scopedFilesystem,
+                    async list() {
+                        return {diagnostics: [{code: 'injected', message: 'Injected failure.'}], stage: 'enumerate', status: 'failed'};
+                    },
+                },
+            };
+        },
+        environment: {HOME: home},
+        platform: 'linux',
+    });
+    assert.equal(result.status, 'partial');
+    await assert.rejects(readdir(join(installationDirectory, 'lib')), {code: 'ENOENT'});
+});
+
+test('a failed message database removal still reports the configuration as removed', async t => {
+    const home = await createHome(t);
+    const installationDirectory = await writeInstallation(home, {managedFiles: ['arw.mjs']});
+    const {paths} = await writeMessageState(installationDirectory);
+    const databaseName = Object.values(paths)[0].split('/').at(-1) ?? '';
+    const result = await uninstallRelease({removeConfig: true, removeInstallation: true, stopBackgroundAgents: false}, {
+        createFilesystem: createFilesystemWithRemove(async (request, remove) => {
+            if (request.path.endsWith(databaseName)) throw new Error('simulated database removal failure');
+            return remove();
+        }),
+        environment: {HOME: home},
+        platform: 'linux',
+    });
+    assert.equal(result.status, 'partial');
+    assert.equal(result.summary?.configurationResult, 'removed');
+});
+
+test('a symbolic link at config.json is preserved when configuration removal is not requested', async t => {
+    const home = await createHome(t);
+    const installationDirectory = await writeInstallation(home, {managedFiles: ['arw.mjs']});
+    await rm(join(installationDirectory, 'config.json'));
+    await writeFile(join(home, 'elsewhere.json'), '{}\n');
+    await symlink(join(home, 'elsewhere.json'), join(installationDirectory, 'config.json'));
+    const {messages, result} = await runNonInteractive(home, ['--remove-config', 'false']);
+    assert.equal(result, 0, messages.map(event => event.message).join('\n'));
+    assert.equal(await readFile(join(home, 'elsewhere.json'), 'utf8'), '{}\n');
+    assert.ok((await readdir(installationDirectory)).includes('config.json'));
+});

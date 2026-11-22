@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
     checkShape,
+    completeConfigurationBytes,
+    removeConfigurationMembers,
     deleteJsonPath,
     digestJson,
     jsonSemanticallyEqual,
@@ -90,4 +92,10 @@ test('checkShape reports the first missing key, wrong type, or failed predicate'
     assert.equal(checkShape({count: 0, nested: {name: 'a'}, tag: 'x'}, shape), 'value.count must be a positive-integer.');
     assert.equal(checkShape({count: 1, nested: {name: 2}, tag: 'x'}, shape), 'value.nested.name must be a string.');
     assert.equal(checkShape({count: 1, nested: {name: 'a'}, tag: 'y'}, shape), 'value.tag is invalid.');
+});
+
+test('configuration editing rejects duplicate member names instead of editing one occurrence', () => {
+    const sourceBytes = Buffer.from('{"languageChecks":1,"configVersion":2,"languageChecks":2}');
+    assert.throws(() => removeConfigurationMembers({sourceBytes, keys: ['languageChecks']}), /duplicate/i);
+    assert.throws(() => completeConfigurationBytes({sourceBytes, defaults: {}}), /duplicate/i);
 });

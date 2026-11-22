@@ -146,3 +146,13 @@ test('verifies managed files and only the managed span of baseline-major documen
     assert.equal(drifted.satisfied, false);
     assert.deepEqual(drifted.diagnostics, [{code: 'managed-content-drift', path: 'managed.md'}]);
 });
+
+test('rejects Code Map roots that are not canonical Repository-relative paths', () => {
+    for (const root of ['src/', 'C:tmp', 'a\0b', './src', 'a//b']) {
+        assert.throws(
+            () => createWorkflowLock({managedTargets: [], profile: {...profile, codeMaps: {...profile.codeMaps, roots: [root]}}, repositoryOwnedSeeds: []}),
+            /unsupported Repository-relative root/,
+            JSON.stringify(root),
+        );
+    }
+});

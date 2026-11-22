@@ -436,6 +436,18 @@ test('installation migrates Codex-era provider settings once and never changes t
     assert.deepEqual(JSON.parse(await readFile(configPath, 'utf8')).backgroundAgent.providers, {openai: {maxInstances: 7}, anthropic: {maxInstances: 4}, deepseek: {maxInstances: 2}});
 });
 
+test('a failed installation does not claim that provider settings were migrated', async t => {
+    const home = await createHome(t);
+    const codexHome = join(home, '.codex');
+    await mkdir(codexHome);
+    await writeFile(join(codexHome, 'models.custom.json'), '{"models":[],"providers":{"deepseek":{"maxInstances":2}}}\n');
+    const attempted = await runNonInteractive(home, {
+        acquireMaintenance: async () => ({status: 'busy', reason: 'active background work', stoppedAgents: []}),
+    });
+    assert.equal(attempted.result, 1);
+    assert.equal(attempted.messages.some(event => event.message.includes('Migrated provider settings')), false);
+});
+
 test('installation without a Codex directory creates none and installs the provider defaults', async t => {
     const home = await createHome(t);
 
@@ -1286,6 +1298,40 @@ test('Linux profile registration repairs owned blocks and rejects malformed mark
         assert.deepEqual(await readdir(home), ['.profile']);
         assert.match(rejected.messages.map(event => event.message).join('\n'), /malformed agent-repository-workflow marker/i);
     }
+});
+
+test('reinstall after the user deleted the Windows PATH value records that this install created it', async t => {
+    const windowsHome = await createHome(t);
+    /** @type {string | null} */
+    let userPath = 'C:\\Tools';
+    /** @type {WindowsPathAdapter} */
+    const windowsPath = {
+        read: async () => userPath === null ? {exists: false, kind: null, value: ''} : {exists: true, kind: 'ExpandString', value: userPath},
+        write: async update => {
+            userPath = update.value;
+        },
+        notify: async () => true,
+    };
+    /** @type {string[]} */
+    const messages = [];
+    const install = () => runInstaller(
+        [...RELEASE_ARGUMENTS, '--non-interactive', '--reinitialize-config', 'false', '--register-path', 'true'],
+        {
+            environment: {USERPROFILE: windowsHome},
+            loadInstallationPayload: loadTestInstallationPayload,
+            platform: 'win32',
+            release: TEST_RELEASE_SOURCE,
+            sourceDirectory: SOURCE_DIRECTORY,
+            stderr: message => assert.fail(message),
+            stdout: message => messages.push(message),
+            windowsPath,
+        },
+    );
+    assert.equal(await install(), 0);
+    userPath = null;
+    assert.equal(await install(), 0);
+    const manifest = JSON.parse(await readFile(join(windowsHome, '.agent-repository-workflow', 'manifest.json'), 'utf8'));
+    assert.equal(manifest.pathOwnership[0].createdValue, true);
 });
 
 test('PowerShell and Git Bash share one Windows installation and current-user PATH', async t => {

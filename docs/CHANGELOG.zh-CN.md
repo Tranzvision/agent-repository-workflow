@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- 配置编辑会拒绝含重复成员名的 JSON 对象, workflow lock 中的 Code Map root 必须是规范的仓库相对路径 (不带尾部斜杠, 盘符前缀或 NUL). Document Terms 把单独的 CR 算作换行, 并识别缩进至多三个空格的标题.
+- 安装器: 用户删除 Windows PATH 值后重装会记录新的归属, 提供方迁移提示只在配置写入后出现, `release-manifest.json` 的 `configSeed` 必须是 `config.install.json`. 卸载器: 按卸载时观察到的值类型恢复 PATH, 只删除了空目录时报告 `partial`, 即使之后删除数据库失败也报告配置已移除, 不要求移除配置时容忍作为链接的 `config.json`.
 - 空的选项值会被拒绝, 读不出的 Spec Readiness `prepare` 输入会报告解析错误, 初始化后的 handoff 会转义清单文本.
 - 配置会拒绝非对象的 `background.providers`. issue 解析器会拒绝格式错误的 `None` 阻塞行, 以及 Wayfinder issue 中的 External dependency. Commit Audit 不再把 Application Source Issue 当作实施 issue, 并拒绝编号相同的第二个 effort 目录, 忽略符号链接的规则文件.
 - 后台 Agent: 启动失败会立即报告 spawn 错误, `followup_task` 会校验 settings, 批量消息失败时把其中每条消息都标为 unknown, 一个提供方租约归还失败不再阻止其余租约归还, 原生卸载只用一个期限, 已加载线程的发现能找到列在父线程之前的成员, resume 的记录路径变化时会取消订阅已加载的线程.
