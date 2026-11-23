@@ -132,6 +132,7 @@
     "lib/reviewer-capability/bundle.mjs",
     "lib/reviewer-capability/command.mjs",
     "lib/reviewer-capability/evidence.mjs",
+    "lib/reviewer-capability/format-judge.mjs",
     "lib/reviewer-capability/format-penalty.mjs",
     "lib/reviewer-capability/operations.mjs",
     "lib/reviewer-capability/pool.mjs",
