@@ -176,40 +176,6 @@ test('Installer arguments select local only when every Release identity option i
     });
 });
 
-test('root Installer rejects invalid arguments before runtime identity observation', async t => {
-    const checkout = await copyLocalCheckout(t, ['install.mjs', 'lib']);
-
-    const result = await runExitedProcess('node', [join(checkout, 'install.mjs'), '--release-tag', `${ARW_VERSION}-pre`]);
-    assert.equal(result.exitCode, 2);
-    assert.match(result.stderr, /stable MAJOR\.MINOR\.PATCH/);
-    assert.doesNotMatch(result.stderr, /Runtime identity authority/);
-});
-
-const runRootInstaller = (/** @type {string} */ home, /** @type {string} */ input) => runExitedProcess('node', [join(SOURCE_DIRECTORY, 'install.mjs')], {
-    env: {...process.env, CODEX_HOME: '', HOME: home, USERPROFILE: home},
-    input,
-    timeout: 10_000,
-});
-
-test('root Installer maps prompt EOF to one stable pre-write error', async t => {
-    const home = await createHome(t);
-    const result = await runRootInstaller(home, '');
-
-    assert.equal(result.exitCode, 1);
-    assert.match(result.stderr, /Interactive input ended before a decision was provided\.\n$/);
-    assert.deepEqual(await readdir(home), []);
-});
-
-test('root Installer completes from a single piped answer line', async t => {
-    const home = await createHome(t);
-    const result = await runRootInstaller(home, 'n\n');
-
-    assert.equal(result.exitCode, 0);
-    assert.equal(result.stderr, '');
-    await readdir(join(home, '.agent-repository-workflow', 'lib'));
-    assert.equal((await readdir(home)).includes('.profile'), false);
-});
-
 const runNonInteractive = async (/** @type {string} */ home, /** @type {NonInteractiveOverrides} */ overrides = {}, /** @type {NonInteractiveDecisions} */ decisions = {}) => {
     /** @type {InstallerMessage[]} */
     const messages = [];

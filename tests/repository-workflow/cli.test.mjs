@@ -411,18 +411,19 @@ test('workflow remove lists directories it could not remove on stdout after all 
 
 
 test('interactive workflow init consumes a complete piped answer sequence on both platforms', async t => {
-    for (const platform of ['codex', 'claude-code']) {
+    // One real process per platform; the two are independent, so they run concurrently.
+    await Promise.all(['codex', 'claude-code'].map(async platform => {
         const root = await createGitRepository(t, {initialCommit: true, prefix: 'arw-piped-workflow-'});
         const result = await runProcess(process.execPath, [join(import.meta.dirname, '../../arw.mjs'), 'workflow', 'init'], {
             cwd: root, input: `${platform}\nsingle-context\n\nyes\n`, timeout: 10_000,
         });
         assert.equal(result.status, 'exited');
-        if (result.status !== 'exited') continue;
+        if (result.status !== 'exited') return;
         assert.equal(result.exitCode, 0, result.stderr + result.stdout);
         assert.deepEqual(JSON.parse(await readFile(join(root, 'arw-lock.json'), 'utf8')).profile.platforms, [platform]);
         assert.match(result.stdout, /Select platforms/u);
         assert.match(result.stdout, /Select domain-documentation layout/u);
-    }
+    }));
 });
 
 test('workflow CLI preserves and escapes platform remediation for both platforms', async t => {

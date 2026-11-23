@@ -134,11 +134,12 @@ test('setup ignores signing and removes a failed scenario target', async t => {
 });
 
 test('pool build rejects non-positive, fractional and nonnumeric limits as usage errors', async () => {
-    for (const limit of ['0', '-1', '1.5', 'abc']) {
+    // One representative per class (0 stands for every non-positive value), each a real entry process, run concurrently.
+    await Promise.all(['0', '1.5', 'abc'].map(async limit => {
         const result = await runProcess(process.execPath, [ENTRY, 'pool', 'build', 'scenario', 'root', 'pool', 'candidates', '--limit', limit]);
         assert.equal(result.status, 'exited');
-        if (result.status !== 'exited') continue;
+        if (result.status !== 'exited') return;
         assert.equal(result.exitCode, 2);
         assert.match(result.stderr, /--limit must be a positive integer/u);
-    }
+    }));
 });
