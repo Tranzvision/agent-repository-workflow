@@ -26,6 +26,11 @@ test('setup stages the candidate over the base commit and returns the reviewer i
     const input = /** @type {any} */ (result).input;
     assert.deepEqual([input.role, input.cwd, await readFile(input.reportPath, 'utf8')], ['code-standards-reviewer', target, '']);
     assert.match(input.handoff, /Only the staged comparison\.$/u);
+    const [base, tree] = (await Promise.all([runGit(target, ['rev-parse', 'HEAD']), runGit(target, ['write-tree'])])).map(result => result.stdout.trim());
+    assert.ok(input.handoff.includes(`git diff ${base} ${tree}`));
+    assert.doesNotMatch(input.handoff, /--cached/u);
+    assert.match(input.handoff, /Verification facts: none.*estimated net added lines: 0\./u);
+    assert.ok(input.handoff.includes(`git ls-tree -r --name-only ${tree}`));
     assert.equal(input.confineReads, process.platform === 'linux');
     assert.equal((await runGit(target, ['diff', '--cached', '--name-only'])).stdout.trim(), 'a.txt');
     assert.equal((await runGit(target, ['log', '--format=%s'])).stdout.trim(), 'scenario base');
