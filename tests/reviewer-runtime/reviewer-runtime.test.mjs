@@ -1266,6 +1266,25 @@ test('a recoverable bound report read fault receives concrete feedback and resum
     } finally {await runtime.close();}
 });
 
+test('a rejected final reply is quoted in the continuation with the only accepted forms', async () => {
+    const fixture = createReviewerRuntimeFixture();
+    const nativeSessions = {open: async (/** @type {Parameters<typeof fixture.native.nativeSessions.open>[0]} */ input) => {
+        const session = await fixture.native.nativeSessions.open(input);
+        return Object.assign(session, {continueTask: programContinuation(session, () => 'rejected-final')});
+    }};
+    const runtime = createReviewerRuntime({...options(fixture), nativeSessions});
+    try {
+        const receipt = succeeded(await runtime.execute({operation: 'spawn_agent', input: reviewerHandoff}));
+        const threadId = /** @type {string} */ (succeeded(await runtime.inspect({runId: receipt.runId})).threadId);
+        await fixture.writeReport('The complete Reviewer-written report.');
+        fixture.native.finish(threadId, 'Done: the review is ready.');
+        const continued = succeeded(await runtime.inspect({runId: receipt.runId}));
+        const feedback = fixture.native.calls.find(call => call.operation === 'startTurn' && call.turnId === continued.turnId)?.text ?? '';
+        assert.ok(feedback.includes('"Done: the review is ready."'));
+        assert.ok(feedback.includes('{"status":"ready"}') && feedback.includes('"status":"incomplete"'));
+    } finally {await runtime.close();}
+});
+
 test('a follow-up or new thread over a delivered review is not pre-empted by a continuation for its emptied report', async () => {
     const fixture = createReviewerRuntimeFixture();
     let continuations = 0;

@@ -167,3 +167,34 @@ for (const [unit, entry] of Object.entries(REGISTRY)) {
         });
     }
 }
+
+const SR_LABELS = ['- `SPEC-READINESS-INPUTS`, gap: a.', '- SPEC-READINESS-INPUTS, gap \u2014 a.', '- SPEC-READINESS-INPUTS (gap): a.', '- [SPEC-READINESS-INPUTS, gap] a.'];
+
+test('a Spec Readiness item label written one way only is repaired to the canonical form and counted, an ambiguous label is not', async t => {
+    const root = await createTemporaryDirectory(t, 'arw-format-');
+    const original = await write(join(root, 'original.txt'), `${SR_LABELS.join('\n')}\n- SPEC-READINESS-INPUTS, uncertain: kept.\n`);
+    const repaired = await repair({out: join(root, 'repaired.txt'), report: original, scenario: SPEC_READINESS});
+    assert.deepEqual(repaired.changes, {'item-label': 4});
+    assert.equal(await readFile(join(root, 'repaired.txt'), 'utf8'), `${'- SPEC-READINESS-INPUTS, gap: a.\n'.repeat(4)}- SPEC-READINESS-INPUTS, uncertain: kept.\n`);
+    const agent = await write(join(root, 'agent.json'), JSON.stringify({status: 'succeeded', result: {notifications: []}}));
+    const scored = await score({agent, noRepair: false, repair: repaired.record, report: join(root, 'repaired.txt'), scenario: SPEC_READINESS});
+    assert.deepEqual([scored.status, scored.scores.modelFailure, scored.scores.rRepairable], ['succeeded', undefined, 4]);
+    // No result word, no check name, or the result without a colon-free separator has more than one meaning.
+    const ambiguous = await write(join(root, 'ambiguous.txt'), '- [SPEC-READINESS-INPUTS] a.\n- SPEC-READINESS-INPUTS: a.\n- `SPEC-READINESS-INPUTS` a.\n');
+    assert.deepEqual((await repair({out: join(root, 'ambiguous-out.txt'), report: ambiguous, scenario: SPEC_READINESS})).changes, {});
+});
+
+test('a report that says only `No findings.` is repaired to the exact `No problems.` and counted once', async t => {
+    const {directory, root} = await demo(t);
+    const original = await write(join(root, 'original.md'), 'No findings.\n');
+    const repaired = await repair({out: join(root, 'repaired.md'), report: original, scenario: directory});
+    assert.deepEqual(repaired.changes, {'no-findings-wording': 1});
+    assert.equal(await readFile(join(root, 'repaired.md'), 'utf8'), 'No problems.\n');
+});
+
+test('a wrapped final status counts as a format error of the final status', async t => {
+    const {root, run} = await demo(t, {});
+    await writeFile(join(root, 'agent.json'), JSON.stringify({status: 'succeeded', result: {completion: {status: 'ready', reportPath: 'r.md', formatErrors: ['wrapped-final-status']}, notifications: []}}));
+    const result = await run({report: await write(join(root, 'report.md'), 'No problems.\n')});
+    assert.deepEqual([result.scores.finalStatusFormatErrors, result.scores.r], [1, 1]);
+});
