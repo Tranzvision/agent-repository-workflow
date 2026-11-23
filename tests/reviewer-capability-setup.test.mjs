@@ -37,6 +37,7 @@ test('setup stages the candidate over the base commit and returns the reviewer i
     assert.match(await readFile(join(target, 'AGENTS.md'), 'utf8'), /^# Agent Repository Workflow$/mu);
 });
 
+// Builds a real Git scenario repository, which exceeds 100 ms.
 test('setup prepares the Spec Readiness Request', async t => {
     const target = join(await createTemporaryDirectory(t, 'arw-capability-setup-'), 'instance');
     const result = await setupScenario({scenario: join(FIXTURES, 'spec-readiness-reviewer', 'spec-readiness'), target});
@@ -44,6 +45,7 @@ test('setup prepares the Spec Readiness Request', async t => {
     assert.match(/** @type {any} */ (result).input.reportPath, /draft\.txt$/u);
 });
 
+// Builds three real Git scenario repositories (init, add, commit each), which exceeds 100 ms.
 test('the inlined role instructions hold no relative path that would leave the instance', async t => {
     const target = join(await createTemporaryDirectory(t, 'arw-capability-setup-'), 'instance');
     for (const [role, scenario] of [['spec-readiness-reviewer', 'spec-readiness'], ['requirements-reviewer', 'code-spec'], ['code-standards-reviewer', 'code-standards']]) {
@@ -113,6 +115,7 @@ test('the entry parses the repeatable options and the cell lists', async () => {
 });
 
 
+// Builds a real Git scenario repository, which exceeds 100 ms.
 test('setup ignores signing and removes a failed scenario target', async t => {
     const root = await createTemporaryDirectory(t, 'arw-capability-settings-');
     const scenario = join(root, 'code-standards-reviewer', 'demo');

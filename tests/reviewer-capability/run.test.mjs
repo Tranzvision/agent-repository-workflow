@@ -10,8 +10,10 @@ import {runExitedProcess} from '../helpers/process.mjs';
 const CHECKOUT = join(import.meta.dirname, '..', '..');
 const CLI = join(CHECKOUT, 'scripts', 'reviewer-capability.mjs');
 const SCENARIO = join(CHECKOUT, 'tests', 'fixtures', 'reviewer-capability', 'spec-readiness-reviewer', 'spec-readiness');
+const RUN_MODULE = new URL('../../lib/reviewer-capability-run.mjs', import.meta.url).href;
 const SETTINGS = {model: 'fake-model', modelProvider: 'openai', reasoningEffort: 'high'};
 
+// Every case starts the fake machine entry as a real child process (the product code spawns it), so each takes over 100 ms.
 /** @param {import('node:test').TestContext} t */
 const fixture = async t => {
     const home = await createTemporaryDirectory(t, 'arw-capability-run-');
@@ -66,13 +68,32 @@ for await (const line of createInterface({input: process.stdin})) {
 }
 `);
     const target = join(home, 'instance');
+    const env = (/** @type {string} */ mode) => ({HOME: home, USERPROFILE: home, TMPDIR: home, FAKE_MODE: mode, FAKE_KEY: join(SCENARIO, 'expected.json')});
+    // The real CLI process: one case proves the entry point, exit code and stdout contract.
     const run = async (mode = '', args = ['run', SCENARIO, target, '--settings', JSON.stringify(SETTINGS)], extraEnv = {}) => {
-        const result = await runExitedProcess(process.execPath, [CLI, ...args], {cwd: home, env: {...process.env, HOME: home, USERPROFILE: home,
-            TMPDIR: home, ...extraEnv, FAKE_MODE: mode, FAKE_KEY: join(SCENARIO, 'expected.json')}});
+        const result = await runExitedProcess(process.execPath, [CLI, ...args], {cwd: home, env: {...process.env, ...env(mode), ...extraEnv}});
         return {code: result.exitCode, stdout: result.stdout, stderr: result.stderr};
     };
+    // The same run through the entry's function in this process, with the CLI's exit-code and output mapping. Test cases in a file run one
+    // at a time, so the process-wide environment (HOME, the fake machine entry's mode) is set and restored around each call.
+    const runHere = async (mode = '', timeScale = '') => {
+        const saved = {...process.env};
+        Object.assign(process.env, env(mode));
+        if (timeScale !== '') process.env.REVIEWER_CAPABILITY_TIME_SCALE = timeScale;
+        let stderr = '';
+        const write = t.mock.method(process.stderr, 'write', (/** @type {string} */ text) => { stderr += text; return true; });
+        try {
+            const {runInstance} = await import(timeScale === '' ? RUN_MODULE : `${RUN_MODULE}?scale=${timeScale}`);
+            const {diagnostics = [], ...payload} = await runInstance({scenario: SCENARIO, target, settings: SETTINGS});
+            return {code: payload.status === 'succeeded' ? 0 : 1, stdout: JSON.stringify(payload), stderr: stderr + diagnostics.join('\n')};
+        } finally {
+            write.mock.restore();
+            for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
+            Object.assign(process.env, saved);
+        }
+    };
     const requests = async () => (await readFile(join(home, 'requests.jsonl'), 'utf8')).trim().split('\n').map(line => JSON.parse(line));
-    return {home, installed, target, run, requests};
+    return {home, installed, target, run, runHere, requests};
 };
 
 test('run uses the installed machine entry, resumes a repeated pause once, scores, and records checkout provenance outside its cwd', async t => {
@@ -108,8 +129,8 @@ test('run uses the installed machine entry, resumes a repeated pause once, score
 
 // Runs a scaled-down 3600 s limit (about 180 ms), so this case exceeds 100 ms.
 test('run waits for the runtime to stop an idle Reviewer that the timeout interrupt cannot reach', async t => {
-    const {target, run, requests} = await fixture(t);
-    const output = await run('stuck', undefined, {REVIEWER_CAPABILITY_TIME_SCALE: '0.00005'});
+    const {target, runHere, requests} = await fixture(t);
+    const output = await runHere('stuck', '0.00005');
     assert.equal(output.code, 0, JSON.stringify(output));
     const {record} = JSON.parse(output.stdout);
     assert.deepEqual(record.validity, {valid: false, status: 'void', notes: 'timeout: turn-mismatch'});
@@ -122,7 +143,7 @@ test('run waits for the runtime to stop an idle Reviewer that the timeout interr
 });
 
 test('run voids an exited environment without completion and leaves unknown measurements null', async t => {
-    const {target, run} = await fixture(t);
+    const {target, runHere: run} = await fixture(t);
     const output = await run('no-completion');
     assert.equal(output.code, 0, JSON.stringify(output));
     const {record} = JSON.parse(output.stdout);
@@ -135,7 +156,7 @@ test('run voids an exited environment without completion and leaves unknown meas
 });
 
 test('run voids forbidden native-record reads without publishing paths or answer snippets', async t => {
-    const {target, home, run} = await fixture(t);
+    const {target, home, runHere: run} = await fixture(t);
     const output = await run('flags');
     assert.equal(output.code, 0, JSON.stringify(output));
     const {record} = JSON.parse(output.stdout);
@@ -148,7 +169,7 @@ test('run voids forbidden native-record reads without publishing paths or answer
 });
 
 test('run falls back to the original malformed readiness report for model-failure scoring', async t => {
-    const {target, run, requests} = await fixture(t);
+    const {target, runHere: run, requests} = await fixture(t);
     const output = await run('failure');
     assert.equal(output.code, 0, JSON.stringify(output));
     const {record} = JSON.parse(output.stdout);
@@ -164,7 +185,7 @@ test('run falls back to the original malformed readiness report for model-failur
 });
 
 test('run reports a rejected spawn with its original error and writes no run record', async t => {
-    const {target, run, requests} = await fixture(t);
+    const {target, runHere: run, requests} = await fixture(t);
     const output = await run('reject');
     assert.equal(output.code, 1);
     assert.deepEqual(JSON.parse(output.stdout), {status: 'failed', stage: 'agent-control'});
@@ -174,20 +195,19 @@ test('run reports a rejected spawn with its original error and writes no run rec
 });
 
 test('run rejects existing targets and absent installations before spawning and rejects non-object settings as usage errors', async t => {
-    const {home, installed, target, run} = await fixture(t);
+    const {home, installed, target, run, runHere} = await fixture(t);
     await mkdir(target);
-    let output = await run();
+    let output = await runHere();
     assert.equal(output.code, 1);
     assert.equal(JSON.parse(output.stdout).status, 'blocked');
     await assert.rejects(readFile(join(home, 'requests.jsonl')), {code: 'ENOENT'});
     await rm(target, {recursive: true});
     await rm(installed, {recursive: true});
-    output = await run();
+    output = await runHere();
     assert.equal(output.code, 1);
     assert.equal(JSON.parse(output.stdout).status, 'blocked');
     await assert.rejects(readFile(target), {code: 'ENOENT'});
-    for (const settings of ['[]', 'null', '1', 'invalid']) {
-        output = await run('', ['run', SCENARIO, target, '--settings', settings]);
-        assert.equal(output.code, 2);
-    }
+    // Usage errors are the entry script's own check, so these stay real CLI processes (run side by side).
+    const usage = await Promise.all(['[]', 'null', '1', 'invalid'].map(settings => run('', ['run', SCENARIO, target, '--settings', settings])));
+    assert.deepEqual(usage.map(result => result.code), [2, 2, 2, 2]);
 });
