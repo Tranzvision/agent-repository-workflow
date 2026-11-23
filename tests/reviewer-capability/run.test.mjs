@@ -26,6 +26,8 @@ const sessionPath = process.env.HOME + '/native.jsonl';
 const notice = {type: 'message', source: 'provider-program', messageId: 'pause-1', text: 'The Reviewer runtime paused this same task after 1 turns'};
 let spawned;
 let waits = 0;
+let interrupted = false;
+let listsAfterInterrupt = 0;
 for await (const line of createInterface({input: process.stdin})) {
     const request = JSON.parse(line);
     appendFileSync(log, line + '\\n');
@@ -46,7 +48,14 @@ for await (const line of createInterface({input: process.stdin})) {
         writeFileSync(sessionPath, records.map(row => JSON.stringify(row)).join('\\n') + '\\n');
     }
     if (operation === 'wait_agent') waits++;
-    const done = waits >= 3;
+    if (operation === 'interrupt_agent') {
+        interrupted = true;
+        console.log(JSON.stringify({id, ok: false, error: {code: 'turn-mismatch', message: 'The observed active Reviewer turn has changed.'}}));
+        continue;
+    }
+    if (interrupted && operation === 'list_agents') listsAfterInterrupt++;
+    const stuck = process.env.FAKE_MODE === 'stuck';
+    const done = stuck ? listsAfterInterrupt >= 2 : waits >= 3;
     const completion = done && process.env.FAKE_MODE !== 'no-completion' ? {status: process.env.FAKE_MODE === 'failure' ? 'incomplete' : 'ready', reportPath: spawned.reportPath} : null;
     const result = operation === 'spawn_agent' ? {runId: 'run-1'} : {
         runId: 'run-1', threadId: 'thread-1', turnId: 'turn-1', state: done ? 'exited' : 'running', cursor: waits,
@@ -57,9 +66,9 @@ for await (const line of createInterface({input: process.stdin})) {
 }
 `);
     const target = join(home, 'instance');
-    const run = async (mode = '', args = ['run', SCENARIO, target, '--settings', JSON.stringify(SETTINGS)]) => {
+    const run = async (mode = '', args = ['run', SCENARIO, target, '--settings', JSON.stringify(SETTINGS)], extraEnv = {}) => {
         const result = await runExitedProcess(process.execPath, [CLI, ...args], {cwd: home, env: {...process.env, HOME: home, USERPROFILE: home,
-            TMPDIR: home, FAKE_MODE: mode, FAKE_KEY: join(SCENARIO, 'expected.json')}});
+            TMPDIR: home, ...extraEnv, FAKE_MODE: mode, FAKE_KEY: join(SCENARIO, 'expected.json')}});
         return {code: result.exitCode, stdout: result.stdout, stderr: result.stderr};
     };
     const requests = async () => (await readFile(join(home, 'requests.jsonl'), 'utf8')).trim().split('\n').map(line => JSON.parse(line));
@@ -95,6 +104,21 @@ test('run uses the installed machine entry, resumes a repeated pause once, score
     for (const name of ['agent.json', 'score.json', 'candidates.json', 'run.json']) await readFile(join(target, name));
     assert.equal(JSON.parse(await readFile(join(target, 'score.json'), 'utf8')).scores.pauseCount, 1);
     assert.deepEqual(JSON.parse(await readFile(join(target, 'run.json'), 'utf8')), record);
+});
+
+// Runs a scaled-down 3600 s limit (about 180 ms), so this case exceeds 100 ms.
+test('run waits for the runtime to stop an idle Reviewer that the timeout interrupt cannot reach', async t => {
+    const {target, run, requests} = await fixture(t);
+    const output = await run('stuck', undefined, {REVIEWER_CAPABILITY_TIME_SCALE: '0.00005'});
+    assert.equal(output.code, 0, JSON.stringify(output));
+    const {record} = JSON.parse(output.stdout);
+    assert.deepEqual(record.validity, {valid: false, status: 'void', notes: 'timeout: turn-mismatch'});
+    const log = await requests();
+    const interrupt = log.findIndex(row => row.operation === 'interrupt_agent');
+    assert.ok(interrupt > 0);
+    assert.ok(log.slice(interrupt + 1).filter(row => row.operation === 'list_agents').length >= 3);
+    assert.ok(!log.some(row => row.operation === 'unload_agent'));
+    await readFile(join(target, 'agent.json'));
 });
 
 test('run voids an exited environment without completion and leaves unknown measurements null', async t => {
