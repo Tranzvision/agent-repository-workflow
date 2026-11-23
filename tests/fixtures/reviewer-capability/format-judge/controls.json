@@ -1,0 +1,146 @@
+[
+ {
+  "id": "f1",
+  "type": "format-positive",
+  "family": "format",
+  "expected": "format-accept",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| * SPEC-READINESS-INPUTS, gap: The Inputs omit the retention rule (specs/a.md:12).\n2| * SPEC-READINESS-RATIONALE, uncertain: The rationale does not say why option B was rejected (specs/a.md:30-32).",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f2",
+  "type": "format-positive",
+  "family": "format",
+  "expected": "format-accept",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| - **SPEC-READINESS-REQUIREMENTS**, gap: Requirement 3 has no acceptance check (issue.md:8).",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f3",
+  "type": "format-positive",
+  "family": "format",
+  "expected": "format-accept",
+  "item": {
+   "kind": "format",
+   "check": "finding-bullets",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| • `lib/a.mjs:10` returns before the lock is released.\n2|   The caller then deadlocks.\n3| • `lib/b.mjs:4-6` ignores the timeout.",
+   "result": "每条发现从行首的 `- ` 或 `1. ` 起, 续行缩进; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f4",
+  "type": "format-negative",
+  "family": "format",
+  "expected": "format-reject",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| - gap: The Inputs omit the retention rule (specs/a.md:12).",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f5",
+  "type": "format-negative",
+  "family": "format",
+  "expected": "format-reject",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| - SPEC-READINESS-INPUTS: The Inputs omit the retention rule (specs/a.md:12).",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f6",
+  "type": "format-negative",
+  "family": "format",
+  "expected": "format-reject",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| - [SPEC-READINESS-RATIONALE] The rationale is thin (specs/a.md:30).",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f7",
+  "type": "format-negative",
+  "family": "format",
+  "expected": "format-reject",
+  "item": {
+   "kind": "format",
+   "check": "finding-bullets",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| I read the change and found it mostly fine; nothing needs fixing in my view.",
+   "result": "每条发现从行首的 `- ` 或 `1. ` 起, 续行缩进; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ },
+ {
+  "id": "f8",
+  "type": "format-negative",
+  "family": "format",
+  "expected": "format-reject",
+  "item": {
+   "kind": "format",
+   "check": "spec-readiness-items",
+   "allowedDecisions": [
+    "format-accept",
+    "format-reject"
+   ],
+   "expectation": null,
+   "finding": "1| Review incomplete: I ran out of time before checking the Inputs.\n2| - SPEC-READINESS-INPUTS",
+   "result": "每个条目一行: `- <检查名>, gap|uncertain: <正文>`（检查名为大写字母与连字符）, 正文可有缩进续行; 整份报告也可以只是 `No problems.`",
+   "evidence": []
+  }
+ }
+]

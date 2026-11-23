@@ -9,6 +9,7 @@ import {loadScenario} from '../../lib/reviewer-capability/scenario.mjs';
 import {normalizeBodyEvidence} from '../../lib/reviewer-capability/evidence.mjs';
 import {sha256} from '../../lib/common/json.mjs';
 import {pool, repeatedId, score, summary} from '../../lib/reviewer-capability/operations.mjs';
+import {FORMAT_JUDGE_DIR} from '../../lib/reviewer-capability/format-judge.mjs';
 import {candidateFingerprint} from '../../lib/reviewer-capability/pool.mjs';
 import {createRandom} from '../../lib/reviewer-capability/random.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
@@ -90,7 +91,8 @@ test('spec readiness scenario uses the same fenced heading boundaries as the iss
 test('scoring: no findings earns nothing, a matched association earns the problem, an unmatched finding costs a clean case', async t => {
     const directory = await scenario(t);
     const none = await run(directory, {report: await report(directory, 'No findings.\n')});
-    assert.deepEqual([none.status, none.candidates, none.scores.score], ['succeeded', [], 0]);
+    // Nothing in it reads as a finding: a model failure for now, and one format candidate for the judge to reject (second layer).
+    assert.deepEqual([none.status, none.candidates.map((/** @type {any} */ candidate) => candidate.kind), none.scores.score], ['succeeded', ['format'], 0]);
 
     const hit = await run(directory, {report: await report(directory, '- `src/a.mjs:3` default export.\n')});
     assert.deepEqual(hit.candidates.map((/** @type {any} */ candidate) => candidate.kind), ['association']);
@@ -390,8 +392,12 @@ test('report range: severity units add up to the k counts, the full range gives 
     const [candidate] = (await run(directory, {report: hit})).candidates;
     const store = join(directory, 'decisions.json');
     await writeFile(store, JSON.stringify({decisions: {[candidate.candidateId]: {brief_sha256: sha256('Pool <ADJ>/pool-<名>.json\n'), decision: 'matched', fingerprint: candidateFingerprint(candidate)}}}));
-    const outputs = [await run(directory, {decisions: [store], report: hit}), await run(directory, {report: await report(directory, 'No findings.\n', 'none.md')}),
-        await run(directory, {report: await report(directory, 'text without bullets\n', 'failed.md')})];
+    const rejectedPaths = [await report(directory, 'No findings.\n', 'none.md'), await report(directory, 'text without bullets\n', 'failed.md')];
+    const formatBrief = sha256(await readFile(join(FORMAT_JUDGE_DIR, 'brief.md'), 'utf8'));
+    const pending = (await Promise.all(rejectedPaths.map(path => run(directory, {report: path})))).flatMap(output => output.candidates);
+    const rejected = join(directory, 'format-decisions.json');
+    await writeFile(rejected, JSON.stringify({decisions: Object.fromEntries(pending.map(item => [item.candidateId, {brief_sha256: formatBrief, decision: 'format-reject', fingerprint: candidateFingerprint(item)}]))}));
+    const outputs = [await run(directory, {decisions: [store], report: hit}), ...await Promise.all(rejectedPaths.map(path => run(directory, {decisions: [rejected], report: path})))];
     const sum = (/** @type {any} */ scores, /** @type {string} */ field) => Object.values(scores.severityUnits).reduce((total, level) => total + level[field], 0);
     for (const {scores} of outputs) assert.deepEqual([sum(scores, 'weight'), sum(scores, 'earned')], [scores.kProblemWeight, scores.kEarnedProblemPoints]);
     assert.deepEqual([outputs[0].scores.final > 0, outputs[2].scores.modelFailure !== undefined, outputs[2].scores.severityUnits.high], [true, true, {earned: 0, reportedK: 0, weight: 1}]);
