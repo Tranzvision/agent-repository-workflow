@@ -346,6 +346,18 @@ test('a grep-family search pattern is not a path, its file arguments and other c
     assert.equal(/** @type {any} */ (await inspect({fixtures, instance})).flags.length, real.length);
 });
 
+test('a regex character class inside an inline program is not a glob of the root directory, a closed glob still is', async t => {
+    const {fixtures, instance, sessionPath} = await setup(t, []);
+    const write = (/** @type {string[]} */ commands) => writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    await write([
+        `node -e 'const escapeText = (text) => text.replace(/[&<>"]/g, (c) => c); console.log(escapeText("a"))'`,
+        `node -e 'const NEEDS_QUOTES = /[",\\r\\n]/; console.log(NEEDS_QUOTES.test("a"))'`,
+    ]);
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+    await write(['ls /[a-z]*', 'ls /[ab]', 'ls /*']);
+    assert.equal(/** @type {any} */ (await inspect({fixtures, instance})).flags.length, 3);
+});
+
 test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {
     const {fixtures, instance, root, sessionPath} = await setup(t, []);
     await writeFile(join(root, 'run', 'x'), 'outside\n');
