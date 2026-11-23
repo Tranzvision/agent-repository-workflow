@@ -136,10 +136,11 @@ test('Reviewer capability handles missing reports, path leaks and usable reports
         "if (MODE === 'delivered') writeFileSync(join(dirname(RB_REPORT_PATH), 'draft.txt'), 'No problems.');",
         'setInterval(() => {}, 20);',
     ].join('\n'));
-    for (const [mode, expected, count] of [['missing', 3, 3], ['leak', 3, 2], ['timed-out', 0, 1], ['delivered', 0, 1]]) {
+    // The four modes use separate configs and output folders, so they run concurrently.
+    await Promise.all([['missing', 3, 3], ['leak', 3, 2], ['timed-out', 0, 1], ['delivered', 0, 1]].map(async ([mode, expected, count]) => {
         const name = String(mode);
-        await writeFile(join(cwd, 'model.json'), JSON.stringify({command: [process.execPath, fake, '{prompt_file}'], env: {MODE: name}}));
-        const result = await runArw(['reviewer-capability', 'run', '--config', 'model.json', '--model', 'fake', '--efforts', 'high',
+        await writeFile(join(cwd, `${name}.json`), JSON.stringify({command: [process.execPath, fake, '{prompt_file}'], env: {MODE: name}}));
+        const result = await runArw(['reviewer-capability', 'run', '--config', `${name}.json`, '--model', 'fake', '--efforts', 'high',
             '--n', name === 'missing' ? '2' : '1', '--scenarios', 'code-spec', '--out', name, '--limit-seconds', '1'],
         {cwd, stdout: () => {}, stderr: assert.fail});
         assert.equal(result, expected, name);
@@ -158,7 +159,7 @@ test('Reviewer capability handles missing reports, path leaks and usable reports
             assert.equal(logs.at(-1).reason, name === 'leak' ? 'inspect-flags' : 'no-completion');
             await assert.rejects(access(folder), {code: 'ENOENT'});
         }
-    }
+    }));
 });
 
 test('Reviewer capability stops oversized output without token data and exits 130 on interruption', {skip: process.platform === 'win32'}, async t => {

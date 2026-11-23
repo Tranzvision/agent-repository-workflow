@@ -227,18 +227,22 @@ test('the released installation runs all four Reviewer scenarios independently u
     ].join('\n'));
     const config = {provider: 'fake', command: [process.execPath, join(cwd, 'fake.mjs'), '{prompt_file}'],
         version_command: [process.execPath, '-e', 'console.log("fake 1")'], env: {CALLS: calls}};
+    // The run records its calls in a separate file, so it can overlap the probe commands below.
+    const runCalls = join(cwd, 'run-calls');
     await writeFile(join(cwd, 'model.json'), JSON.stringify(config));
+    await writeFile(join(cwd, 'run-model.json'), JSON.stringify({...config, env: {CALLS: runCalls}}));
     const cli = (/** @type {string} */ operation, /** @type {string[]} */ args) => runSuccessfulProcess(process.execPath,
         [join(installation, 'arw.mjs'), 'reviewer-capability', operation, ...args], {cwd, env});
     const args = ['--config', 'model.json', '--model', 'fake', '--efforts', 'high', '--n', '1', '--out', 'results'];
-    const check = await cli('check', args);
+    const running = cli('run', ['--config', 'run-model.json', ...args.slice(2)]);
+    const [check, plan] = await Promise.all([cli('check', args), cli('plan', args)]);
     assert.equal(check.stdout.match(/: succeeded/gu)?.length, 4);
-    assert.match((await cli('plan', args)).stdout, /4 model calls/u);
+    assert.match(plan.stdout, /4 model calls/u);
     await assert.rejects(access(calls), {code: 'ENOENT'});
     await cli('check', [...args, '--scenarios', 'code-spec', '--call']);
     assert.equal(await readFile(calls, 'utf8'), 'code-spec\n');
-    await cli('run', args);
-    assert.deepEqual((await readFile(calls, 'utf8')).trim().split('\n'), ['code-spec', 'commit-audit', 'code-spec', 'code-standards', 'spec-readiness']);
+    await running;
+    assert.deepEqual((await readFile(runCalls, 'utf8')).trim().split('\n'), ['commit-audit', 'code-spec', 'code-standards', 'spec-readiness']);
     const bundle = (await cli('pack', ['--out', 'results'])).stdout.trim();
     assert.match(bundle, /\/results\/bundle-\d{8}-\d{9}\.tar\.gz$/u);
     const {stdout: manifestText} = await runSuccessfulProcess('tar', ['-xOzf', bundle, 'manifest.json'], {cwd, env});
@@ -248,7 +252,8 @@ test('the released installation runs all four Reviewer scenarios independently u
     assert.deepEqual(manifest.harness, {provider: 'fake', version: 'fake 1'});
     assert.equal(manifest.cells.length, 4);
     const sourceScoreCommand = join(SOURCE_DIRECTORY, 'scripts', 'reviewer-capability.mjs');
-    for (const {dir} of manifest.cells) {
+    // Scoring uses the source fixtures, so the broken-installation run below is independent of it and runs alongside.
+    const scored = Promise.all(manifest.cells.map(async (/** @type {{dir: string}} */ {dir}) => {
         const instance = join(cwd, 'results', 'runs', dir);
         const record = JSON.parse(await readFile(join(instance, 'run.json'), 'utf8'));
         assert.equal(record.validity.valid, true, dir);
@@ -256,13 +261,14 @@ test('the released installation runs all four Reviewer scenarios independently u
         const {stdout} = await runSuccessfulProcess(process.execPath, [sourceScoreCommand, 'score', sourceFixture,
             join(instance, record.report), '--no-repair', '--agent', join(instance, 'agent.json'), '--instance', record.id], {cwd, env});
         assert.deepEqual({diagnostics: [], ...JSON.parse(stdout)}, JSON.parse(await readFile(join(instance, 'score.json'), 'utf8')));
-    }
+    }));
     // A broken scoring input is a failed attempt, with no completed result to package.
     await writeFile(join(installation, CAPABILITY_FIXTURES, 'format-baseline', 'registry.json'), '{}');
     const failed = await runExitedProcess(process.execPath, [join(installation, 'arw.mjs'), 'reviewer-capability', 'run',
         ...args.slice(0, -1), 'failed-results', '--scenarios', 'code-spec'], {cwd, env});
     assert.match(failed.stdout, /failed \(score:/u);
     await assert.rejects(access(join(cwd, 'failed-results', 'runs')), {code: 'ENOENT'});
+    await scored;
 });
 
 test('bootstrap runs tar inside the download directory with a relative archive name', async t => {
