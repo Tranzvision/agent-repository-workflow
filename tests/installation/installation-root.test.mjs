@@ -33,6 +33,7 @@ const runRootInstaller = (/** @type {string} */ home, /** @type {string} */ inpu
     timeout: 10_000,
 });
 
+// The boundary under test is a real root Installer process, so process start alone exceeds 100 ms.
 test('root Installer maps prompt EOF to one stable pre-write error', async t => {
     const home = await createHome(t);
     const result = await runRootInstaller(home, '');
@@ -42,6 +43,7 @@ test('root Installer maps prompt EOF to one stable pre-write error', async t => 
     assert.deepEqual(await readdir(home), []);
 });
 
+// The boundary under test is a real root Installer process, so process start alone exceeds 100 ms.
 test('root Installer completes from a single piped answer line', async t => {
     const home = await createHome(t);
     const result = await runRootInstaller(home, 'n\n');

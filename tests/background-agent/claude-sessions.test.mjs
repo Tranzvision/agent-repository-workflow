@@ -233,6 +233,7 @@ test('a Claude Code Main title prefers its custom title, then the generated one,
     await assert.rejects(session.readThreadMetadata({threadId: 'main'}), /identity changed/);
 });
 
+// The host starts the fake Claude executable as a real child process, so this case exceeds 100 ms.
 test('a Claude Code Main starts, waits for, follows up and messages a Claude Reviewer through the host', async t => {
     /** @type {Awaited<ReturnType<typeof createBackgroundAgentHost>>|null} */ let host = null;
     t.after(() => host?.manager.close());

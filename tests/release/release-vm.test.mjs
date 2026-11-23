@@ -212,6 +212,7 @@ esac
     });
 }
 
+// Runs the real release-vm script as three child processes; process start alone exceeds 100 ms.
 test('release-vm check records one release-validation effect per machine unless the arguments were invalid', async t => {
     const {directory, write, machine, bundle, archive} = await setup(t);
     const home = join(directory, 'home');
