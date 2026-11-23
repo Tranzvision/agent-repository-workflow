@@ -329,6 +329,23 @@ test('an awk match operator and regex literals are not a home or root directory 
     assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags.map((/** @type {any} */ flag) => flag.match), [homedir(), '/', '/', homedir(), homedir(), homedir(), homedir()]);
 });
 
+test('a grep-family search pattern is not a path, its file arguments and other commands still are', async t => {
+    const {fixtures, instance, sessionPath} = await setup(t, []);
+    const patterns = [
+        `git grep --cached -n "../../.*-service" -- src ${instance}`,
+        `git grep --cached -n "from '../" -- src ${instance}`,
+        `git grep --cached -n -E "from '../[^']+/[^']+-(service|store)\\.mjs'" -- src ${instance}`,
+        "rg -n -e '../x' src",
+        "grep -rn '~/a' src; egrep -n \"../y\" src/a.mjs",
+    ];
+    const write = (/** @type {string[]} */ commands) => writeFile(sessionPath, lines([codex.meta(), ...commands.flatMap((command, index) => [codex.call(`c${index}`), codex.run(command, instance), codex.out(`c${index}`)]), codex.done]));
+    await write(patterns);
+    assert.deepEqual(/** @type {any} */ (await inspect({fixtures, instance})).flags, []);
+    const real = ['grep -n x ../two', 'grep -n "x" ~ src', 'ls ../ | grep -n "x"', 'grep -n "$(cat ../two)" src', 'cat "../two" | wc', 'grep -f "../two" src', 'grep --file "../two" .', "rg --ignore-file '../two' pat", "rg -f '../two'", 'grep -nf "../two" src'];
+    await write(real);
+    assert.equal(/** @type {any} */ (await inspect({fixtures, instance})).flags.length, real.length);
+});
+
 test('a heredoc body that cat writes to a file is the Reviewer own writing, not a path access', async t => {
     const {fixtures, instance, root, sessionPath} = await setup(t, []);
     await writeFile(join(root, 'run', 'x'), 'outside\n');
