@@ -1315,3 +1315,21 @@ test('warm inspection of an exited paused Reviewer clears provider pause state',
         assert.equal(work.resumeMessageId, null);
     } finally {await runtime.close();}
 });
+
+// A final status wrapped in a single code block or inline code has one meaning: it is accepted and flagged as a format error.
+for (const [name, wrapped, accepted] of [['inline code', '`{"status":"ready"}`', true], ['fenced block', '```json\n{"status":"ready"}\n```', true],
+    ['text around', 'Done: `{"status":"ready"}`', false], ['two blocks', '`{"status":"ready"}` `{"status":"ready"}`', false],
+    ['wrapped extra key', '`{"status":"ready","x":1}`', false]]) {
+    test(`final status in ${name} is ${accepted ? 'accepted with a format error' : 'not accepted'}`, async () => {
+        const fixture = createReviewerRuntimeFixture();
+        const runtime = createReviewerRuntime(options(fixture));
+        const run = succeeded(await runtime.execute({operation: 'spawn_agent', input: reviewerHandoff}));
+        const observed = succeeded(await runtime.inspect({runId: run.runId}));
+        await fixture.writeReport('The complete Reviewer-written report.');
+        fixture.native.finish(/** @type {string} */ (observed.threadId), /** @type {string} */ (wrapped));
+        const completed = succeeded(await runtime.inspect({runId: run.runId}));
+        if (accepted) assert.deepEqual(completed.completion, {status: 'ready', reportPath: reviewerHandoff.reportPath, formatErrors: ['wrapped-final-status']});
+        else assert.notEqual(completed.completion?.status, 'ready');
+        await runtime.close();
+    });
+}
