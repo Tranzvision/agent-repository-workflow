@@ -162,7 +162,7 @@ node scripts/reviewer-capability.mjs pool build|view|prompt|split|override|ancho
 
 场景设置接受可选的 `handoff.md`. 若该文件存在却无法读取, 或夹具指定了未知的 Reviewer role, 设置会在创建场景或其恢复目录之前报错.
 
-对单轮的 Antigravity CLI (`agy`) Reviewer 审查, 在实例目录中启动该 CLI, 并以 `--output-format stream-json` 保存其未经修改的 stdout. 可直接传入提示词, 或把提示词文件放在实例目录内. 进程停止后, 将实例 `agent.json` 中的 `result.threadId` 设为该流的初始 `conversation_id`, 将 `result.snapshot.members` 设为只含一个元素的数组, 元素为已保存流的绝对路径 `sessionPath`. 若运行被中断, 将 `result.completion` 设为 `null`. 对该实例运行 `inspect`, 以检查工具名称, 路径和返回的答案键文本. 不可用的记录会阻止检查; 被中断的记录可能列出未完成的调用及其已捕获的参数. 参见 [Antigravity headless stream 格式](https://antigravity.google/docs/cli/headless/#streaming-json).
+对单轮的 Antigravity CLI (`agy`) Reviewer 审查, 在实例目录中启动该 CLI, 并以 `--output-format stream-json` 保存其未经修改的 stdout. 可直接传入提示词, 或把提示词文件放在实例目录内. 进程停止后, 将实例 `agent.json` 中的 `result.threadId` 设为该流的初始 `conversation_id`, 将 `result.snapshot.members` 设为只含一个元素的数组, 元素为已保存流的绝对路径 `sessionPath`. 若运行被中断, 将 `result.completion` 设为 `null`. 对该实例运行 `inspect`, 以检查工具名称, 路径和返回的答案键文本. 以 `ERROR` 状态结束并带错误消息的工具步骤算作已完成. 不可用的记录会阻止检查; 被中断的记录可能列出未完成的调用及其已捕获的参数. 参见 [Antigravity headless stream 格式](https://antigravity.google/docs/cli/headless/#streaming-json).
 
 评分会读取自由格式发现中的裸证据定位符, 包括括号或方括号中的路径和行号范围. Spec Readiness 证据必须指向 Reviewer 输入或提取出的 issue 审核对象中的真实行. 答案键校验与评分都使用用例权重检查层级平衡. 当评分修复改变了格式计数时, 从同一批归档报告重新计算基线. 要比较历史运行, 请在同一个 ARW commit 下为每组重新评分.
 

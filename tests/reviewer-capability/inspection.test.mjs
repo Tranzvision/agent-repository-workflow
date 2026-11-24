@@ -67,6 +67,7 @@ test('inspect accepts a completed agy record and counts a tool step once', async
     await writeFile(sessionPath, lines([
         agy.init(instance),
         agy.step(0, {step_type: 'user_input'}),
+        agy.step(1, {step_type: 'system_message', duration_seconds: 1}),
         agy.step(2, {step_type: 'tool', tool_name: 'run_command', state: 'ACTIVE'}),
         agy.step(2, agy.tool('run_command', {CommandLine: 'cat src/a.mjs'})),
         agy.done,
@@ -76,6 +77,35 @@ test('inspect accepts a completed agy record and counts a tool step once', async
         calls: 1, diagnostics: [], flags: [], interrupted: false, sessionPath,
         status: 'succeeded', threadId: THREAD, unfinished: [],
     });
+});
+
+test('inspect accepts the agy 1.5.15 record shape: read_file and write_file with Path, a TOOL_ERROR step, a write step without output', async t => {
+    const {instance, fixtures, root, sessionPath} = await setup(t, []);
+    const step = (/** @type {number} */ index, /** @type {string} */ state, /** @type {string} */ name, /** @type {object} */ parameters, /** @type {object} */ rest = {}) => agy.step(index, {
+        state, step_type: 'tool', tool_name: name, tool_info: {name, parameters, ...rest},
+    });
+    const missing = {Path: join(instance, 'AGENTS.md')};
+    const report = {Path: join(instance, '.tmp', 'review', 'reports', 'report.txt')};
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(0, {step_type: 'user_input'}),
+        agy.step(1, {step_type: 'agent_response', duration_seconds: 3.1, usage: {input_tokens: 10448, output_tokens: 132}}),
+        step(2, 'ACTIVE', 'read_file', missing),
+        step(2, 'DONE', 'read_file', missing, {output: '120 lines, 14655 bytes'}),
+        step(3, 'ACTIVE', 'read_file', missing),
+        step(3, 'ERROR', 'read_file', missing, {error: {type: 'TOOL_ERROR', message: 'file does not exist'}}),
+        step(4, 'ERROR', 'read_file', missing, {error: {type: 'TOOL_ERROR', message: 'file does not exist'}}),
+        step(5, 'ACTIVE', 'write_file', report),
+        step(5, 'DONE', 'write_file', report),
+        agy.done,
+    ]));
+    assert.deepEqual(await inspect({fixtures, instance}), {
+        calls: 4, diagnostics: [], flags: [], interrupted: false, sessionPath,
+        status: 'succeeded', threadId: THREAD, unfinished: [],
+    });
+    await writeFile(sessionPath, lines([agy.init(instance), step(1, 'DONE', 'read_file', {Path: join(root, 'two', 'x.txt')}, {output: 'x'}), step(2, 'DONE', 'write_file', {Path: join(root, 'two', 'y.txt')}), agy.done]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.position, flag.kind]), [[3, 'path']], 'only the write to an external path is flagged');
 });
 
 test('agy inspection flags paths, tools, and returned answer keys', async t => {
@@ -153,6 +183,11 @@ test('agy inspection blocks unusable records instead of returning a clean result
         ['malformed tool call', [init, agy.step(1, agy.tool('view_file', {AbsolutePath: false})), agy.done]],
         ['missing final result', [init]],
         ['unfinished tool', [init, active, agy.done]],
+        ['system message with tool fields', [init, agy.step(1, {step_type: 'system_message', tool_name: 'run_command'}), agy.done]],
+        ['error step without error message', [init, agy.step(1, {step_type: 'tool', tool_name: 'read_file', state: 'ERROR', tool_info: {name: 'read_file', parameters: {Path: 'a'}, output: 'ok'}}), agy.done]],
+        ['error state on a non-tool step', [init, agy.step(1, {step_type: 'agent_response', state: 'ERROR'}), agy.done]],
+        ['unknown step state', [init, agy.step(1, {step_type: 'tool', tool_name: 'read_file', state: 'CANCELED', tool_info: {name: 'read_file', parameters: {Path: 'a'}, error: {message: 'x'}}}), agy.done]],
+        ['unknown step type', [init, agy.step(1, {step_type: 'notice'}), agy.done]],
         ['trailing event', [init, agy.done, agy.step(1, {step_type: 'checkpoint'})]],
         ['old json envelope', [agy.done.result]],
     ];
