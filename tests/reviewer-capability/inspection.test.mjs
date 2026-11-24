@@ -495,3 +495,55 @@ test('an instance file read failure is reported at fixture-read', async t => {
         syncBuiltinESMExports();
     }
 });
+
+test('agy inspection accepts every tool shape seen in the 1.5.14 to 1.5.16 trials: empty results, no-argument tools, the Reviewer prompt file and its own saved outputs', async t => {
+    const {instance, fixtures, root, sessionPath} = await setup(t, []);
+    const prompt = join(root, 'run', 'side', 'prompt.md');
+    await mkdir(join(root, 'run', 'side'));
+    await writeFile(prompt, 'Review.\n');
+    const saved = join(root, 'home', '.gemini', 'antigravity-cli', 'brain', THREAD, '.system_generated', 'steps', '28', 'output.txt');
+    await mkdir(join(saved, '..'), {recursive: true});
+    await writeFile(saved, 'long output\n');
+    const step = (/** @type {number} */ index, /** @type {string} */ name, /** @type {object} */ parameters, /** @type {object} */ rest = {}) => agy.step(index, {
+        step_type: 'tool', tool_name: name, tool_info: {name, parameters, ...rest},
+    });
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        step(1, 'read_file', {Path: prompt}, {output: '120 lines, 14661 bytes'}),
+        step(2, 'read_file', {Path: join(instance, '.tmp', 'review', 'reports', 'report.txt')}),
+        step(3, 'run_command', {CommandLine: 'git status --short'}),
+        step(4, 'grep_search', {SearchPath: instance, Query: 'zzz'}),
+        step(5, 'read_file', {Path: saved, StartLine: 1, EndLine: 800}, {output: '434 lines, 31959 bytes'}),
+        step(6, 'run_command', {CommandLine: `sed -n 1,5p ${saved}`}),
+        step(7, 'command_status', {CommandId: 'c1', WaitDurationSeconds: 5}),
+        step(8, 'send_command_input', {CommandId: 'c1', Input: 'q'}, {output: 'done'}),
+        step(9, 'wait', {}),
+        agy.step(10, {step_type: 'tool', tool_name: 'wait_5_seconds', tool_info: {name: 'wait_5_seconds'}}),
+        step(11, 'finish', {}),
+        agy.done,
+    ]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual([result.status, result.calls, result.flags], ['succeeded', 11, []]);
+});
+
+test('agy inspection still flags the neighbours of the allowed prompt file, outside writes, other threads and unknown tools', async t => {
+    const {instance, fixtures, root, sessionPath} = await setup(t, []);
+    const side = join(root, 'run', 'side');
+    const brain = join(root, 'home', '.gemini', 'antigravity-cli', 'brain');
+    await mkdir(side);
+    await mkdir(join(brain, 'other', '.system_generated', 'steps', '1'), {recursive: true});
+    await mkdir(join(brain, THREAD, '.system_generated', 'steps', '1'), {recursive: true});
+    for (const file of [join(side, 'prompt.md'), join(side, 'other.md'), join(brain, 'other', '.system_generated', 'steps', '1', 'output.txt'), join(brain, THREAD, '.system_generated', 'steps', '1', 'secret.txt')]) await writeFile(file, 'x\n');
+    const step = (/** @type {number} */ index, /** @type {string} */ name, /** @type {object} */ parameters) => agy.step(index, agy.tool(name, parameters));
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        step(1, 'read_file', {Path: join(side, 'other.md')}),
+        step(2, 'write_file', {Path: join(side, 'prompt.md')}),
+        step(3, 'read_file', {Path: join(brain, 'other', '.system_generated', 'steps', '1', 'output.txt')}),
+        step(4, 'read_file', {Path: join(brain, THREAD, '.system_generated', 'steps', '1', 'secret.txt')}),
+        step(5, 'read_url_content', {Url: 'https://example.com'}),
+        agy.done,
+    ]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.position, flag.kind]), [[2, 'path'], [3, 'path'], [4, 'path'], [5, 'path'], [6, 'tool']]);
+});
