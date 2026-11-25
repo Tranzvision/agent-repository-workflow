@@ -96,3 +96,12 @@ test('Submodule inspection reports an unborn HEAD separately from Git failure', 
         assert.equal(result.diagnostics[0]?.code, 'submodule-head-missing');
     }
 });
+
+test('Submodule Git Adapter reports failed when the state after a mutation cannot be observed', async () => {
+    const adapter = createSubmoduleGitAdapter({git: {run: async ({argv}) => argv[0] === 'symbolic-ref'
+        ? {code: null, failure: 'process', stdout: Buffer.alloc(0), stderr: ''}
+        : {code: 0, failure: null, stdout: Buffer.from('local\n'), stderr: ''}}});
+    for (const result of [await adapter.switchBranch(input), await adapter.fastForward(input), await adapter.restore(input), await adapter.compareRemote(input)]) {
+        assert.equal(result.status, 'failed');
+    }
+});

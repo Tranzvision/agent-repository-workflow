@@ -204,3 +204,13 @@ test('Reviewer capability check builds the selected scenario and probes only whe
     assert.ok(settings.report.startsWith(tmpdir()));
     await assert.rejects(access(join(cwd, 'results')), {code: 'ENOENT'});
 });
+
+test('Reviewer capability rejects a work directory inside the ARW checkout', async t => {
+    const cwd = await createTemporaryDirectory(t, 'arw-capability-work-');
+    await writeFile(join(cwd, 'model.json'), JSON.stringify({command: ['x'], version_command: ['x']}));
+    /** @type {string[]} */ const errors = [];
+    const code = await runArw(['reviewer-capability', 'plan', '--config', 'model.json', '--model', 'fake', '--efforts', 'high',
+        '--out', 'results', '--work', fileURLToPath(new URL('../../lib', import.meta.url))], {cwd, stdout: () => {}, stderr: line => errors.push(line)});
+    assert.equal(code, 2);
+    assert.match(errors.join('\n'), /outside the ARW checkout/u);
+});

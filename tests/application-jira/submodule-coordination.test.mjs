@@ -97,6 +97,24 @@ test('Submodule switch failure restores changed Modules in reverse order and rep
     assert.deepEqual(events, ['switch:billing', 'switch:ledger', 'restore:billing:main:aaa']);
 });
 
+test('Submodule switch whose state cannot be read is restored as well', async () => {
+    /** @type {string[]} */
+    const events = [];
+    const coordinator = createSubmoduleCoordinator({
+        git: {
+            inspectSwitch: async () => ({diagnostics: [], state: {branch: 'main', clean: true, head: 'aaa', localBranchExists: true, remoteBranchExists: true}, status: 'succeeded'}),
+            restore: async input => {
+                events.push(`restore:${input.module}`);
+                return {diagnostics: [], state: {branch: input.branch, head: input.head}, status: 'succeeded'};
+            },
+            switchBranch: async () => ({diagnostics: [{code: 'switch-failed', message: 'Switch failed.'}], state: {branch: '', head: ''}, status: 'failed'}),
+        },
+    });
+    const result = await coordinator.switchBranch({modules: [{name: 'billing', repositoryRoot: '/repo/billing'}], remote: 'origin', targetBranch: 'dev'});
+    assert.deepEqual([result.status, result.recovery], ['failed', [{module: 'billing', status: 'restored'}]]);
+    assert.deepEqual(events, ['restore:billing']);
+});
+
 test('Remote convergence reports every configured Module state at each failure boundary', async () => {
     for (const failure of ['preflight', 'fetch', 'compare', 'fast-forward', 'final-verification']) {
         const coordinator = createSubmoduleCoordinator({

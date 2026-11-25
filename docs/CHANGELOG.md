@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Reviewer capability: a model command that leaves a background process holding its pipes is settled one second after it exits instead of being recorded as a timeout, `run` compares installed files one at a time (no `EMFILE` under a 1024 descriptor limit), `--work` inside the ARW checkout is rejected, and `pool split` bounds huge evidence line ranges. `followup_task` on a Claude run no longer checks `CODEX_HOME`, and Jira Module branch switching rolls back instead of throwing when Git state cannot be read.
 - Configuration editing rejects JSON objects with duplicate member names, and a Code Map root in the workflow lock must be a canonical Repository-relative path (no trailing slash, drive prefix, or NUL). Document Terms counts a lone CR as a line break and recognizes headings indented by up to three spaces.
 - Installer: reinstalling after the user deleted the Windows PATH value records the new ownership, the provider-migration notice appears only after the configuration is written, and `release-manifest.json` must name `config.install.json` as `configSeed`. Uninstaller: restores PATH with the value kind found at uninstall time, reports `partial` after removing only empty directories, reports the configuration as removed even if a later database removal fails, and tolerates a linked `config.json` when it is not asked to remove the configuration.
 - Option values that are empty are rejected, Spec Readiness `prepare` input that cannot be read reports its parse error, and the post-init handoff escapes checklist text.

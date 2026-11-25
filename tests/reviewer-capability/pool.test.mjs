@@ -5,7 +5,7 @@ import test from 'node:test';
 
 import {sha256} from '../../lib/common/json.mjs';
 import {pool} from '../../lib/reviewer-capability/operations.mjs';
-import {candidateFingerprint, itemFingerprint, PoolError, splitPool} from '../../lib/reviewer-capability/pool.mjs';
+import {candidateFingerprint, evidenceRanges, itemFingerprint, PoolError, splitPool} from '../../lib/reviewer-capability/pool.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {control, item} from '../helpers/reviewer-capability-items.mjs';
 
@@ -79,4 +79,8 @@ test('pool split rejects tampered bytes before attempting to parse them', async 
     await writeFile(keyPath, JSON.stringify({...key, briefSha256: sha256(await readFile(join(scenario, 'brief.md')))}));
     await writeFile(join(root, 'p', 'adj', 'pool-p.json'), '{invalid JSON');
     await assert.rejects(splitPool({decisions: {}, name: 'p', root}), error => error instanceof PoolError && error.message === 'The pool file differs from the one the key was written for.');
+});
+
+test('evidence ranges are kept whole however large, and ignore non-integer ends', () => {
+    assert.deepEqual(evidenceRanges({evidence: [{filePath: 'a', lineStart: 1, lineEnd: 9e9}, {filePath: 'b', lineStart: 'x'}, {filePath: 'c', lineStart: 1.5, lineEnd: 2.5}, {filePath: 'd', lineStart: 10, lineEnd: 0}]}), [{file: 'a', from: 1, to: 9e9}]);
 });

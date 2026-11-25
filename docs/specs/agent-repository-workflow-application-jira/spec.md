@@ -759,7 +759,7 @@ Module 的封闭结果合同, Association/Coordination/同步边界和 JIRA 评�
 - Application 验证 issue 与关联 JIRA 的 effort 完成.
 - JIRA 接收/完成评论, 状态转换收敛和令牌安全边界.
 
-开发长期规格唯一拥有 JSON 路径与通用版本化配置转换 Interface. Installation 长期规格唯一拥有全局 `config.json` v2 到 v3 的持久升级与事务. 总长期规格拥有普通跟踪器生命周期, 治理和仓库操作. README 拥有面向用户的操作说明, 但不重新定义本文合同.
+开发长期规格唯一拥有 JSON 路径与通用版本化配置转换 Interface. Installation 长期规格唯一拥有全局 `config.json` v2 到 v3 的持久升级与事务. 总长期规格拥有普通跟踪器生命周期, 治理和仓库操作. 面向用户的文档分工见 `../arw-reader-documentation/spec.md`: README 拥有项目入口和首次成功路线, 专门操作说明属于手册, 都不重新定义本文合同.
 
 ## Validation strategy
 

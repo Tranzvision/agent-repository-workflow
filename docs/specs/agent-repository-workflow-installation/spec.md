@@ -59,7 +59,7 @@ Installer 和 Uninstaller 把通知与成功摘要逐行写入标准输出, 把�
 
 `release-manifest.json` 是安装载荷清单的唯一配置. 它的顶层字段封闭为 `configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles`.
 
-`configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles` 的准确值由源码仓库当前清单决定. `runtimeFiles` 必须包含已安装 `arw terms check` 所需的完整 Document Terms, Markdown 和 Document Repository 运行时依赖. 已安装命令只从安装载荷读取依赖. 命令行 Reviewer 能力套件的已登记场景和 Reviewer 指令是运行资源, 由源码仓库的现有场景与指令提供. 清单不保存 `product`, `releaseManifestVersion`, `workflowDistributionManifest` 或产品版本. 安装载荷不在代码中重复硬编码运行时与启动器清单.
+`configSeed`, `distributionRoot`, `launchers` 和 `runtimeFiles` 的准确值由源码仓库当前清单决定, 但 `configSeed` 必须是 `config.install.json`. `runtimeFiles` 必须包含已安装 `arw terms check` 所需的完整 Document Terms, Markdown 和 Document Repository 运行时依赖. 已安装命令只从安装载荷读取依赖. 命令行 Reviewer 能力套件的已登记场景和 Reviewer 指令是运行资源, 由源码仓库的现有场景与指令提供. 清单不保存 `product`, `releaseManifestVersion`, `workflowDistributionManifest` 或产品版本. 安装载荷不在代码中重复硬编码运行时与启动器清单.
 
 `configSeed` 和 `distributionRoot` 是非空来源相对路径. Filesystem Module 根据来源根解析它们并阻断越界结果, 不应用另一套跨平台文件名语法. `configSeed` 只定位安全普通来源文件; Installation Payload 成功结果只把它的完整内容作为 `configSeedBytes` 返回, Engine Installation Module 固定把这些字节用于安装根目录 `config.json`. `launchers` 是封闭对象, 只包含 `darwin`, `linux` 和 `win32`; 每个值是按字节序排序的非空来源相对路径数组. `runtimeFiles` 是采用相同规则的非空数组. 能力夹具根目录和 Reviewer 角色目录作为整目录资源登记, 展开为其下的安全普通文件. 每个启动器或运行时路径同时是来源路径和安装目录中的目标相对路径, 不增加条目对象或第二份目标映射. 所选平台的启动器, `runtimeFiles` 和 `distributionRoot` 下完整验证载荷合并后, 使用 Filesystem Module 返回的范围相对目标检查精确或大小写等价重复, 并拒绝与安装根 `config.json` 或 `manifest.json` 大小写等价的目标. 这些冲突阻断整个载荷, 不静默排除条目. `configSeedBytes` 不进入普通载荷, 最终 `{path, bytes}` 载荷按路径字节序排序. 本文的字节序排序指 JavaScript 字符串比较顺序 (UTF-16 码元), 对 ASCII 路径与 UTF-8 字节序相同.
 
