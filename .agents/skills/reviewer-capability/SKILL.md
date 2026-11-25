@@ -19,15 +19,9 @@ disable-model-invocation: true
 
 场景: `requirements-reviewer/code-spec`, `requirements-reviewer/commit-audit`, `code-standards-reviewer/code-standards`, `spec-readiness-reviewer/spec-readiness`. 新增缺陷要同时补答案键和候选中的确定位置; 测量中发现的真实未预设缺陷补进答案键并在 issue 中说明. 新增或修改场景时, Reviewer 可见的名称, 注释和顺序不得暗示缺陷位置, 也不得暗示问题用例与干净用例的分类 (例如文件名或注释里写 `bug`, `missing check`).
 
-每道问题用例有 `severity` (干净用例没有, `merge` 配对两例相同), 供按报告范围计分 (第 8 步). 级别定义:
+每道问题用例有 `severity` (干净用例没有, `merge` 配对两例相同), 供按报告范围计分 (第 8 步). 级别定义见 `docs/agents/reviewer.md` 的 Report 节第 1 段, 不另写一份.
 
-| 级别 | 定义 |
-|---|---|
-| `high` | 行为错误, 或会使结果错误或阻断工作的关卡或规则错误 |
-| `medium` | 规则, 要求或设计相互矛盾或含糊到 Agent 可能误读, 会多花一轮, 或体积超出预算而可削减 |
-| `low` | 措辞, 重复, 命名, 排版, 不改变行为也不致误读的整理 |
-
-当前代码已存在的正确性, 数据丢失, 安全或并发缺陷至少为 `medium`; 只在将来改动一处而漏改另一处时才出错的重复按现状评级. 拿不准时为 `medium`. 评级由一个没有看过任何测量结果 (报告, 分数, 检出率) 的独立 Agent 只凭本定义, 场景文件和每例的 `expectation` 给出, 每例一句理由, 结果原样写入答案键; 不按候选是否报出来挑选重评的用例. 新增用例由作者按同一定义评级. 定义不写进盲裁 `brief.md` (改简报会使已存裁决过期).
+答案键评级补充: 只在将来改动一处而漏改另一处时才出错的重复按现状评级. 评级由一个没有看过任何测量结果 (报告, 分数, 检出率) 的独立 Agent 只凭该定义, 场景文件和每例的 `expectation` 给出, 每例一句理由, 结果原样写入答案键; 不按候选是否报出来挑选重评的用例. 新增用例由作者按同一定义评级. 定义不写进盲裁 `brief.md` (改简报会使已存裁决过期).
 
 ## Run
 
@@ -62,7 +56,7 @@ disable-model-invocation: true
 
    锚点一致率不低于 0.9 且合成对照全对才通过, 通过后裁决写入 `<root>/<name>/decisions.json`; 不通过返回 `blocked` 且不写任何裁决, 整池重裁. 输出含分族与分模型的一致率, 并在 `<root>/<name>/split-<name>.json` 给出 Main 复核清单 (全部 `supported`, 以及有争议的 `unsupported`: 裁判点名最难 (`--hard`), 理由含犹豫措辞, 或证据与别的候选相交). Main Agent 复核清单, 需要改的用 `pool override <root> <name> <stable-id> <decision> <reason> [--by <谁>]` (保留历史). 复核确认为稳定的关联裁决可登记为新锚点: `pool anchor-add <scenario-directory> <candidate.json> <matched|not-matched> --family <openai|anthropic|strata> --model <来源模型> --confirmed-by <谁> [--id <id>]`, 这是唯一写夹具的命令, 随后经 Git 提交.
 7. 带上裁决库用 `run.json` 的 `report` 与 `repair` 重新计分: `score <scenario-directory> <report> (--repair <repair> | --no-repair) --agent <instance>/agent.json --instance <实例目录名> --decisions <root>/<name>/decisions.json`, 定稿后把输出写回 `<instance>/score.json` (`export` 只接受定稿的 `score.json`). 简报改动后旧裁决不再套用, 输出的 `staleDecisions` 列出它们, 须重裁. 关联候选被裁为 `not-matched` 后, 对应 finding 成为新的发现候选, `candidates` 非空时对它们再做步骤 5 和 6 (新池名), 并把新旧裁决库都传给 `--decisions`, 重复到 `candidates` 为空, 此时分数为定稿. 想先看分数区间可加 `--provisional lower|upper` (未裁决候选按最低或最高界值暂计, 结果不是定稿), `--enumerate` 只列出候选全集 (不要求 `--agent`, 无分数). 输出的 `templateFindings` 标出同一实例内文字雷同的 finding, 只作提示, 不改分数.
-   格式候选 (第二层): 非空, 是有效 UTF-8, 完成状态不是 `incomplete` 的报告被读取器因写法拒收 (没有可评分内容) 时, `candidates` 里多一个 `kind: "format"` 的候选, 分数暂按模型失败 0 计, 不是定稿. 它不与别的候选同池: `pool build tests/fixtures/reviewer-capability/format-judge <root> <name> <candidates.json ...>` (场景目录参数就是这个目录, 池里是它的盲裁 brief 与合成对照, 没有锚点, 不需要 `pool view`), 然后照步骤 6 用 `pool prompt` 与 `pool split`. 裁判只对每个候选二选一 `format-accept` (只是格式符号写法不同, 每行只有一种读法, 并逐行给出改写 `lines`) 或 `format-reject`; 合成对照必须全对. 带上裁决库重新 `score` 时, 程序核对每行改写只增删格式符号, 字母, 数字, 路径和顺序不变 (紧邻数字的分隔符原样, JSONL 行解析出的值相同), 且读取器能读改写后的报告才接纳, 每个改写的行计 1 个格式错误 (`scores.rJudged`, 计入 `r`); 任何一项不符, 或裁判拒收, 或简报已改, 一律维持拒收. 抽查时看 `split-<name>.json` 的 `review.supported` (全部 `format-accept`). 超时的实例仍整例作废, 不进入这一层. `--provisional` 对格式候选不起作用, 它们按拒收暂计.
+   `candidates` 含 `kind: "format"` 的候选 (报告因写法被读取器拒收) 时读取 `./format-candidates.md`.
 8. 统计: 每格 (一个模型 × 场景 × 设置) 的重复实例按开始先后给出定稿的 `score` 输出:
 
    ```sh

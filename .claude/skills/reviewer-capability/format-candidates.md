@@ -1,0 +1,3 @@
+# 格式候选 (第二层)
+
+非空, 是有效 UTF-8, 完成状态不是 `incomplete` 的报告被读取器因写法拒收 (没有可评分内容) 时, `candidates` 里多一个 `kind: "format"` 的候选, 分数暂按模型失败 0 计, 不是定稿. 它不与别的候选同池: `pool build tests/fixtures/reviewer-capability/format-judge <root> <name> <candidates.json ...>` (场景目录参数就是这个目录, 池里是它的盲裁 brief 与合成对照, 没有锚点, 不需要 `pool view`), 然后照步骤 6 用 `pool prompt` 与 `pool split`. 裁判只对每个候选二选一 `format-accept` (只是格式符号写法不同, 每行只有一种读法, 并逐行给出改写 `lines`) 或 `format-reject`; 合成对照必须全对. 带上裁决库重新 `score` 时, 程序核对每行改写只增删格式符号, 字母, 数字, 路径和顺序不变 (紧邻数字的分隔符原样, JSONL 行解析出的值相同), 且读取器能读改写后的报告才接纳, 每个改写的行计 1 个格式错误 (`scores.rJudged`, 计入 `r`); 任何一项不符, 或裁判拒收, 或简报已改, 一律维持拒收. 抽查时看 `split-<name>.json` 的 `review.supported` (全部 `format-accept`). 超时的实例仍整例作废, 不进入这一层. `--provisional` 对格式候选不起作用, 它们按拒收暂计.

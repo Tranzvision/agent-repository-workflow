@@ -4,7 +4,7 @@ Reviewer 能力测试在维护者显式调用 `$reviewer-capability` Skill 时�
 
 ## Report range
 
-改 Reviewer 报告范围 (报什么级别, 不报什么) 的 issue 在同一 issue 中: 按 `reviewer-capability` Skill 的严重度定义更新受影响场景答案键的 `severity`; 写明 A/B 两格各自的报告范围 (`summary --report-range`); 给出题量表 (每个受影响场景范围内各级问题题数与干净题数); 改动声称不影响的级别在某场景少于 5 道问题题时补题, 或在 issue 写明不补的理由. Reviewer 规则需要级别定义时引用该 Skill 的定义, 不另写一份.
+改 Reviewer 报告范围 (报什么级别, 不报什么) 的 issue 在同一 issue 中: 按 `docs/agents/reviewer.md` Report 节的级别定义更新受影响场景答案键的 `severity`; 写明 A/B 两格各自的报告范围 (`summary --report-range`); 给出题量表 (每个受影响场景范围内各级问题题数与干净题数); 改动声称不影响的级别在某场景少于 5 道问题题时补题, 或在 issue 写明不补的理由. 级别定义只写在 `docs/agents/reviewer.md` 的 Report 节, `reviewer-capability` Skill 和答案键引用它, 不另写一份.
 
 ## 待测项
 
