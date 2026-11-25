@@ -185,7 +185,9 @@ test('agy inspection blocks unusable records instead of returning a clean result
         ['unfinished tool', [init, active, agy.done]],
         ['system message with tool fields', [init, agy.step(1, {step_type: 'system_message', tool_name: 'run_command'}), agy.done]],
         ['error step without error message', [init, agy.step(1, {step_type: 'tool', tool_name: 'read_file', state: 'ERROR', tool_info: {name: 'read_file', parameters: {Path: 'a'}, output: 'ok'}}), agy.done]],
-        ['error state on a non-tool step', [init, agy.step(1, {step_type: 'agent_response', state: 'ERROR'}), agy.done]],
+        ['error state on a user input step', [init, agy.step(1, {step_type: 'user_input', state: 'ERROR'}), agy.done]],
+        ['error state on a response of a run that did not succeed', [init, agy.step(1, {step_type: 'agent_response', state: 'ERROR'}), {event: 'result', result: {...agy.done.result, status: 'ERROR'}}]],
+        ['error_message step then a 401 result', [init, agy.step(1, {step_type: 'error_message'}), {event: 'result', result: {...agy.done.result, status: 'ERROR', error: 'UNAUTHENTICATED (code 401)'}}]],
         ['unknown step state', [init, agy.step(1, {step_type: 'tool', tool_name: 'read_file', state: 'CANCELED', tool_info: {name: 'read_file', parameters: {Path: 'a'}, error: {message: 'x'}}}), agy.done]],
         ['unknown step type', [init, agy.step(1, {step_type: 'notice'}), agy.done]],
         ['trailing event', [init, agy.done, agy.step(1, {step_type: 'checkpoint'})]],
@@ -546,4 +548,17 @@ test('agy inspection still flags the neighbours of the allowed prompt file, outs
     ]));
     const result = /** @type {any} */ (await inspect({fixtures, instance}));
     assert.deepEqual(result.flags.map((/** @type {any} */ flag) => [flag.position, flag.kind]), [[2, 'path'], [3, 'path'], [4, 'path'], [5, 'path'], [6, 'tool']]);
+});
+
+test('agy inspection accepts a response step that failed and was retried within a run that finished with SUCCESS (the 2026-11-25 hydrogen medium spec-readiness record)', async t => {
+    const {instance, fixtures, sessionPath} = await setup(t, []);
+    await writeFile(sessionPath, lines([
+        agy.init(instance),
+        agy.step(1, {step_type: 'agent_response', state: 'DONE', duration_seconds: 4.58, usage: {input_tokens: 11111, output_tokens: 96, thinking_tokens: 40, cache_read_tokens: 0, total_tokens: 11207}}),
+        agy.step(33, {step_type: 'agent_response', state: 'ERROR', duration_seconds: 21.26, usage: {input_tokens: 19712, output_tokens: 2809, thinking_tokens: 2809, cache_read_tokens: 52778, total_tokens: 22521}}),
+        agy.step(34, {step_type: 'agent_response', state: 'DONE'}),
+        agy.done,
+    ]));
+    const result = /** @type {any} */ (await inspect({fixtures, instance}));
+    assert.deepEqual([result.status, result.flags], ['succeeded', []]);
 });

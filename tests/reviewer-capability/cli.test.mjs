@@ -7,6 +7,7 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 
 import {runArw} from '../../arw.mjs';
+import {leaksOutsideInstance} from '../../lib/reviewer-capability-cli.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
 import {installFakeCommand, runExitedProcess, runProcess} from '../helpers/process.mjs';
 
@@ -213,4 +214,20 @@ test('Reviewer capability rejects a work directory inside the ARW checkout', asy
         '--out', 'results', '--work', fileURLToPath(new URL('../../lib', import.meta.url))], {cwd, stdout: () => {}, stderr: line => errors.push(line)});
     assert.equal(code, 2);
     assert.match(errors.join('\n'), /outside the ARW checkout/u);
+});
+
+test('the fixture path check ignores the glob the instance own AGENTS.md cites, and still flags every other fixture path or host path', async () => {
+    // Replays the code-standards voids of the 2026-11-25 Gemini run: a Reviewer printed the checkout AGENTS.md copy, whose line 107 names the fixture glob.
+    const agents = await readFile(new URL('../../AGENTS.md', import.meta.url), 'utf8');
+    const line = agents.split('\n').find(entry => entry.includes('tests/fixtures/reviewer-capability')) ?? '';
+    assert.ok(line);
+    const stream = JSON.stringify({event: 'step_update', step_update: {step_type: 'tool', tool_info: {output: `107: ${line}\r\n`}}});
+    const root = '/host/arw';
+    assert.equal(leaksOutsideInstance([stream, '', line], agents, root), false);
+    assert.equal(leaksOutsideInstance([stream], '', root), true, 'an instance without that text still flags it');
+    assert.equal(leaksOutsideInstance([stream + ' tests/fixtures/reviewer-capability/code-standards-reviewer/x/expected.json'], agents, root), true);
+    assert.equal(leaksOutsideInstance([stream + ' tests/fixtures/reviewer-capability'], agents, root), true);
+    assert.equal(leaksOutsideInstance([stream + ' `tests/fixtures/reviewer-capability/**/expected.json`'], agents, root), true, 'the glob as a prefix of a longer path');
+    assert.equal(leaksOutsideInstance([stream + ' x/tests/fixtures/reviewer-capability/**'], agents, root), true);
+    assert.equal(leaksOutsideInstance([stream + ' /host/arw/AGENTS.md'], agents, root), true);
 });
