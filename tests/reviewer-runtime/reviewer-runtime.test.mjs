@@ -1041,7 +1041,9 @@ test('Reviewer rejects mixed report-directory input at admission, continuation a
     const managed = await managedBinding(fixture, active, 'running');
     await assert.rejects(runtime.restorePausedTask({runId: receipt.runId, managed}), /report directory must contain only/);
     await fixture.writeReport('No problems.\n');fixture.native.finish(/** @type {string} */ (active.threadId));
-    failed(await runtime.inspect({runId: receipt.runId}), 'report-binding-invalid');
+    const rejected = succeeded(await runtime.inspect({runId: receipt.runId}));
+    assert.equal(rejected.state, 'failed');
+    assert.match(rejected.completion?.status === 'incomplete' ? rejected.completion.reason : '', /must contain only/);
     assert.equal(continuations, 0);
     assert.equal(fixture.native.calls.filter(call => call.operation === 'startTurn').length, 1);
     assert.equal((await opened.scopedFilesystem.read({path: inputPath})).status, 'succeeded');
@@ -1068,7 +1070,10 @@ test('Reviewer rejects mixed report-directory input at admission, continuation a
         assert.equal((await opened.scopedFilesystem.write({path: inputPath, bytes: Buffer.from('{}'), mode: 'create'})).status, 'succeeded');
         if (phase === 'final') completedFixture.native.finish(threadId);
         const managed = await managedBinding(completedFixture, active, 'running');
-        failed(await completedRuntime.inspect({runId: receipt.runId, managed}), 'report-binding-invalid');
+        const inspected = await completedRuntime.inspect({runId: receipt.runId, managed});
+        // A violation found in the background at completion ends the run as failed; one found at a later inspection is refused.
+        if (phase === 'final') assert.equal(succeeded(inspected).completion?.status, 'incomplete');
+        else failed(inspected, 'report-binding-invalid');
         if (phase === 'saved') {
             const cold = createReviewerRuntime(options(completedFixture));
             failed(await cold.inspect({runId: receipt.runId, managed}), 'report-binding-invalid');
@@ -1088,6 +1093,34 @@ test('Reviewer rejects mixed report-directory input at admission, continuation a
         assert.equal(report.status === 'succeeded' ? report.text : null, 'Complete original bound report.');
         await completedRuntime.close();
     }
+});
+
+test('a report-directory violation found at completion still releases the protected turn', async () => {
+    const fixture = createReviewerRuntimeFixture();
+    let released = 0;
+    const nativeSessions = {open: async (/** @type {Parameters<typeof fixture.native.nativeSessions.open>[0]} */ input) => {
+        const session = await fixture.native.nativeSessions.open(input);
+        const release = session.releaseProtectedTurn;
+        return Object.assign(session, {releaseProtectedTurn: async (/** @type {Parameters<typeof release>[0]} */ request) => {
+            const result = await release(request);
+            released++;
+            return result;
+        }});
+    }};
+    const runtime = createReviewerRuntime({...options(fixture), nativeSessions});
+    const receipt = succeeded(await runtime.execute({operation: 'spawn_agent', input: reviewerHandoff}));
+    const active = succeeded(await runtime.inspect({runId: receipt.runId}));
+    const opened = await fixture.filesystem.open({root: reviewerHandoff.cwd});
+    assert.equal(opened.status, 'succeeded');
+    if (opened.status !== 'succeeded') throw new Error('Scripted repository unavailable.');
+    const strayPath = relative(reviewerHandoff.cwd, join(dirname(reviewerHandoff.reportPath), '_verify', 'note.txt')).split('\\').join('/');
+    await fixture.writeReport('Complete report.');
+    assert.equal((await opened.scopedFilesystem.write({path: strayPath, bytes: Buffer.from('x'), mode: 'create'})).status, 'succeeded');
+    fixture.native.finish(/** @type {string} */ (active.threadId));
+    for (let turn = 0; turn < 5; turn++) await new Promise(resolve => setImmediate(resolve));
+    assert.equal(released, 1);
+    assert.equal(runtime.holdsRun(receipt.runId), false);
+    await runtime.close();
 });
 
 test('Reviewer admission rejects recovery records inside its writable report directory', async () => {
