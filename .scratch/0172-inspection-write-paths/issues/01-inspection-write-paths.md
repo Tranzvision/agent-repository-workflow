@@ -1,6 +1,6 @@
 # 检查 Reviewer 写路径时不漏报
 
-Status: ready-for-agent
+Status: resolved
 
 ## What to build
 
@@ -31,3 +31,7 @@ Status: ready-for-agent
 ## Comments
 
 - 来源与核对: `~/projects/.tasks/ARW/oc-review/triage/2026-11-25.jsonl` 前三条, `~/projects/.tasks/ARW/daily-report-1126.md`.
+
+## Comments
+
+- Resolved by effort 0174 (commit 9bd05e9), which merged this issue with its sibling.

@@ -1,6 +1,6 @@
 # Git 参数终止符与符号链接入口守卫
 
-Status: ready-for-agent
+Status: resolved
 
 ## What to build
 
@@ -30,3 +30,7 @@ Status: ready-for-agent
 ## Comments
 
 - 来源与核对: `~/projects/.tasks/ARW/oc-review/triage/2026-11-26.jsonl` 第 1, 2, 3, 4 条, `~/projects/.tasks/ARW/daily-report-1127.md`.
+
+## Comments
+
+- Resolved by effort 0174 (commit 9bd05e9), which merged this issue with its sibling.
