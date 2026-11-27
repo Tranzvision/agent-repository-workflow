@@ -1,6 +1,6 @@
 # Git 参数终止符与符号链接入口守卫
 
-Status: resolved
+Status: wontfix
 
 ## What to build
 

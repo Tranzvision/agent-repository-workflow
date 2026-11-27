@@ -1,6 +1,6 @@
 # 检查 Reviewer 写路径时不漏报
 
-Status: resolved
+Status: wontfix
 
 ## What to build
 
