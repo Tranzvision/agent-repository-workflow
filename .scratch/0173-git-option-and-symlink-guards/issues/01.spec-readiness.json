@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0173:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "源码仓库常设例外. 此单 issue effort 修正已定义行为并机械清理实现, 无需治理设计."
+  },
+  "subject": {
+    "filePath": ".scratch/0173-git-option-and-symlink-guards/issues/01-git-option-and-symlink-guards.md",
+    "sha256": "0d32656f0b29ae4c3995a0ab3dec53ac8f9697d8d54b5913269403ef8379799e"
+  },
+  "result": "not-applicable"
+}
