@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0174:01",
+  "exception": {
+    "confirmedAt": "2026-11-27T08:47:50Z",
+    "reason": "本轮 Main 已确认无需治理设计或共用规范, 单独成为只有一个实施 issue 的 effort."
+  },
+  "subject": {
+    "filePath": ".scratch/0174-reviewer-and-git-guards/issues/01-reviewer-and-git-guards.md",
+    "sha256": "5f88d0af3b9622044749a8046b99cb31063bd50f0e6a48e54aadb09eea6eb212"
+  },
+  "result": "not-applicable"
+}

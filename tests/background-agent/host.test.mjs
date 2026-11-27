@@ -11,6 +11,7 @@ import {createStrataTaskSupport} from '../../lib/background-agent/strata-work-po
 import {createUsage} from '../../lib/background-agent/usage.mjs';
 import {createScriptedReviewerSessions} from '../helpers/reviewer-runtime-adapter.mjs';
 import {createTemporaryDirectory} from '../helpers/cleanup.mjs';
+import {runProcess} from '../helpers/process.mjs';
 import {strataTiers, writeStrataInstallation} from '../helpers/strata-installation.mjs';
 
 /** @typedef {import('../../lib/background-agent/native-session.mjs').NativeSessions} NativeSessions */
@@ -28,6 +29,18 @@ const failed = response => {
     assert.equal(response.status, 'failed', JSON.stringify(response));
     return response.error;
 };
+
+test('Background Agent daemon validates its invocation through a symlinked directory', async t => {
+    const root = await createTemporaryDirectory(t, 'arw-daemon-entry-');
+    const linked = join(root, 'lib');
+    const source = join(import.meta.dirname, '..', '..', 'lib');
+    await symlink(source, linked, process.platform === 'win32' ? 'junction' : 'dir');
+
+    const result = await runProcess(process.execPath, [join(linked, 'arw-background-agent-host.mjs')]);
+    assert.equal(result.status, 'exited');
+    assert.equal(result.exitCode, 1);
+    assert.match(result.stderr, /Invalid private Background Agent daemon invocation\./u);
+});
 
 /** @returns {{scripted: ReturnType<typeof createScriptedReviewerSessions>, nativeSessions: NativeSessions, control: {failSnapshots: boolean}}} */
 const scriptedNativeSessions = () => {

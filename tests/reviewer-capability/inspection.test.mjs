@@ -562,3 +562,48 @@ test('agy inspection accepts a response step that failed and was retried within 
     const result = /** @type {any} */ (await inspect({fixtures, instance}));
     assert.deepEqual([result.status, result.flags], ['succeeded', []]);
 });
+
+test('Claude inspection reports writes and edits to missing files outside the instance', async t => {
+    const {fixtures, instance, sessionPath} = await setup(t, []);
+    const external = await createTemporaryDirectory(t, 'arw-inspect-external-');
+    const missing = join(external, 'missing.txt');
+    await writeFile(sessionPath, lines([
+        claude.owner(),
+        claude.use('write', 'Write', {file_path: missing}), claude.result('write', 'ok'),
+        claude.use('edit', 'Edit', {file_path: missing}), claude.result('edit', 'ok'),
+        claude.use('read', 'Read', {file_path: missing}), claude.result('read', 'missing'),
+    ]));
+    const result = await inspect({fixtures, instance});
+    assert.ok('flags' in result);
+    assert.deepEqual(result.flags.map(({position, kind, match}) => [position, kind, match]), [
+        [2, 'path', missing], [4, 'path', missing],
+    ]);
+});
+
+test('Claude inspection allows reading its transcript directory and reports writes there', async t => {
+    const {fixtures, instance, root, sessionPath} = await setup(t, []);
+    const transcriptNeighbor = join(root, 'transcript.txt');
+    await writeFile(transcriptNeighbor, 'transcript');
+    await writeFile(sessionPath, lines([
+        claude.owner(),
+        claude.use('read', 'Read', {file_path: transcriptNeighbor}), claude.result('read', 'ok'),
+        claude.use('write', 'Write', {file_path: transcriptNeighbor}), claude.result('write', 'ok'),
+        claude.use('edit', 'Edit', {file_path: sessionPath}), claude.result('edit', 'ok'),
+    ]));
+    const result = await inspect({fixtures, instance});
+    assert.ok('flags' in result);
+    assert.deepEqual(result.flags.map(({position, kind, match}) => [position, kind, match]), [
+        [4, 'path', transcriptNeighbor], [6, 'path', sessionPath],
+    ]);
+});
+
+test('Claude inspection permits system directory reads but reports writes', async t => {
+    const {fixtures, instance} = await setup(t, [
+        claude.owner(),
+        claude.use('read', 'Read', {file_path: '/etc/hosts'}), claude.result('read', 'ok'),
+        claude.use('write', 'Write', {file_path: '/etc/hosts'}), claude.result('write', 'ok'),
+    ]);
+    const result = await inspect({fixtures, instance});
+    assert.ok('flags' in result);
+    assert.deepEqual(result.flags.map(({position, kind, match}) => [position, kind, match]), [[4, 'path', '/etc/hosts']]);
+});

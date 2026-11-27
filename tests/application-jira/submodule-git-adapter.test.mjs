@@ -105,3 +105,24 @@ test('Submodule Git Adapter reports failed when the state after a mutation canno
         assert.equal(result.status, 'failed');
     }
 });
+
+test('Submodule Git Adapter passes option-shaped operands to Git as data', async () => {
+    /** @type {string[][]} */
+    const calls = [];
+    const adapter = createSubmoduleGitAdapter({git: {run: async ({argv}) => {
+        if (['fetch', 'merge', 'switch'].includes(argv[0])) calls.push(argv);
+        return {code: 0, failure: null, stdout: Buffer.from('dev\n'), stderr: ''};
+    }}});
+    const operands = {...input, remote: '--example-remote', branch: '--example-branch', targetBranch: '--example-branch'};
+    await adapter.fetch(operands);
+    await adapter.fastForward(operands);
+    await adapter.switchBranch(operands);
+    await adapter.switchBranch({...operands, mode: 'remote-tracking'});
+
+    assert.deepEqual(calls, [
+        ['fetch', '--no-tags', '--', '--example-remote', '--example-branch'],
+        ['merge', '--ff-only', '--', '--example-remote/--example-branch'],
+        ['switch', '--', '--example-branch'],
+        ['switch', '--track', '-c', '--example-branch', '--', '--example-remote/--example-branch'],
+    ]);
+});
