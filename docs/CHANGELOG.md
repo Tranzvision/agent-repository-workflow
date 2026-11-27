@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Reviewer capability runs report `instance-write` when a result path already holds a file or symlink, preserving existing data.
 - Reviewer capability inspection flags Claude writes and edits outside the instance, including writes to the Reviewer's transcript directory and system directories. Jira submodule operations pass option-shaped operands to Git as data. The Background Agent daemon recognizes startup through a symlinked path.
 - Reviewer capability: a model command that leaves a background process holding its pipes is settled one second after it exits instead of being recorded as a timeout, `run` compares installed files one at a time (no `EMFILE` under a 1024 descriptor limit), `--work` inside the ARW checkout is rejected, and `pool split` bounds huge evidence line ranges. `followup_task` on a Claude run no longer checks `CODEX_HOME`, and Jira Module branch switching rolls back instead of throwing when Git state cannot be read.
 - Configuration editing rejects JSON objects with duplicate member names, and a Code Map root in the workflow lock must be a canonical Repository-relative path (no trailing slash, drive prefix, or NUL). Document Terms counts a lone CR as a line break and recognizes headings indented by up to three spaces.

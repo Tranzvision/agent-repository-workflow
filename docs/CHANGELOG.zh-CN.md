@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- Reviewer 能力运行在结果路径已有文件或符号链接时报告 `instance-write`, 保留已有数据.
 - Reviewer 能力检查会报告 Claude 在实例外的写入与编辑, 包括对自身会话记录目录和系统目录的写入. Jira 子模块操作将形似选项的参数作为数据交给 Git. 后台 Agent 守护进程能识别经符号链接路径启动的入口.
 - Reviewer 能力套件: 模型命令留下持有管道的后台进程时, 在命令退出 1 秒后结算, 不再记成超时; `run` 逐个比较已安装文件 (`ulimit -n` 为 1024 时不再 `EMFILE`); `--work` 位于 ARW 检出内时被拒绝; `pool split` 限制极大的证据行区间. 对 Claude 运行的 `followup_task` 不再检查 `CODEX_HOME`; Jira Module 切换分支时读不到 Git 状态不再抛错, 而是回滚.
 - 配置编辑会拒绝含重复成员名的 JSON 对象, workflow lock 中的 Code Map root 必须是规范的仓库相对路径 (不带尾部斜杠, 盘符前缀或 NUL). Document Terms 把单独的 CR 算作换行, 并识别缩进至多三个空格的标题.

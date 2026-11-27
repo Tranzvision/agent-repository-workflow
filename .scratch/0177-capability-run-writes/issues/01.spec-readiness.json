@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0177:01",
+  "exception": {
+    "confirmedAt": "2026-11-27T18:22:24Z",
+    "reason": "根 AGENTS.md 的单 issue 常设例外及本轮 Main 明确确认. 本 effort 只有一个实施 issue, 无设计决定且无共用 spec."
+  },
+  "subject": {
+    "filePath": ".scratch/0177-capability-run-writes/issues/01-capability-run-writes.md",
+    "sha256": "bd1923bf354df967f29c85073d9ee8f0a7a638bc36267d2c3d27c69c07f08eb2"
+  },
+  "result": "not-applicable"
+}

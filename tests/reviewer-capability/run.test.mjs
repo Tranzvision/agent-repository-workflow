@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, readlink, rm, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
 
@@ -22,7 +22,8 @@ const fixture = async t => {
     await writeFile(join(installed, 'manifest.json'), JSON.stringify({arwVersion: '0.5.4-pre', managedFiles: ['arw.mjs'], manifestVersion: 2, pathOwnership: [], product: PRODUCT_NAME}));
     await writeFile(join(installed, 'arw.mjs'), `
 import {createInterface} from 'node:readline';
-import {appendFileSync, writeFileSync} from 'node:fs';
+import {appendFileSync, symlinkSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 const log = process.env.HOME + '/requests.jsonl';
 const sessionPath = process.env.HOME + '/native.jsonl';
 const notice = {type: 'message', source: 'provider-program', messageId: 'pause-1', text: 'The Reviewer runtime paused this same task after 1 turns'};
@@ -40,6 +41,13 @@ for await (const line of createInterface({input: process.stdin})) {
             continue;
         }
         spawned = input;
+        const agentPath = join(input.cwd, 'agent.json');
+        if (process.env.FAKE_MODE === 'existing-file') writeFileSync(agentPath, 'existing data');
+        if (process.env.FAKE_MODE === 'existing-link') {
+            const linkedPath = join(process.env.HOME, 'linked.json');
+            writeFileSync(linkedPath, 'existing data');
+            symlinkSync(linkedPath, agentPath, 'file');
+        }
         writeFileSync(input.reportPath, process.env.FAKE_MODE === 'failure' ? 'Preamble\\n- malformed finding\\n' : 'No problems.\\n');
         const records = [{type: 'session_meta', payload: {id: 'thread-1'}}];
         if (process.env.FAKE_MODE === 'flags') records.push(
@@ -193,6 +201,20 @@ test('run reports a rejected spawn with its original error and writes no run rec
     assert.equal((await requests()).length, 1);
     await assert.rejects(readFile(join(target, 'run.json')), {code: 'ENOENT'});
 });
+
+// Each collision case uses the real scenario setup and launches the fake machine entry, which together exceed 100 ms.
+for (const [kind, mode] of [['file', 'existing-file'], ['symlink', 'existing-link']]) {
+    test(`run refuses an existing ${kind} at a result path and preserves existing data`, async t => {
+        const {home, target, runHere} = await fixture(t);
+        const output = await runHere(mode);
+        assert.equal(output.code, 1, JSON.stringify(output));
+        assert.deepEqual(JSON.parse(output.stdout), {status: 'failed', stage: 'instance-write'}, output.stderr);
+        const resultPath = join(target, 'agent.json');
+        if (kind === 'symlink') assert.equal(await readlink(resultPath), join(home, 'linked.json'));
+        assert.equal(await readFile(resultPath, 'utf8'), 'existing data');
+        await assert.rejects(readFile(join(target, 'run.json')), {code: 'ENOENT'});
+    });
+}
 
 test('run rejects existing targets and absent installations before spawning and rejects non-object settings as usage errors', async t => {
     const {home, installed, target, run, runHere} = await fixture(t);
