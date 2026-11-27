@@ -1,6 +1,6 @@
 # 修正能力运行结果的符号链接写入与两处规则文字
 
-Status: ready-for-agent
+Status: wontfix
 
 ## What to build
 
@@ -34,3 +34,4 @@ Status: ready-for-agent
 ## Comments
 
 - 来源: `ARW/daily-1127` 报告第 1 项, 条目 `ARW/mid-1127`. 创建时在 HEAD `6722b9f` 逐条核对均仍成立; `lib/reviewer-capability-run.mjs` 的行号为核对时所见.
+- Superseded by effort 0177 (commit 6ed25f1), which implemented it.
