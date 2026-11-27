@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 7,
+  "issueId": "issue:0176:01",
+  "exception": {
+    "confirmedAt": "2026-11-02T00:00:00Z",
+    "reason": "用户常设确认 (2026-11-02): 不含设计决定且不依赖共用 spec 的 issue 单独成为只有一个实施 issue 的 effort, 见根 AGENTS.md 的 Source Checkout Baseline 例外."
+  },
+  "subject": {
+    "filePath": ".scratch/0176-reviewer-recovery-discovery/issues/01-reviewer-recovery-discovery.md",
+    "sha256": "a99d6dce7f77646db32e9c286895ada62dcf2e0b2a66a8a6655bc91433b785e8"
+  },
+  "result": "not-applicable"
+}
